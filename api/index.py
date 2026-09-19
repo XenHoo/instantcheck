@@ -1014,15 +1014,25 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       const clientIdRegex = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
       const defaultClientId = "9e5f94bc-e8a4-4e73-b8be-63364c29d753";
       
-      const lines = rawText.split('\n');
+      const lines = rawText.split(/\r?\n/);
       const results = [];
       const seen = new Set();
 
-      for (let line of lines) {
-        line = line.trim();
+      for (let rawLine of lines) {
+        let line = rawLine.trim();
         if (!line || line.startsWith('#')) continue;
 
-        const parts = line.split(/[|:;\t]+/).map(p => p.trim()).filter(p => p);
+        let parts = [];
+        if (line.includes('|')) {
+          parts = line.split('|').map(p => p.trim()).filter(p => p);
+        } else if (line.includes('----')) {
+          parts = line.split('----').map(p => p.trim()).filter(p => p);
+        } else if (line.includes('\t')) {
+          parts = line.split('\t').map(p => p.trim()).filter(p => p);
+        } else {
+          parts = line.split(/[\s;]+/).map(p => p.trim()).filter(p => p);
+        }
+
         if (!parts.length) continue;
 
         let email = '';
@@ -1066,7 +1076,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         if (!seen.has(key)) {
           seen.add(key);
           results.push({
-            email: email || 'Unknown',
+            email: email || 'Unknown Email',
             password: password,
             refresh_token: token,
             client_id: clientId
