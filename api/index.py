@@ -1154,13 +1154,19 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       const proxy = proxyEl ? proxyEl.value.trim() : '';
       if (!text) return alert('Silakan masukkan token / akun!');
 
-      const modalEl = document.getElementById('addAccountModal');
-      if (modalEl) {
-        try {
-          const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
-          if (modal) modal.hide();
-        } catch(e) {}
-      }
+      // Close modal safely
+      try {
+        const modalEl = document.getElementById('addAccountModal');
+        if (modalEl) {
+          const closeBtn = modalEl.querySelector('[data-bs-dismiss="modal"]');
+          if (closeBtn) {
+            closeBtn.click();
+          } else if (window.bootstrap && bootstrap.Modal) {
+            const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+            if (modal) modal.hide();
+          }
+        }
+      } catch(e) {}
 
       const container = document.getElementById('tmAccountsContainer');
       container.innerHTML = `<div class="text-center text-muted py-5 small"><i class="fa-solid fa-spinner fa-spin me-2 text-warning"></i>Memeriksa akun...</div>`;
@@ -1720,6 +1726,13 @@ def api_mail_message():
 
     data = fetch_message_detail(message_id=message_id, refresh_token=refresh_token, client_id=client_id, proxy=proxy)
     return jsonify(data)
+
+@app.after_request
+def add_no_cache_headers(response):
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+    return response
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
