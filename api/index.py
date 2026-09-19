@@ -1202,10 +1202,39 @@ HTML_TEMPLATE = """<!DOCTYPE html>
               </div>
               <small class="text-muted d-block text-truncate" style="font-size: 0.72rem;">${acc.ok ? (acc.latest_subject || 'Live') : (acc.error || 'Dead')}</small>
             </div>
+            <button class="btn btn-sm btn-link text-secondary p-0 px-1 opacity-50 hover-opacity-100" title="Hapus akun ini" onclick="deleteOutlookAccount(${idx}, event)">
+              <i class="fa-solid fa-xmark fa-sm text-danger"></i>
+            </button>
           </div>
         `;
       });
       container.innerHTML = html;
+    }
+
+    function deleteOutlookAccount(idx, event) {
+      if (event) event.stopPropagation();
+      const acc = outlookAccounts[idx];
+      const emailName = acc ? acc.email : 'akun ini';
+      if (confirm(`Hapus ${emailName} dari daftar?`)) {
+        outlookAccounts.splice(idx, 1);
+        saveOutlookAccountsStorage();
+        if (selectedAccountIndex === idx) {
+          selectedAccountIndex = outlookAccounts.length > 0 ? 0 : -1;
+        } else if (selectedAccountIndex > idx) {
+          selectedAccountIndex--;
+        }
+        renderAccountsList();
+        if (selectedAccountIndex >= 0) {
+          selectOutlookAccount(selectedAccountIndex);
+        } else {
+          document.getElementById('tmActiveEmailLabel').textContent = 'Pilih Akun';
+          document.getElementById('tmConnectionBadge').className = 'badge bg-dark border border-secondary text-secondary px-2 py-1';
+          document.getElementById('tmConnectionBadge').innerHTML = '● Standby';
+          document.getElementById('tmInboxTitle').innerHTML = '<i class="fa-regular fa-folder-open me-1"></i> INBOX (0)';
+          document.getElementById('tmMessagesContainer').innerHTML = `<div class="text-center text-muted py-5 small">Pilih akun di sebelah kiri untuk melihat pesan inbox.</div>`;
+          document.getElementById('tmReaderContent').innerHTML = `<div class="text-center text-muted my-auto"><i class="fa-regular fa-envelope-open fa-3x mb-3 text-warning"></i><h5 class="text-light">Belum ada email yang dipilih</h5></div>`;
+        }
+      }
     }
 
     async function submitNewOutlookAccounts() {
