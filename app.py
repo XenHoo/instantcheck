@@ -1640,17 +1640,17 @@ def index():
         if not action:
             action = payload.get("action", "")
 
-        if action == "check_single_outlook" or "refresh_token" in payload and "email" in payload and "message_id" not in payload:
+        if action == "mail_message" or "message_id" in payload:
+            return api_mail_message()
+        elif action == "mail_inbox" or ("refresh_token" in payload and "email" not in payload and "password" not in payload):
+            return api_mail_inbox()
+        elif action == "check_single_outlook" or ("refresh_token" in payload and "email" in payload):
             return api_check_single_outlook()
         elif action == "check_single_capcut" or ("email" in payload and "password" in payload and "refresh_token" not in payload):
             return api_check_single_capcut()
-        elif action == "mail_inbox":
-            return api_mail_inbox()
-        elif action == "mail_message":
-            return api_mail_message()
-        elif action == "parse_accounts":
+        elif action == "parse_accounts" or "mode" in payload:
             return api_parse_accounts()
-        elif action == "check_capcut":
+        elif action == "check_capcut" or "accounts_text" in payload:
             return api_check_capcut()
         elif action == "check_outlook":
             return api_check_outlook()
