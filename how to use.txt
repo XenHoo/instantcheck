@@ -1,0 +1,3 @@
+pip install requests
+set CAPCUT_PROXY=http://user-session-{sess}:pass@gate.provider.com:7000
+python capcut_cli.py accounts.txt --out results.csv
