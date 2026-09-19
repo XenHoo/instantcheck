@@ -796,8 +796,12 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       const modalEl = document.getElementById('addAccountModal');
       if (modalEl) {
         try {
-          const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
-          if (modal) modal.hide();
+          const closeBtn = modalEl.querySelector('[data-bs-dismiss="modal"]');
+          if (closeBtn) closeBtn.click();
+          else if (window.bootstrap && bootstrap.Modal) {
+            const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+            if (modal) modal.hide();
+          }
         } catch(e) {}
       }
 
@@ -1366,9 +1370,14 @@ def api_mail_message():
     data = outlook_check.fetch_message_detail(message_id=message_id, refresh_token=refresh_token, client_id=client_id, proxy=proxy)
     return jsonify(data)
 
+@app.after_request
+def add_no_cache_headers(response):
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+    return response
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     print(f"Starting Multi-Checker Web on http://0.0.0.0:{port} ...")
     app.run(host="0.0.0.0", port=port, debug=False)
-
