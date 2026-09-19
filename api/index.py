@@ -11,9 +11,25 @@ from datetime import timezone
 from typing import Dict, Any, Tuple, Optional, List
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from flask import Flask, Response, render_template_string, request, jsonify, send_from_directory
-import requests
-
 app = Flask(__name__)
+
+# Fix Vercel Serverless PATH_INFO rewrite
+class VercelWSGIHandler:
+    def __init__(self, flask_app):
+        self.app = flask_app
+
+    def __call__(self, environ, start_response):
+        path = environ.get('PATH_INFO', '')
+        if path == '/api/index.py' or path == '/api/index':
+            # Preserve original request path if passed via headers or default to /
+            orig_uri = environ.get('HTTP_X_NOW_ROUTE', '') or environ.get('HTTP_X_VERCEL_PATH', '') or '/'
+            if '?' in orig_uri:
+                orig_uri = orig_uri.split('?')[0]
+            environ['PATH_INFO'] = orig_uri
+        return self.app(environ, start_response)
+
+handler = VercelWSGIHandler(app)
+
 
 # ==================== CAPCUT CORE LOGIC ====================
 CAPCUT_AID = "348188"
