@@ -307,7 +307,7 @@ def check_outlook_account(email: str, password: str, refresh_token: str, client_
     out["status"] = "LIVE"
     return out
 
-def fetch_inbox_messages(refresh_token: str, client_id: str = DEFAULT_CLIENT_ID, proxy: Optional[str] = None, top: int = 30) -> Dict[str, Any]:
+def fetch_inbox_messages(refresh_token: str, client_id: str = DEFAULT_CLIENT_ID, proxy: Optional[str] = None, top: int = 50) -> Dict[str, Any]:
     access_token, err = get_access_token(refresh_token, client_id, proxy)
     if not access_token:
         return {"ok": False, "error": err, "messages": []}
@@ -321,7 +321,12 @@ def fetch_inbox_messages(refresh_token: str, client_id: str = DEFAULT_CLIENT_ID,
     }
 
     try:
-        r = requests.get(INBOX_MESSAGES_URL, headers=headers, params=params, proxies=proxies, timeout=10)
+        # Check all messages endpoint first (captures Inbox, Junk, Focus, Other)
+        r = requests.get(SINGLE_MESSAGE_URL, headers=headers, params=params, proxies=proxies, timeout=15)
+        if r.status_code != 200:
+            # Fallback to inbox folder
+            r = requests.get(INBOX_MESSAGES_URL, headers=headers, params=params, proxies=proxies, timeout=15)
+        
         if r.status_code != 200:
             return {"ok": False, "error": f"HTTP {r.status_code}: {r.text[:120]}", "messages": []}
 
@@ -339,16 +344,18 @@ def fetch_inbox_messages(refresh_token: str, client_id: str = DEFAULT_CLIENT_ID,
                 dt = datetime.datetime.fromisoformat(raw_dt.replace("Z", "+00:00"))
                 now = datetime.datetime.now(timezone.utc)
                 diff = now - dt
-                if diff.total_seconds() < 3600:
+                if diff.total_seconds() < 60:
+                    time_display = "Baru saja"
+                elif diff.total_seconds() < 3600:
                     mins = max(1, int(diff.total_seconds() // 60))
-                    time_display = f"{mins}m ago"
+                    time_display = f"{mins}m lalu"
                 elif diff.total_seconds() < 86400:
                     hrs = int(diff.total_seconds() // 3600)
-                    time_display = f"{hrs}h ago"
+                    time_display = f"{hrs}h lalu"
                 elif diff.days == 1:
-                    time_display = "Yesterday"
+                    time_display = "Kemarin"
                 elif diff.days < 7:
-                    time_display = f"{diff.days}d ago"
+                    time_display = f"{diff.days}d lalu"
                 else:
                     time_display = dt.strftime("%d %b %Y")
             except Exception:
@@ -1151,6 +1158,25 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     let outlookAccounts = [];
     let selectedAccountIndex = -1;
 
+    function saveOutlookAccountsStorage() {
+      try {
+        localStorage.setItem('chenstore_outlook_accounts', JSON.stringify(outlookAccounts));
+      } catch(e) {}
+    }
+
+    function loadOutlookAccountsStorage() {
+      try {
+        const raw = localStorage.getItem('chenstore_outlook_accounts');
+        if (raw) {
+          outlookAccounts = JSON.parse(raw) || [];
+          if (outlookAccounts.length > 0) {
+            renderAccountsList();
+            selectOutlookAccount(0);
+          }
+        }
+      } catch(e) {}
+    }
+
     function renderAccountsList() {
       const container = document.getElementById('tmAccountsContainer');
       document.getElementById('tmAccountCount').textContent = outlookAccounts.length;
@@ -1249,6 +1275,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
                 })
               });
               outlookAccounts.push(data);
+              saveOutlookAccountsStorage();
               renderAccountsList();
               if (selectedAccountIndex === -1) {
                 selectOutlookAccount(0);
@@ -1261,6 +1288,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
                 refresh_token: item.refresh_token,
                 client_id: item.client_id
               });
+              saveOutlookAccountsStorage();
               renderAccountsList();
               if (selectedAccountIndex === -1) {
                 selectOutlookAccount(0);
@@ -1274,6 +1302,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
           pool.push(worker());
         }
         await Promise.all(pool);
+        saveOutlookAccountsStorage();
 
       } catch (err) {
         alert('Gagal memproses akun: ' + err.message);
@@ -1285,6 +1314,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       if (confirm('Hapus semua daftar akun Mail Checker?')) {
         outlookAccounts = [];
         selectedAccountIndex = -1;
+        try { localStorage.removeItem('chenstore_outlook_accounts'); } catch(e) {}
         renderAccountsList();
         document.getElementById('tmMessagesContainer').innerHTML = `<div class="text-center text-muted py-5 small">Pilih akun di sebelah kiri untuk melihat pesan inbox.</div>`;
         document.getElementById('tmReaderContent').innerHTML = `<div class="text-center text-muted my-auto"><i class="fa-regular fa-envelope-open fa-3x mb-3 text-warning"></i><h5 class="text-light">Belum ada email yang dipilih</h5></div>`;
@@ -1617,6 +1647,11 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       document.getElementById('btnStartCapcut').disabled = false;
       document.getElementById('btnStopCapcut').disabled = true;
     }
+
+    // Load saved accounts on startup
+    document.addEventListener('DOMContentLoaded', () => {
+      loadOutlookAccountsStorage();
+    });
   </script>
 </body>
 </html>
