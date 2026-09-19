@@ -679,37 +679,47 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       modal.hide();
 
       try {
-        const response = await fetch('/api/check_outlook', {
+        const parseRes = await fetch('/api/parse_accounts', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ accounts_text: text, proxy: proxy, workers: 8 })
+          body: JSON.stringify({ text: text, mode: 'outlook' })
         });
+        const items = await parseRes.json();
+        if (items.length === 0) return alert('Tidak ada token valid!');
 
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder('utf-8');
-        let buffer = '';
-
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          buffer += decoder.decode(value, { stream: true });
-          const lines = buffer.split('\\n');
-          buffer = lines.pop();
-
-          for (const line of lines) {
-            if (!line.trim()) continue;
+        let currentIndex = 0;
+        async function worker() {
+          while (currentIndex < items.length) {
+            const idx = currentIndex++;
+            const item = items[idx];
             try {
-              const res = JSON.parse(line);
-              if (res.type === 'result') {
-                outlookAccounts.push(res.data);
-                renderAccountsList();
-                if (selectedAccountIndex === -1 && res.data.ok) {
-                  selectOutlookAccount(outlookAccounts.length - 1);
-                }
+              const res = await fetch('/api/check_single_outlook', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  email: item.email,
+                  password: item.password,
+                  refresh_token: item.refresh_token,
+                  client_id: item.client_id,
+                  proxy: proxy
+                })
+              });
+              const data = await res.json();
+              outlookAccounts.push(data);
+              renderAccountsList();
+              if (selectedAccountIndex === -1 && data.ok) {
+                selectOutlookAccount(outlookAccounts.length - 1);
               }
             } catch (e) {}
           }
         }
+
+        const pool = [];
+        for (let i = 0; i < Math.min(8, items.length); i++) {
+          pool.push(worker());
+        }
+        await Promise.all(pool);
+
       } catch (err) {
         alert('Gagal memproses akun: ' + err.message);
       }
@@ -920,63 +930,74 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       capcutAbortController = new AbortController();
 
       try {
-        const response = await fetch('/api/check', {
+        const parseRes = await fetch('/api/parse_accounts', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ accounts_text: text, proxy: proxy, workers: workers, retries: retries }),
-          signal: capcutAbortController.signal
+          body: JSON.stringify({ text: text, mode: 'capcut' })
         });
+        const accounts = await parseRes.json();
+        const total = accounts.length;
 
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder('utf-8');
-        let buffer = '';
+        if (total === 0) {
+          alert('Tidak ada akun valid yang ditemukan!');
+          document.getElementById('btnStartCapcut').disabled = false;
+          document.getElementById('btnStopCapcut').disabled = true;
+          return;
+        }
 
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          buffer += decoder.decode(value, { stream: true });
-          const lines = buffer.split('\\n');
-          buffer = lines.pop();
+        document.getElementById('ccProgressText').textContent = `0 / ${total} (0%)`;
+        document.getElementById('ccProgressBar').style.width = '0%';
 
-          for (const line of lines) {
-            if (!line.trim()) continue;
+        let currentIndex = 0;
+        async function worker() {
+          while (currentIndex < total) {
+            if (capcutAbortController.signal.aborted) break;
+            const idx = currentIndex++;
+            const acc = accounts[idx];
+
             try {
-              const data = JSON.parse(line);
-              if (data.type === 'init') {
-                document.getElementById('ccProgressText').textContent = `0 / ${data.total} (0%)`;
-                document.getElementById('ccProgressBar').style.width = '0%';
-                continue;
-              }
-              if (data.type === 'result') {
-                checked++;
-                const r = data.data;
-                capcutRecords.push(r);
-                const uidStr = r.user_id ? ` | UID: ${r.user_id}` : '';
+              const res = await fetch('/api/check_single_capcut', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: acc.email, password: acc.password, proxy: proxy, retries: retries }),
+                signal: capcutAbortController.signal
+              });
+              const r = await res.json();
+              checked++;
+              capcutRecords.push(r);
+              const uidStr = r.user_id ? ` | UID: ${r.user_id}` : '';
 
-                if (r.ok && r.is_pro) {
-                  countPro++;
-                  document.getElementById('proCount').textContent = countPro;
-                  const exp = r.expiry ? ` | Exp: ${r.expiry}` : '';
-                  document.getElementById('proResult').value += `${r.email}:${r.password}${uidStr}${exp}\\n`;
-                } else if (r.ok && !r.is_pro) {
-                  countFree++;
-                  document.getElementById('freeCount').textContent = countFree;
-                  document.getElementById('freeResult').value += `${r.email}:${r.password}${uidStr} | Free Plan\\n`;
-                } else {
-                  countDie++;
-                  document.getElementById('dieCount').textContent = countDie;
-                  const err = r.error ? ` [${r.error}]` : '';
-                  document.getElementById('dieResult').value += `${r.email}:${r.password}${err}\\n`;
-                }
-
-                const total = data.total;
-                const percent = Math.round((checked / total) * 100);
-                document.getElementById('ccProgressText').textContent = `${checked} / ${total} (${percent}%)`;
-                document.getElementById('ccProgressBar').style.width = `${percent}%`;
+              if (r.ok && r.is_pro) {
+                countPro++;
+                document.getElementById('proCount').textContent = countPro;
+                const exp = r.expiry ? ` | Exp: ${r.expiry}` : '';
+                document.getElementById('proResult').value += `${r.email}:${r.password}${uidStr}${exp}\\n`;
+              } else if (r.ok && !r.is_pro) {
+                countFree++;
+                document.getElementById('freeCount').textContent = countFree;
+                document.getElementById('freeResult').value += `${r.email}:${r.password}${uidStr} | Free Plan\\n`;
+              } else {
+                countDie++;
+                document.getElementById('dieCount').textContent = countDie;
+                const err = r.error ? ` [${r.error}]` : '';
+                document.getElementById('dieResult').value += `${r.email}:${r.password}${err}\\n`;
               }
-            } catch (e) {}
+
+              const percent = Math.round((checked / total) * 100);
+              document.getElementById('ccProgressText').textContent = `${checked} / ${total} (${percent}%)`;
+              document.getElementById('ccProgressBar').style.width = `${percent}%`;
+            } catch (e) {
+              if (e.name === 'AbortError') break;
+            }
           }
         }
+
+        const pool = [];
+        for (let i = 0; i < Math.min(workers, total); i++) {
+          pool.push(worker());
+        }
+        await Promise.all(pool);
+
       } catch (err) {
         if (err.name !== 'AbortError') alert('Error: ' + err.message);
       } finally {
@@ -1080,6 +1101,56 @@ def api_check_outlook():
     return Response(generate(), mimetype="application/x-ndjson")
 
 
+# CapCut Check Single Account API (Fast, Zero-Timeout for Vercel & Cloud)
+@app.route("/api/check_single_capcut", methods=["POST"])
+def api_check_single_capcut():
+    payload = request.get_json(force=True)
+    email = payload.get("email", "").strip()
+    pw = payload.get("password", "").strip()
+    proxy_url = payload.get("proxy", "").strip() or os.environ.get("CAPCUT_PROXY", "")
+    retries = int(payload.get("retries", 6))
+
+    res = capcut_check.check_capcut_account(email, pw, proxy_template=proxy_url, max_ip_retries=retries)
+    res["password"] = pw
+    res["status"] = "PRO" if (res.get("ok") and res.get("is_pro")) else ("FREE" if res.get("ok") else "DEAD")
+    return jsonify(res)
+
+
+# Parse Accounts Helper API
+@app.route("/api/parse_accounts", methods=["POST"])
+def api_parse_accounts():
+    payload = request.get_json(force=True)
+    text = payload.get("text", "")
+    mode = payload.get("mode", "capcut")
+
+    if mode == "capcut":
+        accounts = capcut_cli.parse_accounts(text)
+        return jsonify([{"email": a[0], "password": a[1]} for a in accounts])
+    else:
+        items = outlook_check.parse_outlook_lines(text)
+        return jsonify(items)
+
+
+# Outlook Check Single Account API
+@app.route("/api/check_single_outlook", methods=["POST"])
+def api_check_single_outlook():
+    payload = request.get_json(force=True)
+    email = payload.get("email", "")
+    password = payload.get("password", "")
+    refresh_token = payload.get("refresh_token", "")
+    client_id = payload.get("client_id", outlook_check.DEFAULT_CLIENT_ID)
+    proxy_url = payload.get("proxy", "").strip() or None
+
+    res = outlook_check.check_outlook_account(
+        email=email,
+        password=password,
+        refresh_token=refresh_token,
+        client_id=client_id,
+        proxy=proxy_url
+    )
+    return jsonify(res)
+
+
 # TrackMail: Get Inbox Messages
 @app.route("/api/mail/inbox", methods=["POST"])
 def api_mail_inbox():
@@ -1109,3 +1180,4 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     print(f"Starting Multi-Checker Web on http://0.0.0.0:{port} ...")
     app.run(host="0.0.0.0", port=port, debug=False)
+
