@@ -787,17 +787,26 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     }
 
     async function submitNewOutlookAccounts() {
-      const text = document.getElementById('modalAccountInput').value.trim();
-      const proxy = document.getElementById('modalProxyInput').value.trim();
+      const inputEl = document.getElementById('modalAccountInput');
+      const proxyEl = document.getElementById('modalProxyInput');
+      const text = inputEl ? inputEl.value.trim() : '';
+      const proxy = proxyEl ? proxyEl.value.trim() : '';
       if (!text) return alert('Silakan masukkan token / akun!');
 
       const modalEl = document.getElementById('addAccountModal');
-      const modal = bootstrap.Modal.getInstance(modalEl);
-      modal.hide();
+      if (modalEl) {
+        try {
+          const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+          if (modal) modal.hide();
+        } catch(e) {}
+      }
+
+      const container = document.getElementById('tmAccountsContainer');
+      container.innerHTML = `<div class="text-center text-muted py-5 small"><i class="fa-solid fa-spinner fa-spin me-2 text-warning"></i>Memeriksa akun...</div>`;
 
       try {
         let items = parseOutlookLinesJS(text);
-        if (items.length === 0) {
+        if (!items || items.length === 0) {
           try {
             items = await safeFetchJson('/api/parse_accounts', {
               method: 'POST',
@@ -806,7 +815,10 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             });
           } catch(e) {}
         }
-        if (!items || items.length === 0) return alert('Tidak ada token Outlook/Hotmail yang valid!');
+        if (!items || items.length === 0) {
+          renderAccountsList();
+          return alert('Format tidak dikenali / tidak ada token valid!');
+        }
 
         let currentIndex = 0;
         async function worker() {
@@ -851,6 +863,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 
       } catch (err) {
         alert('Gagal memproses akun: ' + err.message);
+        renderAccountsList();
       }
     }
 
