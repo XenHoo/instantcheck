@@ -214,7 +214,7 @@ def get_access_token(refresh_token: str, client_id: str = DEFAULT_CLIENT_ID, pro
         "scope": "https://graph.microsoft.com/Mail.Read https://graph.microsoft.com/User.Read"
     }
     try:
-        r = requests.post(TOKEN_URL, data=data, proxies=proxies, timeout=25)
+        r = requests.post(TOKEN_URL, data=data, proxies=proxies, timeout=10)
         res_json = r.json()
     except Exception as e:
         return None, f"Network / Proxy error: {str(e)}"
@@ -256,7 +256,7 @@ def check_outlook_account(email: str, password: str, refresh_token: str, client_
 
     try:
         if not email or email == "Unknown Email":
-            me_res = requests.get("https://graph.microsoft.com/v1.0/me", headers=headers, proxies=proxies, timeout=15)
+            me_res = requests.get("https://graph.microsoft.com/v1.0/me", headers=headers, proxies=proxies, timeout=10)
             if me_res.status_code == 200:
                 me_data = me_res.json()
                 out["email"] = me_data.get("mail") or me_data.get("userPrincipalName") or email
@@ -266,7 +266,7 @@ def check_outlook_account(email: str, password: str, refresh_token: str, client_
             "$top": "1",
             "$select": "id,subject,from,receivedDateTime,isRead"
         }
-        inbox_res = requests.get(INBOX_MESSAGES_URL, headers=headers, params=params, proxies=proxies, timeout=15)
+        inbox_res = requests.get(INBOX_MESSAGES_URL, headers=headers, params=params, proxies=proxies, timeout=10)
         if inbox_res.status_code == 200:
             inbox_data = inbox_res.json().get("value", [])
             if inbox_data:
@@ -296,7 +296,7 @@ def fetch_inbox_messages(refresh_token: str, client_id: str = DEFAULT_CLIENT_ID,
     }
 
     try:
-        r = requests.get(INBOX_MESSAGES_URL, headers=headers, params=params, proxies=proxies, timeout=25)
+        r = requests.get(INBOX_MESSAGES_URL, headers=headers, params=params, proxies=proxies, timeout=10)
         if r.status_code != 200:
             return {"ok": False, "error": f"HTTP {r.status_code}: {r.text[:120]}", "messages": []}
 
@@ -1206,8 +1206,8 @@ HTML_TEMPLATE = """<!DOCTYPE html>
               });
               outlookAccounts.push(data);
               renderAccountsList();
-              if (selectedAccountIndex === -1 && data.ok) {
-                selectOutlookAccount(outlookAccounts.length - 1);
+              if (selectedAccountIndex === -1) {
+                selectOutlookAccount(0);
               }
             } catch (e) {
               outlookAccounts.push({
@@ -1218,6 +1218,9 @@ HTML_TEMPLATE = """<!DOCTYPE html>
                 client_id: item.client_id
               });
               renderAccountsList();
+              if (selectedAccountIndex === -1) {
+                selectOutlookAccount(0);
+              }
             }
           }
         }
@@ -1248,18 +1251,26 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       selectedAccountIndex = idx;
       renderAccountsList();
       const acc = outlookAccounts[idx];
+      if (!acc) return;
       document.getElementById('tmActiveEmailLabel').textContent = acc.email;
 
       const badge = document.getElementById('tmConnectionBadge');
       if (acc.ok) {
         badge.className = 'badge bg-success text-light px-2 py-1';
         badge.innerHTML = '● Connected';
+        await loadInboxMessages(acc);
       } else {
         badge.className = 'badge bg-danger text-light px-2 py-1';
         badge.innerHTML = '● Disconnected';
+        document.getElementById('tmMessagesContainer').innerHTML = `<div class="text-center py-5 small text-danger"><i class="fa-solid fa-circle-exclamation fa-2x mb-2 text-danger"></i><br>Tidak dapat memuat inbox.<br><small class="text-secondary">${acc.error || 'Akun DEAD / Token tidak valid'}</small></div>`;
+        document.getElementById('tmReaderContent').innerHTML = `
+          <div class="text-center text-muted my-auto">
+            <i class="fa-solid fa-triangle-exclamation fa-3x mb-3 text-danger"></i>
+            <h5 class="text-danger">Akun Disconnected / DEAD</h5>
+            <p class="small text-secondary px-3">${acc.error || 'Token tidak valid, kedaluwarsa, atau rusak.'}</p>
+          </div>
+        `;
       }
-
-      await loadInboxMessages(acc);
     }
 
     async function loadInboxMessages(acc) {
