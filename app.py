@@ -739,6 +739,85 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       border-color: #f59e0b;
       color: #ffffff;
     }
+
+    /* ================= RESPONSIVE STYLES ================= */
+    @media (max-width: 992px) {
+      body {
+        height: auto;
+        min-height: 100vh;
+        overflow-y: auto;
+      }
+      .top-navbar {
+        height: auto;
+        padding: 12px 16px;
+        flex-wrap: wrap;
+        gap: 10px;
+        justify-content: center;
+      }
+      .main-tab-content {
+        overflow: visible;
+        flex: none;
+      }
+      .trackmail-container {
+        flex-direction: column;
+        height: auto;
+        overflow: visible;
+      }
+      .tm-sidebar {
+        width: 100%;
+        max-height: 280px;
+        border-right: none;
+        border-bottom: 1px solid #2d1c10;
+      }
+      .tm-messages-col {
+        width: 100%;
+        max-height: 320px;
+        border-right: none;
+        border-bottom: 1px solid #2d1c10;
+      }
+      .tm-reader-col {
+        width: 100%;
+        min-height: 500px;
+      }
+      .tm-email-iframe {
+        min-height: 450px;
+      }
+      .capcut-container {
+        padding: 18px 14px;
+        overflow: visible;
+      }
+    }
+
+    @media (max-width: 576px) {
+      .top-navbar {
+        padding: 10px 12px;
+      }
+      .brand-title {
+        font-size: 1.1rem;
+      }
+      .nav-tabs-custom {
+        width: 100%;
+        display: flex;
+      }
+      .nav-tabs-custom .nav-item {
+        flex: 1;
+      }
+      .nav-tabs-custom .nav-link {
+        width: 100%;
+        padding: 6px 8px;
+        font-size: 0.78rem;
+        text-align: center;
+      }
+      .tm-reader-topbar {
+        padding: 10px 14px;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+      }
+      .tm-reader-content {
+        padding: 14px;
+      }
+    }
   </style>
 </head>
 <body>
