@@ -11,6 +11,8 @@ from datetime import timezone
 from typing import Dict, Any, Tuple, Optional, List
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from flask import Flask, Response, render_template_string, request, jsonify, send_from_directory
+import requests
+
 app = Flask(__name__)
 
 # Fix Vercel Serverless PATH_INFO rewrite
