@@ -1006,7 +1006,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       const clientIdRegex = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
       const defaultClientId = "9e5f94bc-e8a4-4e73-b8be-63364c29d753";
       
-      const lines = rawText.split('\\n');
+      const lines = rawText.split('\n');
       const results = [];
       const seen = new Set();
 
@@ -1014,7 +1014,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         line = line.trim();
         if (!line || line.startsWith('#')) continue;
 
-        const parts = line.split(/[|:;\\t]+/).map(p => p.trim()).filter(p => p);
+        const parts = line.split(/[|:;\t]+/).map(p => p.trim()).filter(p => p);
         if (!parts.length) continue;
 
         let email = '';
@@ -1039,31 +1039,37 @@ HTML_TEMPLATE = """<!DOCTYPE html>
           }
         }
 
-        for (const p of parts) {
-          if (p !== email && p !== clientId && p !== token && p.length < 50) {
-            password = p;
-            break;
+        if (!token) {
+          if (parts.length >= 3 && parts[0] === email) {
+            token = parts.length >= 4 ? parts[2] : parts[1];
+            password = parts.length >= 4 ? parts[1] : '';
+          } else if (parts.length === 1 && (parts[0].startsWith('M.') || parts[0].length > 40)) {
+            token = parts[0];
           }
         }
 
-        if (token) {
-          const key = (email || token.slice(0, 30)) + '_' + token.slice(-20);
-          if (!seen.has(key)) {
-            seen.add(key);
-            results.push({
-              email: email || 'Unknown',
-              password: password,
-              refresh_token: token,
-              client_id: clientId
-            });
-          }
+        if (!token) continue;
+
+        if (!password && parts.length >= 2 && parts[0] === email && parts[1] !== token) {
+          password = parts[1];
+        }
+
+        const key = (email || token.slice(0, 30)) + '_' + token.slice(-20);
+        if (!seen.has(key)) {
+          seen.add(key);
+          results.push({
+            email: email || 'Unknown',
+            password: password,
+            refresh_token: token,
+            client_id: clientId
+          });
         }
       }
       return results;
     }
 
     function parseCapcutLinesJS(rawText) {
-      const lines = rawText.split('\\n');
+      const lines = rawText.split('\n');
       const accounts = [];
       const seen = new Set();
 
@@ -1086,13 +1092,13 @@ HTML_TEMPLATE = """<!DOCTYPE html>
           const parts = line.split('|');
           email = parts[0].trim();
           password = parts.slice(1).join('|').trim();
-        } else if (line.includes('\\t')) {
-          const parts = line.split('\\t');
+        } else if (line.includes('\t')) {
+          const parts = line.split('\t');
           email = parts[0].trim();
           password = parts[1] ? parts[1].trim() : '';
         } else if (emailMatch) {
           email = emailMatch[0].trim();
-          const rest = line.replace(email, '').trim().replace(/^[:|\\s-]+/, '');
+          const rest = line.replace(email, '').trim().replace(/^[:|\s-]+/, '');
           password = rest;
         }
 
@@ -1142,17 +1148,26 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     }
 
     async function submitNewOutlookAccounts() {
-      const text = document.getElementById('modalAccountInput').value.trim();
-      const proxy = document.getElementById('modalProxyInput').value.trim();
+      const inputEl = document.getElementById('modalAccountInput');
+      const proxyEl = document.getElementById('modalProxyInput');
+      const text = inputEl ? inputEl.value.trim() : '';
+      const proxy = proxyEl ? proxyEl.value.trim() : '';
       if (!text) return alert('Silakan masukkan token / akun!');
 
       const modalEl = document.getElementById('addAccountModal');
-      const modal = bootstrap.Modal.getInstance(modalEl);
-      modal.hide();
+      if (modalEl) {
+        try {
+          const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+          if (modal) modal.hide();
+        } catch(e) {}
+      }
+
+      const container = document.getElementById('tmAccountsContainer');
+      container.innerHTML = `<div class="text-center text-muted py-5 small"><i class="fa-solid fa-spinner fa-spin me-2 text-warning"></i>Memeriksa akun...</div>`;
 
       try {
         let items = parseOutlookLinesJS(text);
-        if (items.length === 0) {
+        if (!items || items.length === 0) {
           try {
             items = await safeFetchJson('/api/parse_accounts', {
               method: 'POST',
@@ -1161,7 +1176,10 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             });
           } catch(e) {}
         }
-        if (!items || items.length === 0) return alert('Tidak ada token Outlook/Hotmail yang valid!');
+        if (!items || items.length === 0) {
+          renderAccountsList();
+          return alert('Format tidak dikenali / tidak ada token valid!');
+        }
 
         let currentIndex = 0;
         async function worker() {
@@ -1206,6 +1224,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 
       } catch (err) {
         alert('Gagal memproses akun: ' + err.message);
+        renderAccountsList();
       }
     }
 
