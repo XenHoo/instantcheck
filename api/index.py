@@ -1623,13 +1623,40 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 
 # ==================== FLASK ROUTES ====================
 
-@app.route("/")
-@app.route("/api/index.py")
-@app.route("/api/index")
-@app.route("/api")
+@app.route("/", methods=["GET", "POST"])
+@app.route("/api/index.py", methods=["GET", "POST"])
+@app.route("/api/index", methods=["GET", "POST"])
+@app.route("/api", methods=["GET", "POST"])
 def index():
+    if request.method == "POST":
+        # Check action from query parameter or JSON payload
+        action = request.args.get("action", "")
+        payload = {}
+        try:
+            payload = request.get_json(force=True, silent=True) or {}
+        except Exception:
+            pass
+        if not action:
+            action = payload.get("action", "")
+
+        if action == "check_single_outlook" or "refresh_token" in payload and "email" in payload and "message_id" not in payload:
+            return api_check_single_outlook()
+        elif action == "check_single_capcut" or ("email" in payload and "password" in payload and "refresh_token" not in payload):
+            return api_check_single_capcut()
+        elif action == "mail_inbox":
+            return api_mail_inbox()
+        elif action == "mail_message":
+            return api_mail_message()
+        elif action == "parse_accounts":
+            return api_parse_accounts()
+        elif action == "check_capcut":
+            return api_check_capcut()
+        elif action == "check_outlook":
+            return api_check_outlook()
+        
     default_proxy = os.environ.get("CAPCUT_PROXY", "")
     return render_template_string(HTML_TEMPLATE, default_proxy=default_proxy)
+
 
 @app.route("/logo.png")
 def serve_logo():
