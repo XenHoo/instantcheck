@@ -1017,6 +1017,9 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 """
 
 @app.route("/")
+@app.route("/api/index.py")
+@app.route("/api/index")
+@app.route("/api")
 def index():
     default_proxy = os.environ.get("CAPCUT_PROXY", "")
     return render_template_string(HTML_TEMPLATE, default_proxy=default_proxy)
