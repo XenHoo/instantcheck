@@ -11,9 +11,25 @@ from datetime import timezone
 from typing import Dict, Any, Tuple, Optional, List
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from flask import Flask, Response, render_template_string, request, jsonify, send_from_directory
-import requests
-
 app = Flask(__name__)
+
+# Fix Vercel Serverless PATH_INFO rewrite
+class VercelWSGIHandler:
+    def __init__(self, flask_app):
+        self.app = flask_app
+
+    def __call__(self, environ, start_response):
+        path = environ.get('PATH_INFO', '')
+        if path == '/api/index.py' or path == '/api/index':
+            # Preserve original request path if passed via headers or default to /
+            orig_uri = environ.get('HTTP_X_NOW_ROUTE', '') or environ.get('HTTP_X_VERCEL_PATH', '') or '/'
+            if '?' in orig_uri:
+                orig_uri = orig_uri.split('?')[0]
+            environ['PATH_INFO'] = orig_uri
+        return self.app(environ, start_response)
+
+handler = VercelWSGIHandler(app)
+
 
 # ==================== CAPCUT CORE LOGIC ====================
 CAPCUT_AID = "348188"
@@ -1014,15 +1030,25 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       const clientIdRegex = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
       const defaultClientId = "9e5f94bc-e8a4-4e73-b8be-63364c29d753";
       
-      const lines = rawText.split('\n');
+      const lines = rawText.split(/\r?\n/);
       const results = [];
       const seen = new Set();
 
-      for (let line of lines) {
-        line = line.trim();
+      for (let rawLine of lines) {
+        let line = rawLine.trim();
         if (!line || line.startsWith('#')) continue;
 
-        const parts = line.split(/[|:;\t]+/).map(p => p.trim()).filter(p => p);
+        let parts = [];
+        if (line.includes('|')) {
+          parts = line.split('|').map(p => p.trim()).filter(p => p);
+        } else if (line.includes('----')) {
+          parts = line.split('----').map(p => p.trim()).filter(p => p);
+        } else if (line.includes('\t')) {
+          parts = line.split('\t').map(p => p.trim()).filter(p => p);
+        } else {
+          parts = line.split(/[\s;]+/).map(p => p.trim()).filter(p => p);
+        }
+
         if (!parts.length) continue;
 
         let email = '';
@@ -1066,7 +1092,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         if (!seen.has(key)) {
           seen.add(key);
           results.push({
-            email: email || 'Unknown',
+            email: email || 'Unknown Email',
             password: password,
             refresh_token: token,
             client_id: clientId
@@ -1597,13 +1623,40 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 
 # ==================== FLASK ROUTES ====================
 
-@app.route("/")
-@app.route("/api/index.py")
-@app.route("/api/index")
-@app.route("/api")
+@app.route("/", methods=["GET", "POST"])
+@app.route("/api/index.py", methods=["GET", "POST"])
+@app.route("/api/index", methods=["GET", "POST"])
+@app.route("/api", methods=["GET", "POST"])
 def index():
+    if request.method == "POST":
+        # Check action from query parameter or JSON payload
+        action = request.args.get("action", "")
+        payload = {}
+        try:
+            payload = request.get_json(force=True, silent=True) or {}
+        except Exception:
+            pass
+        if not action:
+            action = payload.get("action", "")
+
+        if action == "check_single_outlook" or "refresh_token" in payload and "email" in payload and "message_id" not in payload:
+            return api_check_single_outlook()
+        elif action == "check_single_capcut" or ("email" in payload and "password" in payload and "refresh_token" not in payload):
+            return api_check_single_capcut()
+        elif action == "mail_inbox":
+            return api_mail_inbox()
+        elif action == "mail_message":
+            return api_mail_message()
+        elif action == "parse_accounts":
+            return api_parse_accounts()
+        elif action == "check_capcut":
+            return api_check_capcut()
+        elif action == "check_outlook":
+            return api_check_outlook()
+        
     default_proxy = os.environ.get("CAPCUT_PROXY", "")
     return render_template_string(HTML_TEMPLATE, default_proxy=default_proxy)
+
 
 @app.route("/logo.png")
 def serve_logo():
