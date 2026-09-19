@@ -634,6 +634,123 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       link.click();
     }
 
+    /* =================== HELPER & CLIENT-SIDE PARSERS =================== */
+    async function safeFetchJson(url, options = {}) {
+      const res = await fetch(url, options);
+      const text = await res.text();
+      try {
+        return JSON.parse(text);
+      } catch (e) {
+        throw new Error(`Respon server tidak valid (${res.status}): ` + (text.slice(0, 120).replace(/<[^>]+>/g, '').trim() || 'Error internal server'));
+      }
+    }
+
+    function parseOutlookLinesJS(rawText) {
+      const emailRegex = /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/;
+      const clientIdRegex = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+      const defaultClientId = "9e5f94bc-e8a4-4e73-b8be-63364c29d753";
+      
+      const lines = rawText.split('\n');
+      const results = [];
+      const seen = new Set();
+
+      for (let line of lines) {
+        line = line.trim();
+        if (!line || line.startsWith('#')) continue;
+
+        const parts = line.split(/[|:;\t]+/).map(p => p.trim()).filter(p => p);
+        if (!parts.length) continue;
+
+        let email = '';
+        let password = '';
+        let token = '';
+        let clientId = defaultClientId;
+
+        const emailMatch = line.match(emailRegex);
+        if (emailMatch) email = emailMatch[0].trim();
+
+        for (const p of parts) {
+          if (clientIdRegex.test(p)) {
+            clientId = p;
+            break;
+          }
+        }
+
+        for (const p of parts) {
+          if (p.startsWith('M.') || (p.length > 50 && p !== email && p !== clientId)) {
+            token = p;
+            break;
+          }
+        }
+
+        for (const p of parts) {
+          if (p !== email && p !== clientId && p !== token && p.length < 50) {
+            password = p;
+            break;
+          }
+        }
+
+        if (token) {
+          const key = (email || token.slice(0, 30)) + '_' + token.slice(-20);
+          if (!seen.has(key)) {
+            seen.add(key);
+            results.push({
+              email: email || 'Unknown',
+              password: password,
+              refresh_token: token,
+              client_id: clientId
+            });
+          }
+        }
+      }
+      return results;
+    }
+
+    function parseCapcutLinesJS(rawText) {
+      const lines = rawText.split('\n');
+      const accounts = [];
+      const seen = new Set();
+
+      for (let line of lines) {
+        line = line.trim();
+        if (!line || line.startsWith('#')) continue;
+
+        let email = '', password = '';
+        const emailMatch = line.match(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/);
+        
+        if (line.includes('----')) {
+          const parts = line.split('----');
+          email = parts[0].trim();
+          password = parts[1] ? parts[1].trim() : '';
+        } else if (line.includes(':')) {
+          const parts = line.split(':');
+          email = parts[0].trim();
+          password = parts.slice(1).join(':').trim();
+        } else if (line.includes('|')) {
+          const parts = line.split('|');
+          email = parts[0].trim();
+          password = parts.slice(1).join('|').trim();
+        } else if (line.includes('\t')) {
+          const parts = line.split('\t');
+          email = parts[0].trim();
+          password = parts[1] ? parts[1].trim() : '';
+        } else if (emailMatch) {
+          email = emailMatch[0].trim();
+          const rest = line.replace(email, '').trim().replace(/^[:|\s-]+/, '');
+          password = rest;
+        }
+
+        if (email) {
+          const key = (email + ':' + password).toLowerCase();
+          if (!seen.has(key)) {
+            seen.add(key);
+            accounts.push({ email, password });
+          }
+        }
+      }
+      return accounts;
+    }
+
     /* =================== MAIL SYSTEM =================== */
     let outlookAccounts = [];
     let selectedAccountIndex = -1;
@@ -679,13 +796,17 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       modal.hide();
 
       try {
-        const parseRes = await fetch('/api/parse_accounts', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text: text, mode: 'outlook' })
-        });
-        const items = await parseRes.json();
-        if (items.length === 0) return alert('Tidak ada token valid!');
+        let items = parseOutlookLinesJS(text);
+        if (items.length === 0) {
+          try {
+            items = await safeFetchJson('/api/parse_accounts', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ text: text, mode: 'outlook' })
+            });
+          } catch(e) {}
+        }
+        if (!items || items.length === 0) return alert('Tidak ada token Outlook/Hotmail yang valid!');
 
         let currentIndex = 0;
         async function worker() {
@@ -693,7 +814,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             const idx = currentIndex++;
             const item = items[idx];
             try {
-              const res = await fetch('/api/check_single_outlook', {
+              const data = await safeFetchJson('/api/check_single_outlook', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -704,13 +825,21 @@ HTML_TEMPLATE = """<!DOCTYPE html>
                   proxy: proxy
                 })
               });
-              const data = await res.json();
               outlookAccounts.push(data);
               renderAccountsList();
               if (selectedAccountIndex === -1 && data.ok) {
                 selectOutlookAccount(outlookAccounts.length - 1);
               }
-            } catch (e) {}
+            } catch (e) {
+              outlookAccounts.push({
+                ok: false,
+                email: item.email || 'Error',
+                error: e.message,
+                refresh_token: item.refresh_token,
+                client_id: item.client_id
+              });
+              renderAccountsList();
+            }
           }
         }
 
@@ -758,12 +887,11 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       container.innerHTML = `<div class="text-center text-muted py-5 small"><i class="fa-solid fa-spinner fa-spin me-2 text-warning"></i>Memuat pesan inbox...</div>`;
 
       try {
-        const res = await fetch('/api/mail/inbox', {
+        const data = await safeFetchJson('/api/mail/inbox', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ refresh_token: acc.refresh_token, client_id: acc.client_id })
         });
-        const data = await res.json();
 
         if (!data.ok) {
           container.innerHTML = `<div class="text-center text-danger py-5 small">${data.error || 'Gagal memuat pesan'}</div>`;
@@ -817,12 +945,11 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       reader.innerHTML = `<div class="text-center text-muted my-auto"><i class="fa-solid fa-spinner fa-spin fa-2x mb-2 text-warning"></i><p class="small">Memuat isi surat...</p></div>`;
 
       try {
-        const res = await fetch('/api/mail/message', {
+        const data = await safeFetchJson('/api/mail/message', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ message_id: msgId, refresh_token: acc.refresh_token, client_id: acc.client_id })
         });
-        const data = await res.json();
 
         if (!data.ok) {
           reader.innerHTML = `<div class="text-center text-danger my-auto">${data.error || 'Gagal membaca email'}</div>`;
@@ -864,39 +991,68 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 
     function copyCurrentEmail() {
       if (selectedAccountIndex >= 0) {
-        navigator.clipboard.writeText(outlookAccounts[selectedAccountIndex].email).then(() => alert('Email disalin!'));
+        const email = outlookAccounts[selectedAccountIndex].email;
+        if (email) {
+          navigator.clipboard.writeText(email).then(() => alert('Email disalin: ' + email));
+        }
       }
     }
 
     /* =================== CAPCUT CHECKER =================== */
-    let capcutAbortController = null;
     let capcutRecords = [];
+    let capcutAbortController = null;
 
     const ccAccountsInput = document.getElementById('ccAccountsInput');
-    ccAccountsInput.addEventListener('input', updateCapcutCount);
+    const ccLineCount = document.getElementById('ccLineCount');
 
-    function updateCapcutCount() {
-      const lines = ccAccountsInput.value.trim().split('\\n').filter(l => l.trim().length > 0);
-      document.getElementById('ccAccountCount').textContent = `Total: ${lines.length} akun`;
+    ccAccountsInput.addEventListener('input', () => {
+      const lines = ccAccountsInput.value.split('\n').filter(l => l.trim().length > 0);
+      ccLineCount.textContent = lines.length + ' Baris';
+    });
+
+    function clearCapcutInput() {
+      ccAccountsInput.value = '';
+      ccLineCount.textContent = '0 Baris';
     }
 
-    function downloadCapcutAll(format) {
-      if (capcutRecords.length === 0) return alert('Belum ada hasil untuk didownload.');
+    function clearCapcutResults() {
+      document.getElementById('proResult').value = '';
+      document.getElementById('freeResult').value = '';
+      document.getElementById('dieResult').value = '';
+      document.getElementById('proCount').textContent = '0';
+      document.getElementById('freeCount').textContent = '0';
+      document.getElementById('dieCount').textContent = '0';
+      document.getElementById('ccProgressText').textContent = '0 / 0 (0%)';
+      document.getElementById('ccProgressBar').style.width = '0%';
+      capcutRecords = [];
+    }
+
+    function exportCapcutResults(type) {
       let content = '', filename = '', mimeType = '';
 
-      if (format === 'csv') {
-        content = 'email,password,status,plan,expiry,user_id,error\\n';
-        for (const r of capcutRecords) {
-          content += `"${r.email}","${r.password}","${r.status}","${r.plan || ''}","${r.expiry || ''}","${r.user_id || ''}","${r.error || ''}"\\n`;
-        }
+      if (type === 'json') {
+        content = JSON.stringify(capcutRecords, null, 2);
+        filename = 'capcut_results.json';
+        mimeType = 'application/json;charset=utf-8;';
+      } else if (type === 'csv') {
+        const headers = ['Email', 'Password', 'Status', 'User ID', 'Plan', 'Expiry', 'Error'];
+        const rows = capcutRecords.map(r => [
+          r.email,
+          r.password,
+          r.status,
+          r.user_id || '',
+          r.is_pro ? 'PRO' : (r.ok ? 'FREE' : 'DEAD'),
+          r.expiry || '',
+          r.error || ''
+        ].map(val => `"${(val || '').toString().replace(/"/g, '""')}"`).join(','));
+        content = [headers.join(','), ...rows].join('\r\n');
         filename = 'capcut_results.csv';
         mimeType = 'text/csv;charset=utf-8;';
       } else {
-        for (const r of capcutRecords) {
-          const uidStr = r.user_id ? ` | UID: ${r.user_id}` : '';
-          const planStr = r.is_pro ? ` | Exp: ${r.expiry}` : ' | Free Plan';
-          content += `${r.email}:${r.password}${uidStr}${r.ok ? planStr : ' [' + (r.error||'DEAD') + ']'}\\n`;
-        }
+        const pro = document.getElementById('proResult').value.trim();
+        const free = document.getElementById('freeResult').value.trim();
+        const die = document.getElementById('dieResult').value.trim();
+        content = `=== PRO ACCOUNTS ===\n${pro}\n\n=== FREE ACCOUNTS ===\n${free}\n\n=== DEAD ACCOUNTS ===\n${die}\n`;
         filename = 'capcut_results.txt';
         mimeType = 'text/plain;charset=utf-8;';
       }
@@ -906,6 +1062,10 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       link.href = URL.createObjectURL(blob);
       link.download = filename;
       link.click();
+    }
+
+    function downloadCapcutAll(format) {
+      return exportCapcutResults(format);
     }
 
     async function startCapcutChecking() {
@@ -930,13 +1090,17 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       capcutAbortController = new AbortController();
 
       try {
-        const parseRes = await fetch('/api/parse_accounts', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text: text, mode: 'capcut' })
-        });
-        const accounts = await parseRes.json();
-        const total = accounts.length;
+        let accounts = parseCapcutLinesJS(text);
+        if (accounts.length === 0) {
+          try {
+            accounts = await safeFetchJson('/api/parse_accounts', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ text: text, mode: 'capcut' })
+            });
+          } catch(e) {}
+        }
+        const total = accounts ? accounts.length : 0;
 
         if (total === 0) {
           alert('Tidak ada akun valid yang ditemukan!');
@@ -956,13 +1120,12 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             const acc = accounts[idx];
 
             try {
-              const res = await fetch('/api/check_single_capcut', {
+              const r = await safeFetchJson('/api/check_single_capcut', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email: acc.email, password: acc.password, proxy: proxy, retries: retries }),
                 signal: capcutAbortController.signal
               });
-              const r = await res.json();
               checked++;
               capcutRecords.push(r);
               const uidStr = r.user_id ? ` | UID: ${r.user_id}` : '';
@@ -971,16 +1134,16 @@ HTML_TEMPLATE = """<!DOCTYPE html>
                 countPro++;
                 document.getElementById('proCount').textContent = countPro;
                 const exp = r.expiry ? ` | Exp: ${r.expiry}` : '';
-                document.getElementById('proResult').value += `${r.email}:${r.password}${uidStr}${exp}\\n`;
+                document.getElementById('proResult').value += `${r.email}:${r.password}${uidStr}${exp}\n`;
               } else if (r.ok && !r.is_pro) {
                 countFree++;
                 document.getElementById('freeCount').textContent = countFree;
-                document.getElementById('freeResult').value += `${r.email}:${r.password}${uidStr} | Free Plan\\n`;
+                document.getElementById('freeResult').value += `${r.email}:${r.password}${uidStr} | Free Plan\n`;
               } else {
                 countDie++;
                 document.getElementById('dieCount').textContent = countDie;
                 const err = r.error ? ` [${r.error}]` : '';
-                document.getElementById('dieResult').value += `${r.email}:${r.password}${err}\\n`;
+                document.getElementById('dieResult').value += `${r.email}:${r.password}${err}\n`;
               }
 
               const percent = Math.round((checked / total) * 100);
@@ -988,6 +1151,13 @@ HTML_TEMPLATE = """<!DOCTYPE html>
               document.getElementById('ccProgressBar').style.width = `${percent}%`;
             } catch (e) {
               if (e.name === 'AbortError') break;
+              checked++;
+              countDie++;
+              document.getElementById('dieCount').textContent = countDie;
+              document.getElementById('dieResult').value += `${acc.email}:${acc.password} [${e.message}]\n`;
+              const percent = Math.round((checked / total) * 100);
+              document.getElementById('ccProgressText').textContent = `${checked} / ${total} (${percent}%)`;
+              document.getElementById('ccProgressBar').style.width = `${percent}%`;
             }
           }
         }
