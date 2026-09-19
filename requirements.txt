@@ -1,3 +1,5 @@
 flask
 requests
+httpx
+msal
 gunicorn
