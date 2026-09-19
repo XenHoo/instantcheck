@@ -161,7 +161,7 @@ def parse_capcut_accounts(text: str) -> list:
 DEFAULT_CLIENT_ID = "9e5f94bc-e8a4-4e73-b8be-63364c29d753"
 INBOX_MESSAGES_URL = "https://graph.microsoft.com/v1.0/me/mailFolders/inbox/messages"
 SINGLE_MESSAGE_URL = "https://graph.microsoft.com/v1.0/me/messages"
-TOKEN_URL = "https://login.microsoftonline.com/consumers/oauth2/v2.0/token"
+TOKEN_URL = "https://login.microsoftonline.com/common/oauth2/v2.0/token"
 
 ERROR_MESSAGES = {
     "AADSTS70000": "Token tidak valid, kedaluwarsa, atau rusak.",
@@ -172,7 +172,7 @@ ERROR_MESSAGES = {
     "AADSTS900232": "Aplikasi tidak diizinkan untuk tipe akun ini.",
 }
 
-_EMAIL_RE = re.compile(r"[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}")
+_EMAIL_RE = re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}")
 _CLIENT_ID_RE = re.compile(r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")
 
 def parse_outlook_lines(text: str) -> List[Dict[str, str]]:
@@ -236,11 +236,10 @@ def get_access_token(refresh_token: str, client_id: str = DEFAULT_CLIENT_ID, pro
     data = {
         "grant_type": "refresh_token",
         "client_id": client_id,
-        "refresh_token": refresh_token,
-        "scope": "https://graph.microsoft.com/Mail.Read https://graph.microsoft.com/User.Read"
+        "refresh_token": refresh_token
     }
     try:
-        r = requests.post(TOKEN_URL, data=data, proxies=proxies, timeout=10)
+        r = requests.post(TOKEN_URL, data=data, proxies=proxies, timeout=15)
         res_json = r.json()
     except Exception as e:
         return None, f"Network / Proxy error: {str(e)}"
