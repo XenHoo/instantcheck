@@ -164,7 +164,15 @@ def parse_outlook_lines(text: str) -> List[Dict[str, str]]:
         line = line.strip()
         if not line or line.startswith("#"):
             continue
-        parts = [p.strip() for p in re.split(r"[|:;\t]+", line) if p.strip()]
+        if "|" in line:
+            parts = [p.strip() for p in line.split("|") if p.strip()]
+        elif "----" in line:
+            parts = [p.strip() for p in line.split("----") if p.strip()]
+        elif "\t" in line:
+            parts = [p.strip() for p in line.split("\t") if p.strip()]
+        else:
+            parts = [p.strip() for p in re.split(r"[:;\s]+", line) if p.strip()]
+
         if not parts:
             continue
         email = ""
