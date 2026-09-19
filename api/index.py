@@ -1162,19 +1162,26 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       const proxy = proxyEl ? proxyEl.value.trim() : '';
       if (!text) return alert('Silakan masukkan token / akun!');
 
-      // Close modal safely
+      // Force close modal
       try {
         const modalEl = document.getElementById('addAccountModal');
         if (modalEl) {
           const closeBtn = modalEl.querySelector('[data-bs-dismiss="modal"]');
-          if (closeBtn) {
-            closeBtn.click();
-          } else if (window.bootstrap && bootstrap.Modal) {
-            const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
-            if (modal) modal.hide();
+          if (closeBtn) closeBtn.click();
+          if (window.bootstrap && bootstrap.Modal) {
+            const inst = bootstrap.Modal.getInstance(modalEl);
+            if (inst) inst.hide();
           }
+          modalEl.classList.remove('show');
+          modalEl.style.display = 'none';
+          document.querySelectorAll('.modal-backdrop').forEach(b => b.remove());
+          document.body.classList.remove('modal-open');
+          document.body.style.removeProperty('padding-right');
+          document.body.style.removeProperty('overflow');
         }
-      } catch(e) {}
+      } catch(e) {
+        console.error('Modal close error:', e);
+      }
 
       const container = document.getElementById('tmAccountsContainer');
       container.innerHTML = `<div class="text-center text-muted py-5 small"><i class="fa-solid fa-spinner fa-spin me-2 text-warning"></i>Memeriksa akun...</div>`;
@@ -1188,11 +1195,13 @@ HTML_TEMPLATE = """<!DOCTYPE html>
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ text: text, mode: 'outlook' })
             });
-          } catch(e) {}
+          } catch(e) {
+            console.error('API parse error:', e);
+          }
         }
         if (!items || items.length === 0) {
           renderAccountsList();
-          return alert('Format tidak dikenali / tidak ada token valid!');
+          return alert('Format tidak dikenali / token tidak ditemukan! Pastikan ada email dan refresh token.');
         }
 
         let currentIndex = 0;
