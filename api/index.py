@@ -1032,7 +1032,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       const clientIdRegex = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
       const defaultClientId = "9e5f94bc-e8a4-4e73-b8be-63364c29d753";
       
-      const lines = rawText.split(/\r?\n/);
+      const lines = (rawText || '').split(/[\\r\\n]+/);
       const results = [];
       const seen = new Set();
 
@@ -1105,7 +1105,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     }
 
     function parseCapcutLinesJS(rawText) {
-      const lines = rawText.split('\n');
+      const lines = (rawText || '').split(/[\\r\\n]+/);
       const accounts = [];
       const seen = new Set();
 
