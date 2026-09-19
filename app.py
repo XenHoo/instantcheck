@@ -1275,6 +1275,7 @@ def api_check_outlook():
 
 
 # CapCut Check Single Account API (Fast, Zero-Timeout for Vercel & Cloud)
+@app.route("/check_single_capcut", methods=["POST"])
 @app.route("/api/check_single_capcut", methods=["POST"])
 def api_check_single_capcut():
     payload = request.get_json(force=True)
@@ -1290,6 +1291,7 @@ def api_check_single_capcut():
 
 
 # Parse Accounts Helper API
+@app.route("/parse_accounts", methods=["POST"])
 @app.route("/api/parse_accounts", methods=["POST"])
 def api_parse_accounts():
     payload = request.get_json(force=True)
@@ -1305,6 +1307,7 @@ def api_parse_accounts():
 
 
 # Outlook Check Single Account API
+@app.route("/check_single_outlook", methods=["POST"])
 @app.route("/api/check_single_outlook", methods=["POST"])
 def api_check_single_outlook():
     payload = request.get_json(force=True)
@@ -1325,6 +1328,7 @@ def api_check_single_outlook():
 
 
 # TrackMail: Get Inbox Messages
+@app.route("/mail/inbox", methods=["POST"])
 @app.route("/api/mail/inbox", methods=["POST"])
 def api_mail_inbox():
     payload = request.get_json(force=True)
@@ -1337,6 +1341,7 @@ def api_mail_inbox():
 
 
 # TrackMail: Get Message Detail & HTML Body
+@app.route("/mail/message", methods=["POST"])
 @app.route("/api/mail/message", methods=["POST"])
 def api_mail_message():
     payload = request.get_json(force=True)
