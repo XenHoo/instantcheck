@@ -1,58 +1,95 @@
-# CapCut Checker (standalone)
+# Outlook Commander TUI
 
-Verifies CapCut accounts (`email:password` → **Pro/Free + expiry date**) by logging in through
-CapCut's direct email API and reading the subscription. This is the same checker that ran behind
-the admin panel's `/tools/capcut` page (removed 2026-09-17); only the web wrapper is gone — the
-checking logic here is identical to the server's `capcut_check.py`.
+Interactive terminal application for viewing Outlook, Hotmail, and Live inboxes across multiple accounts. The complete application source lives in one file: `outlook_commander.py`.
 
-## Files
-- `capcut_check.py` — the checker (one function: `check_capcut_account`). Unchanged from server.
-- `capcut_cli.py` — command-line runner: reads `email:pass` lines, checks them concurrently, prints/saves results.
+Language: **English** | [Bahasa Indonesia](README-ID.md)
 
-## Install
-```
-pip install requests
-```
+## Features
 
-## Run
-```
-# Windows (PowerShell)
-$env:CAPCUT_PROXY = "http://USER-session-{sess}:PASS@gate.yourprovider.com:7000"
-python capcut_cli.py accounts.txt --out results.csv
+- Microsoft device-flow sign-in and refresh-token storage.
+- Multi-account inbox dashboard powered by Microsoft Graph.
+- Subject and sender search, local timestamps, and plain-text email reading.
+- Latest-message or date-range retrieval.
+- Authenticated HTTP/HTTPS and SOCKS5 proxies, with a connection test.
+- Portable data files stored next to the executable.
 
-# Linux / macOS
-export CAPCUT_PROXY='http://USER-session-{sess}:PASS@gate.yourprovider.com:7000'
-python capcut_cli.py accounts.txt --out results.csv
+## Run from Source
 
-# or pass it inline, and read from stdin
-type accounts.txt | python capcut_cli.py --proxy "http://.../{sess}/..."
+Requirements: Windows, Python 3.14 x64, and a terminal that supports Textual.
+
+```powershell
+py -3.14 -m pip install -r requirements.txt
+py -3.14 outlook_commander.py
 ```
 
-Options: `--workers N` (concurrency, default 6), `--retries N` (proxy-IP rotations per account,
-default 6), `--timeout S`, `--out results.csv`.
+The first launch creates the following files beside `outlook_commander.py`:
 
-## The proxy is required
-CapCut soft-blocks datacenter and most home IPs on login (`error_code 7`). You **must** use a
-**residential** proxy. Put the literal token `{sess}` somewhere in the proxy URL — it's replaced
-with a fresh random session id on every attempt, so each retry exits from a new residential IP,
-which is how the checker clears the block. If your provider rotates IPs automatically on its
-gateway, you can omit `{sess}` and the URL is used as-is.
+- `email_list.txt` — one email address per line; an optional password metadata field may follow `|`.
+- `accounts_with_tokens.txt` — saved refresh tokens and Microsoft client IDs.
 
-> The proxy string is a credential — it is **not** included in these files. Use the same
-> residential provider you had configured on the server (`capcut_proxy` setting), or any
-> residential proxy in the format above.
+## Build the Windows EXE
 
-## Input format
-The parser is tolerant — one account per line, in any of these shapes:
+Build one portable console executable:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\Build-Executable.ps1
 ```
-email@example.com:password
-email@example.com|password|123456
-1. email@example.com password
-```
-Header lines and trailing user-ids/junk are ignored; duplicate emails are dropped.
 
-## Notes
-- Each check logs out afterwards, so it doesn't burn the account's 2-login cap (1 desktop + 1 mobile).
-- Credentials are sent only to CapCut's own endpoints (`login-row.www.capcut.com`,
-  `commerce-api-sg.capcut.com`) through your proxy. Nothing is logged or sent anywhere else.
-- Use it only on accounts you own or sell.
+The output is `dist\OutlookCommander.exe`. End users do not need Python or Python packages. The executable remains a terminal application because its interface is built with Textual.
+
+When the EXE is started, it creates and reads `email_list.txt` and `accounts_with_tokens.txt` in the EXE folder, even when launched through a shortcut with a different working directory. Use a writable folder; do not place it in `Program Files` unless the user has write permission.
+
+## First-Time Setup
+
+1. Start the application once so it creates `email_list.txt` in the application folder.
+2. Add the email addresses to `email_list.txt`.
+3. Return to the application and choose **Generate New Token**. If the generator was already open while you edited the file, close and reopen it so the account list is reloaded.
+4. Select the input file, account, and client-ID preset.
+5. Open the displayed Microsoft URL, enter the device code, and approve access.
+6. Return to Home and choose **Manage Email**.
+
+## Data Formats
+
+`email_list.txt` accepts one account per line:
+
+```text
+account@example.com
+account@example.com|optional-password-metadata
+```
+
+`accounts_with_tokens.txt` accepts either form:
+
+```text
+account@example.com|refresh_token|client_id
+account@example.com|optional-password-metadata|refresh_token|client_id
+```
+
+Do not place the `|` character inside a field.
+
+## Shortcuts
+
+| Key | Action |
+| --- | --- |
+| `q` | Quit |
+| `e` | Open dashboard from Home |
+| `g` | Generate tokens |
+| `h` | Return Home from dashboard |
+| `r` | Refresh active inbox |
+| `l` | Reload token-file accounts |
+| `Esc` | Close or skip a modal |
+
+## Security
+
+`accounts_with_tokens.txt` contains credentials that can access mail. Treat it as a secret, do not commit or share it, and rotate/revoke a token if exposed. `email_list.txt` can also contain password metadata. Neither file is bundled into the executable.
+
+## Project Layout
+
+```text
+outlook_commander.py       # Entire application source
+requirements.txt           # Runtime Python dependencies
+requirements-build.txt     # PyInstaller build dependency
+scripts/Build-Executable.ps1
+README.md
+README-ID.md
+dist/OutlookCommander.exe  # Generated output
+```
