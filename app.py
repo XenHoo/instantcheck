@@ -843,8 +843,8 @@ HTML_TEMPLATE = """<!DOCTYPE html>
               });
               outlookAccounts.push(data);
               renderAccountsList();
-              if (selectedAccountIndex === -1 && data.ok) {
-                selectOutlookAccount(outlookAccounts.length - 1);
+              if (selectedAccountIndex === -1) {
+                selectOutlookAccount(0);
               }
             } catch (e) {
               outlookAccounts.push({
@@ -855,6 +855,9 @@ HTML_TEMPLATE = """<!DOCTYPE html>
                 client_id: item.client_id
               });
               renderAccountsList();
+              if (selectedAccountIndex === -1) {
+                selectOutlookAccount(0);
+              }
             }
           }
         }
@@ -885,18 +888,26 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       selectedAccountIndex = idx;
       renderAccountsList();
       const acc = outlookAccounts[idx];
+      if (!acc) return;
       document.getElementById('tmActiveEmailLabel').textContent = acc.email;
 
       const badge = document.getElementById('tmConnectionBadge');
       if (acc.ok) {
         badge.className = 'badge bg-success text-light px-2 py-1';
         badge.innerHTML = '● Connected';
+        await loadInboxMessages(acc);
       } else {
         badge.className = 'badge bg-danger text-light px-2 py-1';
         badge.innerHTML = '● Disconnected';
+        document.getElementById('tmMessagesContainer').innerHTML = `<div class="text-center py-5 small text-danger"><i class="fa-solid fa-circle-exclamation fa-2x mb-2 text-danger"></i><br>Tidak dapat memuat inbox.<br><small class="text-secondary">${acc.error || 'Akun DEAD / Token tidak valid'}</small></div>`;
+        document.getElementById('tmReaderContent').innerHTML = `
+          <div class="text-center text-muted my-auto">
+            <i class="fa-solid fa-triangle-exclamation fa-3x mb-3 text-danger"></i>
+            <h5 class="text-danger">Akun Disconnected / DEAD</h5>
+            <p class="small text-secondary px-3">${acc.error || 'Token tidak valid, kedaluwarsa, atau rusak.'}</p>
+          </div>
+        `;
       }
-
-      await loadInboxMessages(acc);
     }
 
     async function loadInboxMessages(acc) {
