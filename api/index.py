@@ -1049,6 +1049,65 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       flex: 1;
     }
 
+    .tm-platform-chips {
+      display: flex;
+      gap: 4px;
+      overflow-x: auto;
+      padding: 6px 10px;
+      background-color: #120b06;
+      border-bottom: 1px solid #2d1c10;
+      scrollbar-width: none;
+    }
+    .tm-platform-chips::-webkit-scrollbar { display: none; }
+    .tm-chip-btn {
+      border: 1px solid #382415;
+      background: #1c120a;
+      color: #a89f91;
+      font-size: 0.72rem;
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: 6px;
+      white-space: nowrap;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .tm-chip-btn:hover {
+      color: #fef3c7;
+      border-color: #78471c;
+      background: #2b1a0d;
+    }
+    .tm-chip-btn.active {
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      color: #180f07 !important;
+      font-weight: 700;
+      border-color: #f59e0b;
+      box-shadow: 0 0 8px rgba(245, 158, 11, 0.3);
+    }
+    .otp-highlight-card {
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.18), rgba(217, 119, 6, 0.08));
+      border: 1px solid #d97706;
+      border-radius: 10px;
+      padding: 14px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      box-shadow: 0 4px 15px rgba(217, 119, 6, 0.15);
+    }
+    .otp-code-text {
+      font-family: monospace;
+      font-size: 1.5rem;
+      font-weight: 800;
+      letter-spacing: 4px;
+      color: #fef08a;
+      text-shadow: 0 0 10px rgba(254, 240, 138, 0.4);
+    }
+    .btn-xs {
+      padding: 1px 6px;
+      font-size: 0.7rem;
+      border-radius: 4px;
+    }
+
     .capcut-container {
       width: 100%;
       height: 100%;
@@ -1290,16 +1349,33 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             </div>
           </div>
 
-          <div class="tm-accounts-list" id="tmAccountsContainer">
-            <div class="text-center text-muted py-5 small">
-              Belum ada akun.<br>Klik <b>+ Add Account</b> di bawah.
+          <!-- Quick Search & Upload Bar -->
+          <div class="p-2 border-bottom border-secondary" style="background: #110a06;">
+            <div class="input-group input-group-sm mb-2">
+              <span class="input-group-text bg-dark border-secondary text-secondary p-1 px-2"><i class="fa-solid fa-magnifying-glass fa-xs"></i></span>
+              <input type="text" id="tmAccountSearch" class="form-control form-control-sm form-control-theme" placeholder="Cari email akun..." oninput="renderAccountsList()" onkeydown="handleAccountSearchKeydown(event)">
+            </div>
+            <div class="d-flex gap-1 mb-1">
+              <input type="file" id="tmDirectTxtFile" accept=".txt,.csv" style="display:none" onchange="handleTxtFileUpload(event)">
+              <button class="btn btn-sm btn-outline-gold flex-grow-1 py-1" style="font-size: 0.74rem;" onclick="document.getElementById('tmDirectTxtFile').click()" title="Upload File .TXT (Bulk Auto-read)">
+                <i class="fa-solid fa-file-arrow-up me-1"></i>Upload .TXT
+              </button>
+              <button class="btn btn-sm btn-gold py-1 px-3" style="font-size: 0.74rem;" data-bs-toggle="modal" data-bs-target="#addAccountModal" title="Tambah Akun Manual">
+                <i class="fa-solid fa-plus me-1"></i>Add
+              </button>
+            </div>
+            <div class="d-flex justify-content-between align-items-center mt-1 px-1">
+              <span id="tmAccountModeStatus" class="text-secondary small" style="font-size: 0.7rem;">Mode: Cari Email</span>
+              <button id="btnToggleShowAll" class="btn btn-sm btn-link p-0 text-warning text-decoration-none small" style="font-size: 0.72rem;" onclick="toggleShowAllAccounts()">
+                <i class="fa-solid fa-eye me-1"></i>Tampilkan Semua
+              </button>
             </div>
           </div>
 
-          <div class="p-3 border-top border-secondary" style="background: #140d07;">
-            <button class="btn btn-gold w-100 py-2 btn-sm" data-bs-toggle="modal" data-bs-target="#addAccountModal">
-              <i class="fa-solid fa-plus me-1"></i> Add Account
-            </button>
+          <div class="tm-accounts-list" id="tmAccountsContainer">
+            <div class="text-center text-muted py-5 small">
+              Belum ada akun.<br>Upload file <b>.TXT</b> atau klik <b>Add</b>.
+            </div>
           </div>
         </div>
 
@@ -1317,6 +1393,26 @@ HTML_TEMPLATE = """<!DOCTYPE html>
               <i class="fa-solid fa-rotate-right fa-xs"></i>
             </button>
           </div>
+
+          <!-- Platform Filter Chips & Search -->
+          <div class="p-2 border-bottom border-secondary" style="background: #110a06;">
+            <div class="input-group input-group-sm mb-2">
+              <span class="input-group-text bg-dark border-secondary text-secondary p-1 px-2"><i class="fa-solid fa-filter fa-xs"></i></span>
+              <input type="text" id="tmMessageSearch" class="form-control form-control-sm form-control-theme" placeholder="Filter pengirim / subjek..." oninput="renderCurrentMessages()">
+            </div>
+            <div class="tm-platform-chips">
+              <button class="tm-chip-btn active" id="chip-plat-all" onclick="setPlatformFilter('all')">All</button>
+              <button class="tm-chip-btn" id="chip-plat-capcut" onclick="setPlatformFilter('capcut')"><i class="fa-solid fa-film text-warning me-1"></i>CapCut</button>
+              <button class="tm-chip-btn" id="chip-plat-netflix" onclick="setPlatformFilter('netflix')"><i class="fa-solid fa-tv text-danger me-1"></i>Netflix</button>
+              <button class="tm-chip-btn" id="chip-plat-steam" onclick="setPlatformFilter('steam')"><i class="fa-brands fa-steam text-info me-1"></i>Steam</button>
+              <button class="tm-chip-btn" id="chip-plat-epic" onclick="setPlatformFilter('epic')"><i class="fa-solid fa-gamepad text-light me-1"></i>Epic</button>
+              <button class="tm-chip-btn" id="chip-plat-tiktok" onclick="setPlatformFilter('tiktok')"><i class="fa-brands fa-tiktok text-light me-1"></i>TikTok</button>
+              <button class="tm-chip-btn" id="chip-plat-telegram" onclick="setPlatformFilter('telegram')"><i class="fa-brands fa-telegram text-info me-1"></i>Telegram</button>
+              <button class="tm-chip-btn" id="chip-plat-discord" onclick="setPlatformFilter('discord')"><i class="fa-brands fa-discord text-primary me-1"></i>Discord</button>
+              <button class="tm-chip-btn" id="chip-plat-microsoft" onclick="setPlatformFilter('microsoft')"><i class="fa-brands fa-microsoft text-warning me-1"></i>Microsoft</button>
+            </div>
+          </div>
+
           <div class="tm-messages-list" id="tmMessagesContainer">
             <div class="text-center text-muted py-5 small">
               Pilih akun di sebelah kiri untuk melihat pesan inbox.
@@ -1780,8 +1876,12 @@ HTML_TEMPLATE = """<!DOCTYPE html>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
-          <label class="form-label small text-secondary fw-semibold">PASTE TOKENS (email|pass|refresh_token|client_id atau token saja)</label>
-          <textarea id="modalAccountInput" class="form-control form-control-theme" rows="7" placeholder="user@hotmail.com|password|M.R3_BAY...|9e5f94bc-e8a4-4e73-b8be-63364c29d753"></textarea>
+          <div class="mb-3">
+            <label class="form-label small text-secondary fw-semibold">UPLOAD FILE .TXT (Bulk Import)</label>
+            <input type="file" id="modalFileInput" class="form-control form-control-sm form-control-theme" accept=".txt,.csv" onchange="handleModalFileSelect(event)">
+          </div>
+          <label class="form-label small text-secondary fw-semibold">ATAU PASTE TOKENS (email|pass|refresh_token|client_id atau token saja)</label>
+          <textarea id="modalAccountInput" class="form-control form-control-theme" rows="6" placeholder="user@hotmail.com|password|M.R3_BAY...|9e5f94bc-e8a4-4e73-b8be-63364c29d753"></textarea>
           
           <div class="mt-3">
             <label class="form-label small text-secondary fw-semibold">PROXY (Opsional: http://user:pass@host:port)</label>
@@ -2522,6 +2622,19 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     let outlookAccounts = [];
     let selectedAccountIndex = -1;
     let currentMailView = 'accounts';
+    let currentInboxMessages = [];
+    let currentPlatformFilter = 'all';
+
+    const PLATFORM_KEYWORDS = {
+      capcut: ['capcut', 'bytedance', 'tiktok'],
+      netflix: ['netflix'],
+      steam: ['steampowered', 'steam', 'valve'],
+      epic: ['epicgames', 'epic games', 'epic'],
+      tiktok: ['tiktok', 'bytedance'],
+      telegram: ['telegram'],
+      discord: ['discord'],
+      microsoft: ['microsoft', 'xbox', 'live.com', 'outlook', 'security code']
+    };
 
     function setMailView(view) {
       currentMailView = view;
@@ -2530,6 +2643,31 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         el.classList.remove('tm-view-accounts', 'tm-view-inbox', 'tm-view-reader');
         el.classList.add('tm-view-' + view);
       }
+    }
+
+    function extractOtpCode(subject, preview, body) {
+      const text = `${subject || ''} ${preview || ''} ${body || ''}`.replace(/<[^>]+>/g, ' ');
+      // 1. Explicit OTP keywords
+      const explicitMatch = text.match(/(?:code|kode|pin|otp|passcode|verification\s*code|kode\s*verifikasi|security\s*code)[:\s\-=]+([0-9]{4,8})/i);
+      if (explicitMatch && explicitMatch[1]) return explicitMatch[1];
+
+      // 2. Look for standalone 6 digit code
+      const sixDigit = text.match(/\b([0-9]{6})\b/);
+      if (sixDigit && sixDigit[1]) return sixDigit[1];
+
+      // 3. Look for 4 to 8 digit code in subject
+      const subjMatch = (subject || '').match(/\b([0-9]{4,8})\b/);
+      if (subjMatch && subjMatch[1]) return subjMatch[1];
+
+      return null;
+    }
+
+    function copyOtpDirect(otp, event) {
+      if (event) event.stopPropagation();
+      if (!otp) return;
+      navigator.clipboard.writeText(otp).then(() => {
+        alert(`Kode OTP disalin: ${otp}`);
+      });
     }
 
     function saveOutlookAccountsStorage() {
@@ -2553,17 +2691,112 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       } catch(e) {}
     }
 
+    let showAllAccounts = false;
+
+    function toggleShowAllAccounts() {
+      showAllAccounts = !showAllAccounts;
+      const btn = document.getElementById('btnToggleShowAll');
+      const status = document.getElementById('tmAccountModeStatus');
+      if (btn) {
+        btn.innerHTML = showAllAccounts ? '<i class="fa-solid fa-filter me-1"></i>Mode Cari Saja' : '<i class="fa-solid fa-eye me-1"></i>Tampilkan Semua';
+      }
+      if (status) {
+        status.textContent = showAllAccounts ? 'Mode: Semua Akun' : 'Mode: Cari Email';
+      }
+      renderAccountsList();
+    }
+
+    function handleAccountSearchKeydown(event) {
+      if (event.key === 'Enter') {
+        const search = (document.getElementById('tmAccountSearch')?.value || '').toLowerCase().trim();
+        if (!search) return;
+        const matchedIdx = outlookAccounts.findIndex(acc => (acc.email || '').toLowerCase().includes(search));
+        if (matchedIdx >= 0) {
+          selectOutlookAccount(matchedIdx);
+        }
+      }
+    }
+
     function renderAccountsList() {
       const container = document.getElementById('tmAccountsContainer');
+      const search = (document.getElementById('tmAccountSearch')?.value || '').toLowerCase().trim();
       document.getElementById('tmAccountCount').textContent = outlookAccounts.length;
 
+      const btn = document.getElementById('btnToggleShowAll');
+      const status = document.getElementById('tmAccountModeStatus');
+      if (btn) {
+        btn.innerHTML = showAllAccounts ? '<i class="fa-solid fa-filter me-1"></i>Mode Cari Saja' : '<i class="fa-solid fa-eye me-1"></i>Tampilkan Semua';
+      }
+      if (status) {
+        status.textContent = showAllAccounts ? 'Mode: Semua Akun' : 'Mode: Cari Email';
+      }
+
       if (outlookAccounts.length === 0) {
-        container.innerHTML = `<div class="text-center text-muted py-5 small">Belum ada akun.<br>Klik <b>+ Add Account</b> di bawah.</div>`;
+        container.innerHTML = `<div class="text-center text-muted py-5 small">Belum ada akun.<br>Upload file <b>.TXT</b> atau klik <b>Add</b>.</div>`;
+        return;
+      }
+
+      // If search is empty and showAllAccounts is false -> Show active account + search prompt
+      if (!search && !showAllAccounts) {
+        let activeAccHtml = '';
+        if (selectedAccountIndex >= 0 && outlookAccounts[selectedAccountIndex]) {
+          const activeAcc = outlookAccounts[selectedAccountIndex];
+          const initial = (activeAcc.email || 'U')[0].toUpperCase();
+          const dotClass = activeAcc.ok ? 'live' : 'dead';
+          activeAccHtml = `
+            <div class="mb-3">
+              <div class="small text-warning fw-bold mb-1" style="font-size: 0.7rem; letter-spacing: 0.5px;">
+                <i class="fa-solid fa-circle-check me-1 text-success"></i> AKUN AKTIF:
+              </div>
+              <div class="tm-account-item active" style="margin-bottom: 0;">
+                <div class="tm-avatar">${initial}</div>
+                <div class="flex-grow-1 overflow-hidden">
+                  <div class="d-flex align-items-center gap-2">
+                    <span class="status-dot ${dotClass}"></span>
+                    <span class="small fw-semibold text-truncate text-light">${escapeHtml(activeAcc.email)}</span>
+                  </div>
+                  <small class="text-muted d-block text-truncate" style="font-size: 0.72rem;">${activeAcc.ok ? (escapeHtml(activeAcc.latest_subject) || 'Connected') : (escapeHtml(activeAcc.error) || 'Dead')}</small>
+                </div>
+              </div>
+            </div>
+          `;
+        }
+
+        container.innerHTML = `
+          ${activeAccHtml}
+          <div class="text-center text-muted py-4 px-2 small">
+            <i class="fa-solid fa-magnifying-glass fa-2x mb-2 text-warning opacity-75"></i>
+            <div class="text-light fw-semibold mb-1">Cari Akun Lain</div>
+            <div class="text-secondary mb-3" style="font-size: 0.74rem;">
+              Ketik email di kolom pencarian di atas untuk memilih akun.<br>
+              <span class="badge bg-dark border border-warning text-warning mt-1">${outlookAccounts.length} Akun Tersedia</span>
+            </div>
+            <button class="btn btn-sm btn-outline-gold px-3 py-1" style="font-size: 0.75rem;" onclick="toggleShowAllAccounts()">
+              <i class="fa-solid fa-eye me-1"></i> Tampilkan Semua (${outlookAccounts.length})
+            </button>
+          </div>
+        `;
+        return;
+      }
+
+      let filtered = outlookAccounts.map((acc, idx) => ({ ...acc, originalIdx: idx }));
+      if (search) {
+        filtered = filtered.filter(acc => (acc.email || '').toLowerCase().includes(search));
+      }
+
+      if (filtered.length === 0) {
+        container.innerHTML = `
+          <div class="text-center text-muted py-4 small">
+            Tidak ada akun yang cocok dengan "<b>${escapeHtml(search)}</b>"<br>
+            <button class="btn btn-sm btn-link text-warning mt-2 small" onclick="toggleShowAllAccounts()">Tampilkan semua akun</button>
+          </div>
+        `;
         return;
       }
 
       let html = '';
-      outlookAccounts.forEach((acc, idx) => {
+      filtered.forEach(acc => {
+        const idx = acc.originalIdx;
         const initial = (acc.email || 'U')[0].toUpperCase();
         const dotClass = acc.ok ? 'live' : 'dead';
         const activeClass = idx === selectedAccountIndex ? 'active' : '';
@@ -2574,9 +2807,9 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             <div class="flex-grow-1 overflow-hidden">
               <div class="d-flex align-items-center gap-2">
                 <span class="status-dot ${dotClass}"></span>
-                <span class="small fw-semibold text-truncate text-light">${acc.email}</span>
+                <span class="small fw-semibold text-truncate text-light">${escapeHtml(acc.email)}</span>
               </div>
-              <small class="text-muted d-block text-truncate" style="font-size: 0.72rem;">${acc.ok ? (acc.latest_subject || 'Live') : (acc.error || 'Dead')}</small>
+              <small class="text-muted d-block text-truncate" style="font-size: 0.72rem;">${acc.ok ? (escapeHtml(acc.latest_subject) || 'Live') : (escapeHtml(acc.error) || 'Dead')}</small>
             </div>
             <button class="btn btn-sm btn-link text-secondary p-0 px-1 opacity-50 hover-opacity-100" title="Hapus akun ini" onclick="deleteOutlookAccount(${idx}, event)">
               <i class="fa-solid fa-xmark fa-sm text-danger"></i>
@@ -2585,6 +2818,109 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         `;
       });
       container.innerHTML = html;
+    }
+
+    function handleTxtFileUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = async function(e) {
+        const text = e.target.result;
+        if (!text) return alert('File kosong!');
+        await importAccountsFromText(text);
+        event.target.value = '';
+      };
+      reader.readAsText(file);
+    }
+
+    function handleModalFileSelect(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const text = e.target.result;
+        const inputEl = document.getElementById('modalAccountInput');
+        if (inputEl) inputEl.value = text;
+      };
+      reader.readAsText(file);
+    }
+
+    async function importAccountsFromText(text, proxy = '') {
+      const container = document.getElementById('tmAccountsContainer');
+      container.innerHTML = `<div class="text-center text-muted py-5 small"><i class="fa-solid fa-spinner fa-spin me-2 text-warning"></i>Mengekstrak & memeriksa akun...</div>`;
+
+      try {
+        let items = parseOutlookLinesJS(text);
+        if (!items || items.length === 0) {
+          try {
+            items = await safeFetchJson('/api/parse_accounts', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ text: text, mode: 'outlook' })
+            });
+          } catch(e) {}
+        }
+
+        if (!items || items.length === 0) {
+          renderAccountsList();
+          return alert('Format tidak dikenali / token tidak ditemukan! Pastikan format baris berisi email & refresh token.');
+        }
+
+        let currentIndex = 0;
+        let addedCount = 0;
+
+        async function worker() {
+          while (currentIndex < items.length) {
+            const idx = currentIndex++;
+            const item = items[idx];
+            try {
+              const data = await safeFetchJson('/api/check_single_outlook', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  email: item.email,
+                  password: item.password,
+                  refresh_token: item.refresh_token,
+                  client_id: item.client_id,
+                  proxy: proxy
+                })
+              });
+              outlookAccounts.push(data);
+              addedCount++;
+              saveOutlookAccountsStorage();
+              renderAccountsList();
+              if (selectedAccountIndex === -1 && window.innerWidth > 991) {
+                selectOutlookAccount(0);
+              }
+            } catch (e) {
+              outlookAccounts.push({
+                ok: false,
+                email: item.email || 'Error',
+                error: e.message,
+                refresh_token: item.refresh_token,
+                client_id: item.client_id
+              });
+              addedCount++;
+              saveOutlookAccountsStorage();
+              renderAccountsList();
+              if (selectedAccountIndex === -1 && window.innerWidth > 991) {
+                selectOutlookAccount(0);
+              }
+            }
+          }
+        }
+
+        const pool = [];
+        for (let i = 0; i < Math.min(8, items.length); i++) {
+          pool.push(worker());
+        }
+        await Promise.all(pool);
+        saveOutlookAccountsStorage();
+
+      } catch (err) {
+        alert('Gagal memproses file akun: ' + err.message);
+        renderAccountsList();
+      }
     }
 
     function deleteOutlookAccount(idx, event) {
@@ -2619,7 +2955,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       const proxyEl = document.getElementById('modalProxyInput');
       const text = inputEl ? inputEl.value.trim() : '';
       const proxy = proxyEl ? proxyEl.value.trim() : '';
-      if (!text) return alert('Silakan masukkan token / akun!');
+      if (!text) return alert('Silakan masukkan token / akun atau upload file .txt!');
 
       // Force close modal
       try {
@@ -2638,91 +2974,20 @@ HTML_TEMPLATE = """<!DOCTYPE html>
           document.body.style.removeProperty('padding-right');
           document.body.style.removeProperty('overflow');
         }
-      } catch(e) {
-        console.error('Modal close error:', e);
-      }
+      } catch(e) {}
 
-      const container = document.getElementById('tmAccountsContainer');
-      container.innerHTML = `<div class="text-center text-muted py-5 small"><i class="fa-solid fa-spinner fa-spin me-2 text-warning"></i>Memeriksa akun...</div>`;
-
-      try {
-        let items = parseOutlookLinesJS(text);
-        if (!items || items.length === 0) {
-          try {
-            items = await safeFetchJson('/api/parse_accounts', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ text: text, mode: 'outlook' })
-            });
-          } catch(e) {
-            console.error('API parse error:', e);
-          }
-        }
-        if (!items || items.length === 0) {
-          renderAccountsList();
-          return alert('Format tidak dikenali / token tidak ditemukan! Pastikan ada email dan refresh token.');
-        }
-
-        let currentIndex = 0;
-        async function worker() {
-          while (currentIndex < items.length) {
-            const idx = currentIndex++;
-            const item = items[idx];
-            try {
-              const data = await safeFetchJson('/api/check_single_outlook', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  email: item.email,
-                  password: item.password,
-                  refresh_token: item.refresh_token,
-                  client_id: item.client_id,
-                  proxy: proxy
-                })
-              });
-              outlookAccounts.push(data);
-              saveOutlookAccountsStorage();
-              renderAccountsList();
-              if (selectedAccountIndex === -1 && window.innerWidth > 991) {
-                selectOutlookAccount(0);
-              }
-            } catch (e) {
-              outlookAccounts.push({
-                ok: false,
-                email: item.email || 'Error',
-                error: e.message,
-                refresh_token: item.refresh_token,
-                client_id: item.client_id
-              });
-              saveOutlookAccountsStorage();
-              renderAccountsList();
-              if (selectedAccountIndex === -1 && window.innerWidth > 991) {
-                selectOutlookAccount(0);
-              }
-            }
-          }
-        }
-
-        const pool = [];
-        for (let i = 0; i < Math.min(8, items.length); i++) {
-          pool.push(worker());
-        }
-        await Promise.all(pool);
-        saveOutlookAccountsStorage();
-
-      } catch (err) {
-        alert('Gagal memproses akun: ' + err.message);
-        renderAccountsList();
-      }
+      await importAccountsFromText(text, proxy);
     }
 
     function clearAllOutlookAccounts() {
       if (confirm('Hapus semua daftar akun Mail Checker?')) {
         outlookAccounts = [];
         selectedAccountIndex = -1;
+        currentInboxMessages = [];
         try { localStorage.removeItem('chenstore_outlook_accounts'); } catch(e) {}
         renderAccountsList();
         setMailView('accounts');
+        document.getElementById('tmInboxTitle').innerHTML = '<i class="fa-regular fa-folder-open me-1"></i> INBOX (0)';
         document.getElementById('tmMessagesContainer').innerHTML = `<div class="text-center text-muted py-5 small">Pilih akun di sebelah kiri untuk melihat pesan inbox.</div>`;
         document.getElementById('tmReaderContent').innerHTML = `<div class="text-center text-muted my-auto"><i class="fa-regular fa-envelope-open fa-3x mb-3 text-warning"></i><h5 class="text-light">Belum ada email yang dipilih</h5></div>`;
       }
@@ -2757,6 +3022,79 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       }
     }
 
+    function setPlatformFilter(platform) {
+      currentPlatformFilter = platform;
+      document.querySelectorAll('.tm-chip-btn').forEach(btn => btn.classList.remove('active'));
+      const activeBtn = document.getElementById('chip-plat-' + platform);
+      if (activeBtn) activeBtn.classList.add('active');
+      renderCurrentMessages();
+    }
+
+    function renderCurrentMessages() {
+      const container = document.getElementById('tmMessagesContainer');
+      const search = (document.getElementById('tmMessageSearch')?.value || '').toLowerCase().trim();
+
+      if (!currentInboxMessages || currentInboxMessages.length === 0) {
+        container.innerHTML = `<div class="text-center text-muted py-5 small">Inbox kosong.</div>`;
+        return;
+      }
+
+      let filtered = currentInboxMessages.filter(msg => {
+        // Filter by platform keywords
+        if (currentPlatformFilter !== 'all') {
+          const keys = PLATFORM_KEYWORDS[currentPlatformFilter] || [currentPlatformFilter];
+          const text = `${msg.sender_name} ${msg.sender_email} ${msg.subject} ${msg.preview}`.toLowerCase();
+          const match = keys.some(k => text.includes(k));
+          if (!match) return false;
+        }
+
+        // Filter by user search input
+        if (search) {
+          const hay = `${msg.sender_name} ${msg.sender_email} ${msg.subject} ${msg.preview}`.toLowerCase();
+          if (!hay.includes(search)) return false;
+        }
+
+        return true;
+      });
+
+      document.getElementById('tmInboxTitle').innerHTML = `<i class="fa-regular fa-folder-open me-1"></i> INBOX (${filtered.length}/${currentInboxMessages.length})`;
+
+      if (filtered.length === 0) {
+        container.innerHTML = `<div class="text-center text-muted py-5 small">Tidak ada pesan yang cocok dengan filter.</div>`;
+        return;
+      }
+
+      let html = '';
+      filtered.forEach(msg => {
+        const otp = extractOtpCode(msg.subject, msg.preview, '');
+        html += `
+          <div class="tm-message-item" id="msg-${msg.id}" onclick="readMessage('${msg.id}')">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <span class="fw-bold small text-truncate text-light">${escapeHtml(msg.sender_name)}</span>
+              <small class="text-warning" style="font-size: 0.72rem;">${msg.time_display}</small>
+            </div>
+            <div class="fw-semibold text-truncate small text-light mb-1">
+              ${!msg.is_read ? '<span class="tm-unread-dot"></span>' : ''}"${escapeHtml(msg.subject)}"
+            </div>
+            <div class="text-muted text-truncate" style="font-size: 0.75rem;">
+              ${escapeHtml(msg.preview || 'Tidak ada preview')}
+            </div>
+            ${otp ? `
+              <div class="mt-2 d-flex align-items-center gap-1">
+                <span class="badge bg-warning text-dark fw-bold font-monospace py-1 px-2"><i class="fa-solid fa-key me-1"></i>OTP: ${otp}</span>
+                <button class="btn btn-xs btn-outline-warning py-0 px-2 fw-semibold" onclick="copyOtpDirect('${otp}', event)">Salin</button>
+              </div>
+            ` : ''}
+          </div>
+        `;
+      });
+      container.innerHTML = html;
+
+      if (filtered.length > 0 && window.innerWidth > 991) {
+        readMessage(filtered[0].id);
+      }
+    }
+
     async function loadInboxMessages(acc) {
       const container = document.getElementById('tmMessagesContainer');
       container.innerHTML = `<div class="text-center text-muted py-5 small"><i class="fa-solid fa-spinner fa-spin me-2 text-warning"></i>Memuat pesan inbox...</div>`;
@@ -2773,35 +3111,8 @@ HTML_TEMPLATE = """<!DOCTYPE html>
           return;
         }
 
-        document.getElementById('tmInboxTitle').innerHTML = `<i class="fa-regular fa-folder-open me-1"></i> INBOX (${data.messages.length})`;
-
-        if (data.messages.length === 0) {
-          container.innerHTML = `<div class="text-center text-muted py-5 small">Inbox kosong.</div>`;
-          return;
-        }
-
-        let html = '';
-        data.messages.forEach((msg, mIdx) => {
-          html += `
-            <div class="tm-message-item" id="msg-${msg.id}" onclick="readMessage('${msg.id}')">
-              <div class="d-flex justify-content-between align-items-center mb-1">
-                <span class="fw-bold small text-truncate text-light">${msg.sender_name}</span>
-                <small class="text-warning" style="font-size: 0.72rem;">${msg.time_display}</small>
-              </div>
-              <div class="fw-semibold text-truncate small text-light mb-1">
-                ${!msg.is_read ? '<span class="tm-unread-dot"></span>' : ''}"${msg.subject}"
-              </div>
-              <div class="text-muted text-truncate" style="font-size: 0.75rem;">
-                ${msg.preview || 'Tidak ada preview'}
-              </div>
-            </div>
-          `;
-        });
-        container.innerHTML = html;
-
-        if (data.messages.length > 0 && window.innerWidth > 991) {
-          readMessage(data.messages[0].id);
-        }
+        currentInboxMessages = data.messages || [];
+        renderCurrentMessages();
 
       } catch (err) {
         container.innerHTML = `<div class="text-center text-danger py-5 small">${err.message}</div>`;
@@ -2835,17 +3146,34 @@ HTML_TEMPLATE = """<!DOCTYPE html>
           return;
         }
 
+        const otp = extractOtpCode(data.subject, '', data.body);
+        let otpHtml = '';
+        if (otp) {
+          otpHtml = `
+            <div class="otp-highlight-card mb-3">
+              <div>
+                <div class="small text-warning fw-bold text-uppercase"><i class="fa-solid fa-key me-1"></i> KODE VERIFIKASI / OTP TERDETEKSI</div>
+                <div class="otp-code-text">${otp}</div>
+              </div>
+              <button class="btn btn-gold px-3 py-2 fw-bold shadow-sm" onclick="copyOtpDirect('${otp}', event)">
+                <i class="fa-regular fa-copy me-1"></i> Salin OTP
+              </button>
+            </div>
+          `;
+        }
+
         reader.innerHTML = `
-          <h4 class="fw-bold text-warning mb-2">"${data.subject}"</h4>
+          ${otpHtml}
+          <h4 class="fw-bold text-warning mb-2">"${escapeHtml(data.subject)}"</h4>
           
           <div class="tm-meta-card">
             <div class="row g-2 small">
               <div class="col-sm-2 text-warning fw-bold">FROM</div>
-              <div class="col-sm-10 text-light">${data.from}</div>
+              <div class="col-sm-10 text-light">${escapeHtml(data.from)}</div>
               <div class="col-sm-2 text-warning fw-bold">TO</div>
-              <div class="col-sm-10 text-light">${data.to || acc.email}</div>
+              <div class="col-sm-10 text-light">${escapeHtml(data.to || acc.email)}</div>
               <div class="col-sm-2 text-warning fw-bold">DATE</div>
-              <div class="col-sm-10 text-light">${data.date}</div>
+              <div class="col-sm-10 text-light">${escapeHtml(data.date)}</div>
             </div>
           </div>
 
