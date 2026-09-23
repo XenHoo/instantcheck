@@ -798,552 +798,521 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         radial-gradient(circle at 15% 15%, rgba(180, 83, 9, 0.12) 0%, transparent 40%),
         radial-gradient(circle at 85% 85%, rgba(217, 119, 6, 0.08) 0%, transparent 45%);
       color: var(--text-main);
-      font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      min-height: 100vh;
       margin: 0;
       padding: 0;
-      height: 100vh;
       display: flex;
       flex-direction: column;
-      overflow: hidden;
     }
 
     .top-navbar {
-      background-color: #140d07;
-      border-bottom: 2px solid #382415;
-      padding: 8px 24px;
+      background: linear-gradient(180deg, #1d1209 0%, #140c06 100%);
+      border-bottom: 1px solid var(--border-bronze);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+      padding: 0.75rem 1.5rem;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      height: 68px;
-      flex-shrink: 0;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+      gap: 1rem;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
     }
 
     .brand-title {
       font-family: 'Cinzel', serif;
       font-weight: 800;
-      font-size: 1.25rem;
+      font-size: 1.45rem;
       letter-spacing: 1.5px;
-      background: linear-gradient(180deg, #fffbeb 0%, #fcd34d 50%, #d97706 100%);
+      background: linear-gradient(135deg, #fffbeb 0%, #fef08a 25%, #f59e0b 60%, #b45309 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
-      text-shadow: 0 2px 10px rgba(217, 119, 6, 0.3);
+      text-shadow: 0 2px 10px rgba(245, 158, 11, 0.3);
+      line-height: 1.1;
     }
+
     .brand-sub {
-      font-size: 0.72rem;
+      font-size: 0.68rem;
       letter-spacing: 2px;
-      color: #b45309;
+      color: var(--gold-main);
       font-weight: 700;
-      text-transform: uppercase;
+      opacity: 0.9;
     }
 
     .nav-tabs-custom {
-      background: #0d0805;
-      padding: 4px;
-      border-radius: 10px;
-      border: 1px solid #382415;
-      display: inline-flex;
-      gap: 4px;
-      align-items: center;
+      display: flex;
+      gap: 0.4rem;
+      background-color: #0b0704;
+      padding: 0.3rem;
+      border-radius: 12px;
+      border: 1px solid var(--border-bronze);
     }
-    .nav-tab-btn, .nav-tabs-custom .nav-link {
-      color: var(--text-muted);
-      border: none;
-      outline: none;
-      font-weight: 600;
-      font-size: 0.88rem;
-      padding: 8px 20px;
-      border-radius: 8px;
+
+    .nav-tab-btn {
       background: transparent;
-      cursor: pointer;
+      border: 1px solid transparent;
+      color: #d1c7bd;
+      font-weight: 600;
+      font-size: 0.85rem;
+      padding: 0.45rem 1rem;
+      border-radius: 8px;
       transition: all 0.2s ease;
-      display: inline-flex;
+      cursor: pointer;
+      display: flex;
       align-items: center;
-      user-select: none;
+      white-space: nowrap;
     }
-    .nav-tab-btn:hover, .nav-tabs-custom .nav-link:hover {
+
+    .nav-tab-btn:hover {
       color: var(--gold-light);
-      background-color: #24160d;
+      background-color: rgba(245, 158, 11, 0.1);
     }
-    .nav-tab-btn.active, .nav-tabs-custom .nav-link.active {
-      color: #1a0f05 !important;
-      font-weight: 700;
-      background: linear-gradient(135deg, #fcd34d 0%, #f59e0b 50%, #d97706 100%) !important;
-      box-shadow: 0 2px 12px var(--gold-glow);
+
+    .nav-tab-btn.active {
+      background: linear-gradient(135deg, #2b1a0e 0%, #1f1208 100%);
+      color: var(--gold-light);
+      border-color: var(--border-gold);
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5), inset 0 0 8px rgba(245, 158, 11, 0.2);
     }
 
     .main-tab-content {
       flex: 1;
-      overflow: hidden;
       display: flex;
+      flex-direction: column;
+      position: relative;
     }
 
     .tab-pane-custom {
-      width: 100%;
-      height: 100%;
       display: none;
-      flex-direction: column;
-      flex: 1 1 0%;
-      overflow: hidden;
+      flex: 1;
+      width: 100%;
     }
+
     .tab-pane-custom.active {
       display: flex !important;
+      flex-direction: column;
     }
 
     .trackmail-container {
+      flex: 1;
       display: flex;
-      width: 100%;
-      height: 100%;
+      height: calc(100vh - 65px);
+      background-color: var(--bg-wood-dark);
       overflow: hidden;
     }
 
     .tm-sidebar {
-      width: 290px;
-      background-color: #120c08;
-      border-right: 1px solid #2d1c10;
+      width: 310px;
+      min-width: 280px;
+      background-color: var(--bg-card);
+      border-right: 1px solid var(--border-bronze);
       display: flex;
       flex-direction: column;
-      flex-shrink: 0;
+      height: 100%;
     }
+
     .tm-sidebar-header {
-      padding: 14px 18px;
-      border-bottom: 1px solid #2d1c10;
+      padding: 0.85rem 1rem;
+      background: linear-gradient(180deg, #20140c 0%, #181009 100%);
+      border-bottom: 1px solid var(--border-bronze);
       display: flex;
       align-items: center;
       justify-content: space-between;
-      background: #170f0a;
     }
+
     .tm-accounts-list {
       flex: 1;
       overflow-y: auto;
-      padding: 10px;
+      padding: 0.5rem;
     }
+
     .tm-account-item {
+      padding: 0.65rem 0.85rem;
+      border-radius: 8px;
+      margin-bottom: 0.35rem;
+      background-color: rgba(34, 24, 16, 0.4);
+      border: 1px solid transparent;
+      cursor: pointer;
+      transition: all 0.15s ease;
       display: flex;
       align-items: center;
-      gap: 10px;
-      padding: 10px 12px;
-      border-radius: 8px;
-      cursor: pointer;
-      margin-bottom: 5px;
-      border: 1px solid transparent;
-      background: #18110b;
-      transition: all 0.15s;
+      gap: 0.75rem;
     }
+
     .tm-account-item:hover {
-      background-color: #261a11;
-      border-color: #5c3b1e;
+      background-color: rgba(245, 158, 11, 0.08);
+      border-color: rgba(180, 83, 9, 0.4);
     }
+
     .tm-account-item.active {
-      background-color: #2d1d13;
-      border-color: #d97706;
-      box-shadow: 0 0 10px rgba(217, 119, 6, 0.2);
+      background: linear-gradient(135deg, #2e1d11 0%, #20130a 100%);
+      border-color: var(--gold-main);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
     }
+
     .tm-avatar {
       width: 32px;
       height: 32px;
-      border-radius: 6px;
-      background: linear-gradient(135deg, #452e1d, #2b1a0d);
-      border: 1px solid #78471c;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #78471c 0%, #45260e 100%);
+      color: var(--gold-light);
       display: flex;
       align-items: center;
       justify-content: center;
-      font-weight: bold;
-      font-size: 0.85rem;
-      color: #fef3c7;
+      font-weight: 700;
+      font-size: 0.8rem;
+      border: 1px solid var(--border-gold);
       flex-shrink: 0;
     }
+
     .status-dot {
       width: 8px;
       height: 8px;
       border-radius: 50%;
       display: inline-block;
+      flex-shrink: 0;
     }
-    .status-dot.live { background-color: var(--dot-green); box-shadow: 0 0 8px rgba(34, 197, 94, 0.7); }
-    .status-dot.dead { background-color: var(--dot-red); box-shadow: 0 0 8px rgba(239, 68, 68, 0.7); }
+    .status-dot.live { background-color: var(--dot-green); box-shadow: 0 0 6px rgba(34, 197, 94, 0.8); }
+    .status-dot.dead { background-color: var(--dot-red); box-shadow: 0 0 6px rgba(239, 68, 68, 0.8); }
 
     .tm-messages-col {
       width: 360px;
-      background-color: #140d08;
-      border-right: 1px solid #2d1c10;
+      min-width: 320px;
+      background-color: #140d07;
+      border-right: 1px solid var(--border-bronze);
       display: flex;
       flex-direction: column;
-      flex-shrink: 0;
-    }
-    .tm-messages-header {
-      padding: 14px 18px;
-      border-bottom: 1px solid #2d1c10;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      background: #170f0a;
-    }
-    .tm-messages-list {
-      flex: 1;
-      overflow-y: auto;
-      padding: 10px;
-    }
-    .tm-message-item {
-      padding: 12px;
-      border-radius: 8px;
-      cursor: pointer;
-      margin-bottom: 6px;
-      border: 1px solid #2d1c10;
-      background-color: #19110b;
-      transition: all 0.15s;
-    }
-    .tm-message-item:hover {
-      background-color: #271a11;
-      border-color: #5c3b1e;
-    }
-    .tm-message-item.active {
-      border-color: #f59e0b;
-      background-color: #2b1d13;
-      box-shadow: 0 0 10px rgba(245, 158, 11, 0.2);
-    }
-    .tm-unread-dot {
-      width: 6px;
-      height: 6px;
-      background-color: #f59e0b;
-      border-radius: 50%;
-      display: inline-block;
-      margin-right: 6px;
-      box-shadow: 0 0 6px rgba(245, 158, 11, 0.8);
+      height: 100%;
     }
 
-    .tm-reader-col {
-      flex: 1;
-      background-color: #0f0a06;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-    }
-    .tm-reader-topbar {
-      padding: 12px 24px;
-      border-bottom: 1px solid #2d1c10;
+    .tm-messages-header {
+      padding: 0.85rem 1rem;
+      background: linear-gradient(180deg, #1c1109 0%, #140d07 100%);
+      border-bottom: 1px solid var(--border-bronze);
       display: flex;
       align-items: center;
       justify-content: space-between;
-      background-color: #170f0a;
-    }
-    .tm-reader-content {
-      flex: 1;
-      overflow-y: auto;
-      padding: 24px;
-      display: flex;
-      flex-direction: column;
-      gap: 18px;
-    }
-    .tm-meta-card {
-      background-color: #18110b;
-      border: 1px solid #382415;
-      border-radius: 10px;
-      padding: 18px 22px;
-    }
-    .tm-email-iframe {
-      width: 100%;
-      min-height: 550px;
-      border: 1px solid #382415;
-      border-radius: 10px;
-      background-color: #ffffff;
-      flex: 1;
     }
 
     .tm-platform-chips {
       display: flex;
-      gap: 4px;
+      gap: 0.35rem;
+      padding: 0.4rem 0.75rem;
+      background: #0f0905;
+      border-bottom: 1px solid var(--border-bronze);
       overflow-x: auto;
-      padding: 6px 10px;
-      background-color: #120b06;
-      border-bottom: 1px solid #2d1c10;
-      scrollbar-width: none;
-    }
-    .tm-platform-chips::-webkit-scrollbar { display: none; }
-    .tm-chip-btn {
-      border: 1px solid #382415;
-      background: #1c120a;
-      color: #a89f91;
-      font-size: 0.72rem;
-      font-weight: 600;
-      padding: 3px 8px;
-      border-radius: 6px;
       white-space: nowrap;
+    }
+
+    .tm-chip-btn {
+      background: #1e130b;
+      border: 1px solid var(--border-bronze);
+      color: var(--text-muted);
+      border-radius: 14px;
+      padding: 0.2rem 0.6rem;
+      font-size: 0.73rem;
+      font-weight: 600;
       cursor: pointer;
       transition: all 0.15s;
     }
+
     .tm-chip-btn:hover {
-      color: #fef3c7;
-      border-color: #78471c;
-      background: #2b1a0d;
+      color: var(--gold-light);
+      border-color: var(--gold-main);
     }
+
     .tm-chip-btn.active {
-      background: linear-gradient(135deg, #f59e0b, #d97706);
-      color: #180f07 !important;
+      background: var(--gold-main);
+      color: #180d05;
+      border-color: var(--gold-light);
       font-weight: 700;
-      border-color: #f59e0b;
-      box-shadow: 0 0 8px rgba(245, 158, 11, 0.3);
     }
-    .otp-highlight-card {
-      background: linear-gradient(135deg, rgba(245, 158, 11, 0.18), rgba(217, 119, 6, 0.08));
-      border: 1px solid #d97706;
-      border-radius: 10px;
-      padding: 14px 18px;
+
+    .tm-messages-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0.5rem;
+    }
+
+    .tm-message-item {
+      padding: 0.75rem 0.85rem;
+      border-radius: 8px;
+      margin-bottom: 0.4rem;
+      background-color: rgba(31, 20, 12, 0.4);
+      border: 1px solid transparent;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .tm-message-item:hover {
+      background-color: rgba(245, 158, 11, 0.08);
+      border-color: rgba(180, 83, 9, 0.3);
+    }
+
+    .tm-message-item.active {
+      background: linear-gradient(135deg, #2b1b0f 0%, #1e1208 100%);
+      border-color: var(--border-gold);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+    }
+
+    .tm-unread-dot {
+      width: 6px;
+      height: 6px;
+      background-color: var(--gold-main);
+      border-radius: 50%;
+      display: inline-block;
+      margin-right: 4px;
+    }
+
+    .tm-reader-col {
+      flex: 1;
+      background-color: var(--bg-wood-dark);
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    .tm-reader-topbar {
+      padding: 0.75rem 1.25rem;
+      background: linear-gradient(180deg, #1a0f07 0%, #120a05 100%);
+      border-bottom: 1px solid var(--border-bronze);
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 12px;
-      box-shadow: 0 4px 15px rgba(217, 119, 6, 0.15);
+      gap: 1rem;
     }
+
+    .tm-reader-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .tm-meta-card {
+      background-color: var(--bg-card);
+      border: 1px solid var(--border-bronze);
+      border-radius: 10px;
+      padding: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .otp-highlight-card {
+      background: linear-gradient(135deg, #2a1a0b 0%, #1b0f06 100%);
+      border: 1.5px solid var(--gold-main);
+      border-radius: 12px;
+      padding: 1rem 1.25rem;
+      box-shadow: 0 4px 15px rgba(245, 158, 11, 0.15);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+    }
+
     .otp-code-text {
-      font-family: monospace;
-      font-size: 1.5rem;
+      font-family: 'Courier New', monospace;
+      font-size: 1.8rem;
       font-weight: 800;
+      color: var(--gold-light);
       letter-spacing: 4px;
-      color: #fef08a;
-      text-shadow: 0 0 10px rgba(254, 240, 138, 0.4);
+      text-shadow: 0 0 10px rgba(245, 158, 11, 0.4);
     }
-    .btn-xs {
-      padding: 1px 6px;
-      font-size: 0.7rem;
-      border-radius: 4px;
+
+    .tm-email-iframe {
+      width: 100%;
+      flex: 1;
+      min-height: 480px;
+      border: 1px solid var(--border-bronze);
+      border-radius: 8px;
+      background-color: #ffffff;
     }
 
     .capcut-container {
-      width: 100%;
-      height: 100%;
+      flex: 1;
+      padding: 1.5rem;
       overflow-y: auto;
-      padding: 28px 36px;
+      max-width: 1300px;
+      margin: 0 auto;
+      width: 100%;
     }
+
     .card-theme {
-      background-color: #18110b;
-      border: 1px solid #382415;
+      background-color: var(--bg-card);
+      border: 1px solid var(--border-bronze);
       border-radius: 12px;
     }
+
     .form-control-theme {
-      background-color: #0f0a06;
-      border: 1px solid #382415;
-      color: #fef3c7;
+      background-color: #100a06;
+      border: 1px solid var(--border-bronze);
+      color: #fff;
     }
+
     .form-control-theme:focus {
-      background-color: #0f0a06;
-      border-color: #d97706;
-      color: #fef3c7;
-      box-shadow: 0 0 0 0.25rem rgba(217, 119, 6, 0.25);
+      background-color: #160d08;
+      border-color: var(--gold-main);
+      box-shadow: 0 0 0 0.25rem rgba(245, 158, 11, 0.25);
+      color: #fff;
     }
+
     .btn-gold {
-      background: linear-gradient(135deg, #d97706 0%, #f59e0b 100%);
-      color: #180f07;
-      font-weight: 700;
-      border: none;
-      transition: all 0.2s;
+      background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+      color: #fff;
+      border: 1px solid #f59e0b;
+      font-weight: 600;
     }
+
     .btn-gold:hover {
-      background: linear-gradient(135deg, #b45309 0%, #d97706 100%);
-      color: #ffffff;
-      box-shadow: 0 0 14px var(--gold-glow);
+      background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+      color: #fff;
+      box-shadow: 0 0 12px var(--gold-glow);
     }
+
     .btn-outline-gold {
-      border: 1px solid #b45309;
-      color: #fcd34d;
+      border: 1px solid var(--gold-main);
+      color: var(--gold-main);
     }
+
     .btn-outline-gold:hover {
-      background-color: #2b1d13;
-      border-color: #f59e0b;
-      color: #ffffff;
+      background-color: var(--gold-main);
+      color: #180d05;
     }
 
-    /* ================= RESPONSIVE STYLES (Mobile, Tablet, Laptop, Desktop) ================= */
-    @media (max-width: 1199px) {
-      .tm-sidebar { width: 250px; }
-      .tm-messages-col { width: 310px; }
-      .nav-tab-btn { padding: 8px 14px; font-size: 0.84rem; }
-    }
-
-    @media (max-width: 991px) {
-      body {
-        height: auto;
-        min-height: 100vh;
-        overflow-x: hidden;
-        overflow-y: auto;
-      }
+    @media (max-width: 991.98px) {
       .top-navbar {
-        height: auto;
-        padding: 10px 14px;
         flex-direction: column;
-        gap: 10px;
-        align-items: center;
+        align-items: stretch;
+        gap: 0.75rem;
       }
       .brand-container {
         justify-content: center;
-        text-align: center;
       }
-      .nav-tabs-custom {
-        width: 100%;
-        display: flex;
-        overflow-x: auto;
-        white-space: nowrap;
-        justify-content: flex-start;
-        padding: 4px;
-        scrollbar-width: none;
+      .trackmail-container {
+        height: calc(100vh - 125px);
       }
-      .nav-tabs-custom::-webkit-scrollbar {
+      .tm-sidebar, .tm-messages-col, .tm-reader-col {
+        width: 100% !important;
+        min-width: 100% !important;
         display: none;
       }
-      .nav-tab-btn {
-        flex: 1 0 auto;
-        justify-content: center;
-        padding: 8px 12px;
-        font-size: 0.8rem;
-      }
-      .main-tab-content {
-        overflow: visible;
-        flex: none;
-        height: auto;
-      }
-      .tab-pane-custom {
-        height: auto;
-        min-height: calc(100vh - 140px);
-        overflow: visible;
-      }
-      .trackmail-container {
-        flex-direction: column;
-        height: auto;
-        overflow: visible;
-        gap: 12px;
-        padding: 12px 10px;
-      }
-      /* TrackMail Responsive View Switcher on Mobile/Tablet */
-      .trackmail-container {
-        display: flex;
-        width: 100%;
-        height: 100%;
-        overflow: hidden;
-      }
-
-      @media (max-width: 991px) {
-        .trackmail-container {
-          display: block !important;
-          width: 100%;
-          height: auto;
-          overflow: visible;
-          padding: 0 !important;
-        }
-        .tm-view-accounts .tm-sidebar { display: flex !important; width: 100% !important; min-height: calc(100vh - 140px); border-radius: 0; border: none; }
-        .tm-view-accounts .tm-messages-col { display: none !important; }
-        .tm-view-accounts .tm-reader-col { display: none !important; }
-
-        .tm-view-inbox .tm-sidebar { display: none !important; }
-        .tm-view-inbox .tm-messages-col { display: flex !important; width: 100% !important; min-height: calc(100vh - 140px); border-radius: 0; border: none; }
-        .tm-view-inbox .tm-reader-col { display: none !important; }
-
-        .tm-view-reader .tm-sidebar { display: none !important; }
-        .tm-view-reader .tm-messages-col { display: none !important; }
-        .tm-view-reader .tm-reader-col { display: flex !important; width: 100% !important; min-height: calc(100vh - 140px); border-radius: 0; border: none; }
-
-        .tm-sidebar {
-          width: 100%;
-          border: none;
-          max-height: none;
-        }
-        .tm-messages-col {
-          width: 100%;
-          border: none;
-          max-height: none;
-        }
-        .tm-reader-col {
-          width: 100%;
-          border: none;
-          min-height: 500px;
-        }
-        .tm-email-iframe {
-          min-height: 480px;
-        }
-        .capcut-container {
-          padding: 16px 12px;
-          overflow: visible;
-          height: auto;
-        }
-      }
+      .tm-view-accounts .tm-sidebar { display: flex !important; }
+      .tm-view-inbox .tm-messages-col { display: flex !important; }
+      .tm-view-reader .tm-reader-col { display: flex !important; }
     }
-
-    @media (max-width: 576px) {
-      .top-navbar {
-        padding: 8px 10px;
-      }
-      .brand-title {
-        font-size: 1.1rem;
-      }
-      .brand-sub {
-        font-size: 0.62rem;
-        letter-spacing: 1px;
-      }
-      .nav-tab-btn {
-        padding: 7px 10px;
-        font-size: 0.75rem;
-      }
-      .nav-tab-btn i {
-        margin-right: 4px !important;
-      }
-      .capcut-container {
-        padding: 12px 8px;
-      }
-      .card-theme {
-        padding: 1rem !important;
-      }
-      .tm-reader-topbar {
-        padding: 10px 12px;
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 8px;
-      }
-      .tm-reader-content {
-        padding: 12px;
-      }
-      .table-responsive {
-        font-size: 0.75rem;
-      }
+  
+    /* Language Selector Custom Styles */
+    .lang-wrapper {
+      position: relative;
+      display: inline-block;
     }
+    .lang-dropdown-menu {
+      display: none;
+      position: absolute;
+      top: calc(100% + 6px);
+      right: 0;
+      background: #18110b;
+      border: 1px solid #78471c;
+      border-radius: 8px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.85);
+      min-width: 190px;
+      z-index: 99999;
+      padding: 6px 0;
+      margin: 0;
+      list-style: none;
+    }
+    .lang-dropdown-menu.show {
+      display: block !important;
+    }
+    .lang-dropdown-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 14px;
+      color: #fef08a;
+      text-decoration: none;
+      font-size: 0.84rem;
+      font-weight: 500;
+      cursor: pointer;
+      user-select: none;
+      transition: background 0.15s ease, color 0.15s ease;
+    }
+    .lang-dropdown-item:hover {
+      background: rgba(217, 119, 6, 0.25);
+      color: #ffffff;
+    }
+    .lang-dropdown-item.active {
+      background: rgba(217, 119, 6, 0.4);
+      color: #fbbf24;
+      font-weight: 700;
+    }
+    
   </style>
 </head>
 <body>
 
+  <!-- Top Navbar -->
   <div class="top-navbar">
     <div class="d-flex align-items-center gap-3 brand-container">
       <img src="/logo.png" alt="ChenStore" style="height: 42px; border-radius: 8px; border: 1px solid #78471c; box-shadow: 0 2px 8px rgba(0,0,0,0.5);" onerror="this.style.display='none'">
       <div>
         <div class="brand-title">ChenStore</div>
-        <div class="brand-sub">MULTI TOOLS • LAYANAN SOSMED</div>
+        <div class="brand-sub" data-i18n="brand_sub">MULTI TOOLS • LAYANAN SOSMED</div>
       </div>
     </div>
     
-    <div class="nav-tabs-custom" id="mainTabs">
-      <button type="button" class="nav-tab-btn active" id="btn-tab-mail" onclick="switchTab('mail')">
-        <i class="fa-solid fa-inbox me-2 text-warning"></i>Mail Checker
-      </button>
-      <button type="button" class="nav-tab-btn" id="btn-tab-capcut" onclick="switchTab('capcut')">
-        <i class="fa-solid fa-film me-2 text-warning"></i>CapCut Checker
-      </button>
-      <button type="button" class="nav-tab-btn" id="btn-tab-2fa" onclick="switchTab('2fa')">
-        <i class="fa-solid fa-key me-2 text-warning"></i>2FA Generator
-      </button>
-      <button type="button" class="nav-tab-btn" id="btn-tab-proxy" onclick="switchTab('proxy')">
-        <i class="fa-solid fa-server me-2 text-warning"></i>Proxy Checker
-      </button>
+    <div class="d-flex align-items-center gap-2 flex-wrap justify-content-center">
+      <div class="nav-tabs-custom" id="mainTabs">
+        <button type="button" class="nav-tab-btn active" id="btn-tab-mail" onclick="switchTab('mail')">
+          <i class="fa-solid fa-inbox me-2 text-warning"></i><span data-i18n="tab_mail">Mail Checker</span>
+        </button>
+        <button type="button" class="nav-tab-btn" id="btn-tab-capcut" onclick="switchTab('capcut')">
+          <i class="fa-solid fa-film me-2 text-warning"></i><span data-i18n="tab_capcut">CapCut Checker</span>
+        </button>
+        <button type="button" class="nav-tab-btn" id="btn-tab-2fa" onclick="switchTab('2fa')">
+          <i class="fa-solid fa-key me-2 text-warning"></i><span data-i18n="tab_2fa">2FA Generator</span>
+        </button>
+        <button type="button" class="nav-tab-btn" id="btn-tab-proxy" onclick="switchTab('proxy')">
+          <i class="fa-solid fa-server me-2 text-warning"></i><span data-i18n="tab_proxy">Proxy Checker</span>
+        </button>
+      </div>
+
+      <!-- Language Selector Dropdown -->
+      <div class="lang-wrapper" id="langSelectorWrapper">
+        <button class="btn btn-sm btn-outline-gold px-2.5 py-1 fw-bold d-flex align-items-center gap-1.5" type="button" id="langDropdownBtn" onclick="toggleLangMenu(event)" style="font-size: 0.82rem; border-radius: 8px;">
+          <span id="currentLangFlag">🇮🇩</span> <span id="currentLangCode">ID</span>
+          <i class="fa-solid fa-chevron-down fa-xs ms-1 opacity-75"></i>
+        </button>
+        <div class="lang-dropdown-menu" id="langDropdownList">
+          <div class="lang-dropdown-item" onclick="selectAppLanguage('id', event)"><span>🇮🇩</span> <span>Bahasa Indonesia</span></div>
+          <div class="lang-dropdown-item" onclick="selectAppLanguage('en', event)"><span>🇬🇧</span> <span>English</span></div>
+          <div class="lang-dropdown-item" onclick="selectAppLanguage('vi', event)"><span>🇻🇳</span> <span>Tiếng Việt</span></div>
+          <div class="lang-dropdown-item" onclick="selectAppLanguage('zh', event)"><span>🇨🇳</span> <span>简体中文</span></div>
+          <div class="lang-dropdown-item" onclick="selectAppLanguage('ru', event)"><span>🇷🇺</span> <span>Русский</span></div>
+          <div class="lang-dropdown-item" onclick="selectAppLanguage('es', event)"><span>🇪🇸</span> <span>Español</span></div>
+          <div class="lang-dropdown-item" onclick="selectAppLanguage('pt', event)"><span>🇧🇷</span> <span>Português</span></div>
+        </div>
+      </div>
     </div>
   </div>
 
   <div class="main-tab-content">
     
+    <!-- TAB 1: MAIL CHECKER (TRACKMAIL) -->
     <div id="tab-mail" class="tab-pane-custom active">
       <div id="trackmailContainer" class="trackmail-container tm-view-accounts">
         
+        <!-- Column 1: Accounts Sidebar -->
         <div class="tm-sidebar">
           <div class="tm-sidebar-header">
             <span class="small fw-bold text-uppercase text-warning" style="letter-spacing: 0.5px;">
-              <i class="fa-solid fa-users-viewfinder me-1"></i> Accounts (<span id="tmAccountCount">0</span>)
+              <i class="fa-solid fa-users-viewfinder me-1"></i> <span data-i18n="tm_accounts_title">Accounts</span> (<span id="tmAccountCount">0</span>)
             </span>
             <div class="d-flex gap-2">
-              <button class="btn btn-sm btn-outline-secondary p-1" title="Clear All" onclick="clearAllOutlookAccounts()">
+              <button class="btn btn-sm btn-outline-secondary p-1" data-i18n-title="tm_clear_all_title" title="Clear All" onclick="clearAllOutlookAccounts()">
                 <i class="fa-solid fa-trash-can fa-xs text-danger"></i>
               </button>
             </div>
@@ -1353,40 +1322,42 @@ HTML_TEMPLATE = """<!DOCTYPE html>
           <div class="p-2 border-bottom border-secondary" style="background: #110a06;">
             <div class="input-group input-group-sm mb-2">
               <span class="input-group-text bg-dark border-secondary text-secondary p-1 px-2"><i class="fa-solid fa-magnifying-glass fa-xs"></i></span>
-              <input type="text" id="tmAccountSearch" class="form-control form-control-sm form-control-theme" placeholder="Cari email akun..." oninput="renderAccountsList()" onkeydown="handleAccountSearchKeydown(event)">
+              <input type="text" id="tmAccountSearch" class="form-control form-control-sm form-control-theme" data-i18n-ph="tm_search_acc_ph" placeholder="Cari email akun..." oninput="renderAccountsList()" onkeydown="handleAccountSearchKeydown(event)">
             </div>
             <div class="d-flex gap-1 mb-1">
               <input type="file" id="tmDirectTxtFile" accept=".txt,.csv" style="display:none" onchange="handleTxtFileUpload(event)">
-              <button class="btn btn-sm btn-outline-gold flex-grow-1 py-1" style="font-size: 0.74rem;" onclick="document.getElementById('tmDirectTxtFile').click()" title="Upload File .TXT (Bulk Auto-read)">
-                <i class="fa-solid fa-file-arrow-up me-1"></i>Upload .TXT
+              <button class="btn btn-sm btn-outline-gold flex-grow-1 py-1" style="font-size: 0.74rem;" onclick="document.getElementById('tmDirectTxtFile').click()" data-i18n-title="tm_upload_txt_title" title="Upload File .TXT (Bulk Auto-read)">
+                <i class="fa-solid fa-file-arrow-up me-1"></i><span data-i18n="tm_upload_txt">Upload .TXT</span>
               </button>
-              <button class="btn btn-sm btn-gold py-1 px-3" style="font-size: 0.74rem;" data-bs-toggle="modal" data-bs-target="#addAccountModal" title="Tambah Akun Manual">
-                <i class="fa-solid fa-plus me-1"></i>Add
+              <button class="btn btn-sm btn-gold py-1 px-3" style="font-size: 0.74rem;" data-bs-toggle="modal" data-bs-target="#addAccountModal" data-i18n-title="tm_add_btn_title" title="Tambah Akun Manual">
+                <i class="fa-solid fa-plus me-1"></i><span data-i18n="tm_add_btn">Add</span>
               </button>
             </div>
             <div class="d-flex justify-content-between align-items-center mt-1 px-1">
-              <span id="tmAccountModeStatus" class="text-secondary small" style="font-size: 0.7rem;">Mode: Cari Email</span>
+              <span id="tmAccountModeStatus" class="text-secondary small" style="font-size: 0.7rem;" data-i18n="tm_mode_search">Mode: Cari Email</span>
               <button id="btnToggleShowAll" class="btn btn-sm btn-link p-0 text-warning text-decoration-none small" style="font-size: 0.72rem;" onclick="toggleShowAllAccounts()">
-                <i class="fa-solid fa-eye me-1"></i>Tampilkan Semua
+                <i class="fa-solid fa-eye me-1"></i><span data-i18n="tm_show_all">Tampilkan Semua</span>
               </button>
             </div>
           </div>
 
+          <!-- Accounts List Container -->
           <div class="tm-accounts-list" id="tmAccountsContainer">
-            <div class="text-center text-muted py-5 small">
+            <div class="text-center text-muted py-5 small" data-i18n="tm_empty_acc_msg">
               Belum ada akun.<br>Upload file <b>.TXT</b> atau klik <b>Add</b>.
             </div>
           </div>
         </div>
 
+        <!-- Column 2: Inbox Messages -->
         <div class="tm-messages-col">
           <div class="tm-messages-header">
             <div class="d-flex align-items-center gap-2">
-              <button class="btn btn-sm btn-outline-warning py-0 px-2 d-lg-none" onclick="setMailView('accounts')" title="Kembali ke Daftar Akun">
-                <i class="fa-solid fa-chevron-left me-1"></i>Akun
+              <button class="btn btn-sm btn-outline-warning py-0 px-2 d-lg-none" onclick="setMailView('accounts')" title="Back to Accounts">
+                <i class="fa-solid fa-chevron-left me-1"></i><span data-i18n="tm_btn_accounts">Akun</span>
               </button>
               <span class="fw-bold small text-uppercase text-warning" id="tmInboxTitle">
-                <i class="fa-regular fa-folder-open me-1"></i> INBOX (0)
+                <i class="fa-regular fa-folder-open me-1"></i> <span data-i18n="tm_inbox_title">INBOX</span> (0)
               </span>
             </div>
             <button class="btn btn-sm btn-outline-gold py-0 px-2" onclick="refreshCurrentInbox()" title="Refresh Inbox">
@@ -1398,7 +1369,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
           <div class="p-2 border-bottom border-secondary" style="background: #110a06;">
             <div class="input-group input-group-sm mb-2">
               <span class="input-group-text bg-dark border-secondary text-secondary p-1 px-2"><i class="fa-solid fa-filter fa-xs"></i></span>
-              <input type="text" id="tmMessageSearch" class="form-control form-control-sm form-control-theme" placeholder="Filter pengirim / subjek..." oninput="renderCurrentMessages()">
+              <input type="text" id="tmMessageSearch" class="form-control form-control-sm form-control-theme" data-i18n-ph="tm_filter_msg_ph" placeholder="Filter pengirim / subjek..." oninput="renderCurrentMessages()">
             </div>
             <div class="tm-platform-chips">
               <button class="tm-chip-btn active" id="chip-plat-all" onclick="setPlatformFilter('all')">All</button>
@@ -1413,27 +1384,29 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             </div>
           </div>
 
+          <!-- Message Items List -->
           <div class="tm-messages-list" id="tmMessagesContainer">
-            <div class="text-center text-muted py-5 small">
+            <div class="text-center text-muted py-5 small" data-i18n="tm_empty_inbox_select">
               Pilih akun di sebelah kiri untuk melihat pesan inbox.
             </div>
           </div>
         </div>
 
+        <!-- Column 3: Full Email Reader -->
         <div class="tm-reader-col">
           <div class="tm-reader-topbar">
             <div class="d-flex align-items-center gap-2 overflow-hidden">
-              <button class="btn btn-sm btn-outline-warning py-0 px-2 d-lg-none flex-shrink-0" onclick="setMailView('inbox')" title="Kembali ke Inbox">
+              <button class="btn btn-sm btn-outline-warning py-0 px-2 d-lg-none flex-shrink-0" onclick="setMailView('inbox')" title="Back to Inbox">
                 <i class="fa-solid fa-chevron-left me-1"></i>Inbox
               </button>
-              <span class="fw-semibold text-truncate text-warning" id="tmActiveEmailLabel" style="max-width: 240px;">Pilih Akun</span>
-              <span id="tmConnectionBadge" class="badge bg-dark border border-secondary text-secondary px-2 py-1 flex-shrink-0">
+              <span class="fw-semibold text-truncate text-warning" id="tmActiveEmailLabel" style="max-width: 240px;" data-i18n="tm_active_email_placeholder">Pilih Akun</span>
+              <span id="tmConnectionBadge" class="badge bg-dark border border-secondary text-secondary px-2 py-1 flex-shrink-0" data-i18n="tm_badge_standby">
                 ● Standby
               </span>
             </div>
             <div class="d-flex gap-2 flex-shrink-0">
               <button class="btn btn-sm btn-outline-gold" onclick="copyCurrentEmail()" title="Copy Email">
-                <i class="fa-regular fa-copy me-1"></i> Copy
+                <i class="fa-regular fa-copy me-1"></i> <span data-i18n="tm_btn_copy">Copy</span>
               </button>
               <button class="btn btn-sm btn-outline-gold" onclick="refreshCurrentInbox()" title="Refresh">
                 <i class="fa-solid fa-arrows-rotate"></i>
@@ -1444,8 +1417,8 @@ HTML_TEMPLATE = """<!DOCTYPE html>
           <div class="tm-reader-content" id="tmReaderContent">
             <div class="text-center text-muted my-auto">
               <i class="fa-regular fa-envelope-open fa-3x mb-3 text-warning"></i>
-              <h5 class="text-light">Belum ada email yang dipilih</h5>
-              <p class="small text-secondary">Klik salah satu email dari daftar inbox untuk membaca isi surat.</p>
+              <h5 class="text-light" data-i18n="tm_no_email_selected">Belum ada email yang dipilih</h5>
+              <p class="small text-secondary" data-i18n="tm_click_inbox_hint">Klik salah satu email dari daftar inbox untuk membaca isi surat.</p>
             </div>
           </div>
         </div>
@@ -1453,17 +1426,18 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       </div>
     </div>
 
+    <!-- TAB 2: CAPCUT CHECKER -->
     <div id="tab-capcut" class="tab-pane-custom">
       <div class="capcut-container">
         <div class="row g-4">
           
           <div class="col-lg-5">
             <div class="card card-theme p-4 shadow-sm">
-              <h5 class="fw-bold mb-3 text-warning"><i class="fa-solid fa-film me-2"></i>Input Akun CapCut</h5>
+              <h5 class="fw-bold mb-3 text-warning"><i class="fa-solid fa-film me-2"></i><span data-i18n="cc_card_title">Input Akun CapCut</span></h5>
               
               <div class="mb-3">
-                <label class="form-label text-secondary small fw-semibold">DAFTAR AKUN (email:pass, email|pass, dll)</label>
-                <textarea id="ccAccountsInput" class="form-control form-control-theme" rows="7" placeholder="user1@example.com:password123&#10;user2@example.com|password456"></textarea>
+                <label class="form-label text-secondary small fw-semibold" data-i18n="cc_acc_label">DAFTAR AKUN (email:pass, email|pass, dll)</label>
+                <textarea id="ccAccountsInput" class="form-control form-control-theme" rows="7" data-i18n-ph="cc_acc_ph" placeholder="user1@example.com:password123&#10;user2@example.com|password456"></textarea>
                 <div class="d-flex justify-content-between mt-1">
                   <small id="ccAccountCount" class="text-muted">Total: 0 akun</small>
                   <button class="btn btn-sm btn-link text-decoration-none p-0 text-danger" onclick="document.getElementById('ccAccountsInput').value=''; updateCapcutCount();">Clear</button>
@@ -1471,28 +1445,28 @@ HTML_TEMPLATE = """<!DOCTYPE html>
               </div>
 
               <div class="mb-3">
-                <label class="form-label text-secondary small fw-semibold">RESIDENTIAL PROXY URL (Wajib)</label>
+                <label class="form-label text-secondary small fw-semibold" data-i18n="cc_proxy_label">RESIDENTIAL PROXY URL (Wajib)</label>
                 <input type="text" id="ccProxyInput" class="form-control form-control-theme" placeholder="http://user-session-{sess}:pass@gate.provider.com:7000" value="{{ default_proxy }}">
-                <small class="text-muted" style="font-size: 0.75rem;">Gunakan token <code>{sess}</code> untuk rotasi IP otomatis.</small>
+                <small class="text-muted" style="font-size: 0.75rem;" data-i18n="cc_proxy_help">Gunakan token <code>{sess}</code> untuk rotasi IP otomatis.</small>
               </div>
 
               <div class="row g-2 mb-3">
                 <div class="col-6">
-                  <label class="form-label text-secondary small fw-semibold">THREADS</label>
+                  <label class="form-label text-secondary small fw-semibold" data-i18n="cc_threads_label">THREADS</label>
                   <input type="number" id="ccWorkersInput" class="form-control form-control-theme" value="6" min="1" max="25">
                 </div>
                 <div class="col-6">
-                  <label class="form-label text-secondary small fw-semibold">IP RETRIES</label>
+                  <label class="form-label text-secondary small fw-semibold" data-i18n="cc_retries_label">IP RETRIES</label>
                   <input type="number" id="ccRetriesInput" class="form-control form-control-theme" value="6" min="1" max="15">
                 </div>
               </div>
 
               <div class="d-flex gap-2">
                 <button id="btnStartCapcut" class="btn btn-gold flex-grow-1 py-2" onclick="startCapcutChecking()">
-                  <i class="fa-solid fa-play me-2"></i>Mulai Check CapCut
+                  <i class="fa-solid fa-play me-2"></i><span data-i18n="cc_btn_start">Mulai Check CapCut</span>
                 </button>
                 <button id="btnStopCapcut" class="btn btn-outline-secondary py-2" onclick="stopCapcutChecking()" disabled>
-                  <i class="fa-solid fa-stop me-2"></i>Stop
+                  <i class="fa-solid fa-stop me-2"></i><span data-i18n="cc_btn_stop">Stop</span>
                 </button>
               </div>
 
@@ -1511,7 +1485,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
           <div class="col-lg-7">
             <div class="card card-theme p-4 shadow-sm">
               <div class="d-flex justify-content-between align-items-center mb-3">
-                <h5 class="fw-bold mb-0 text-warning"><i class="fa-solid fa-square-poll-vertical me-2"></i>Hasil Pengecekan CapCut</h5>
+                <h5 class="fw-bold mb-0 text-warning"><i class="fa-solid fa-square-poll-vertical me-2"></i><span data-i18n="cc_results_title">Hasil Pengecekan CapCut</span></h5>
                 <div class="d-flex gap-2">
                   <button class="btn btn-sm btn-outline-gold" onclick="downloadCapcutAll('csv')">
                     <i class="fa-solid fa-file-csv me-1"></i>CSV
@@ -1525,43 +1499,43 @@ HTML_TEMPLATE = """<!DOCTYPE html>
               <div class="mb-3">
                 <div class="d-flex justify-content-between align-items-center mb-1">
                   <span class="fw-bold text-success">
-                    <i class="fa-solid fa-crown me-1"></i>PRO / VIP 
+                    <i class="fa-solid fa-crown me-1"></i><span data-i18n="cc_pro_title">PRO / VIP</span> 
                     <span id="proCount" class="badge bg-success badge-counter ms-1">0</span>
                   </span>
                   <div class="btn-group btn-group-sm">
-                    <button class="btn btn-sm btn-outline-secondary text-light" onclick="copyField('proResult')">Copy</button>
-                    <button class="btn btn-sm btn-outline-secondary text-light" onclick="downloadField('proResult', 'capcut_pro.txt')">Save</button>
+                    <button class="btn btn-sm btn-outline-secondary text-light" onclick="copyField('proResult')" data-i18n="cc_btn_copy">Copy</button>
+                    <button class="btn btn-sm btn-outline-secondary text-light" onclick="downloadField('proResult', 'capcut_pro.txt')" data-i18n="cc_btn_save">Save</button>
                   </div>
                 </div>
-                <textarea id="proResult" class="form-control form-control-theme border-success" rows="4" readonly placeholder="Akun PRO akan muncul di sini..."></textarea>
+                <textarea id="proResult" class="form-control form-control-theme border-success" rows="4" readonly data-i18n-ph="cc_pro_ph" placeholder="Akun PRO akan muncul di sini..."></textarea>
               </div>
 
               <div class="mb-3">
                 <div class="d-flex justify-content-between align-items-center mb-1">
                   <span class="fw-bold text-info">
-                    <i class="fa-solid fa-user me-1"></i>FREE / REGULAR
+                    <i class="fa-solid fa-user me-1"></i><span data-i18n="cc_free_title">FREE / REGULAR</span>
                     <span id="freeCount" class="badge bg-info text-dark badge-counter ms-1">0</span>
                   </span>
                   <div class="btn-group btn-group-sm">
-                    <button class="btn btn-sm btn-outline-secondary text-light" onclick="copyField('freeResult')">Copy</button>
-                    <button class="btn btn-sm btn-outline-secondary text-light" onclick="downloadField('freeResult', 'capcut_free.txt')">Save</button>
+                    <button class="btn btn-sm btn-outline-secondary text-light" onclick="copyField('freeResult')" data-i18n="cc_btn_copy">Copy</button>
+                    <button class="btn btn-sm btn-outline-secondary text-light" onclick="downloadField('freeResult', 'capcut_free.txt')" data-i18n="cc_btn_save">Save</button>
                   </div>
                 </div>
-                <textarea id="freeResult" class="form-control form-control-theme border-info" rows="4" readonly placeholder="Akun FREE akan muncul di sini..."></textarea>
+                <textarea id="freeResult" class="form-control form-control-theme border-info" rows="4" readonly data-i18n-ph="cc_free_ph" placeholder="Akun FREE akan muncul di sini..."></textarea>
               </div>
 
               <div>
                 <div class="d-flex justify-content-between align-items-center mb-1">
                   <span class="fw-bold text-danger">
-                    <i class="fa-solid fa-circle-xmark me-1"></i>DEAD / ERROR
+                    <i class="fa-solid fa-circle-xmark me-1"></i><span data-i18n="cc_dead_title">DEAD / ERROR</span>
                     <span id="dieCount" class="badge bg-danger badge-counter ms-1">0</span>
                   </span>
                   <div class="btn-group btn-group-sm">
-                    <button class="btn btn-sm btn-outline-secondary text-light" onclick="copyField('dieResult')">Copy</button>
-                    <button class="btn btn-sm btn-outline-secondary text-light" onclick="downloadField('dieResult', 'capcut_die.txt')">Save</button>
+                    <button class="btn btn-sm btn-outline-secondary text-light" onclick="copyField('dieResult')" data-i18n="cc_btn_copy">Copy</button>
+                    <button class="btn btn-sm btn-outline-secondary text-light" onclick="downloadField('dieResult', 'capcut_die.txt')" data-i18n="cc_btn_save">Save</button>
                   </div>
                 </div>
-                <textarea id="dieResult" class="form-control form-control-theme border-danger" rows="3" readonly placeholder="Akun Gagal akan muncul di sini..."></textarea>
+                <textarea id="dieResult" class="form-control form-control-theme border-danger" rows="3" readonly data-i18n-ph="cc_dead_ph" placeholder="Akun Gagal akan muncul di sini..."></textarea>
               </div>
 
             </div>
@@ -1571,7 +1545,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       </div>
     </div>
 
-    <!-- TAB 2FA GENERATOR -->
+    <!-- TAB 3: 2FA GENERATOR -->
     <div id="tab-2fa" class="tab-pane-custom">
       <div class="capcut-container">
         <div class="row g-4 justify-content-center">
@@ -1581,30 +1555,30 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             <div class="card card-theme p-4 shadow-sm h-100">
               <div class="d-flex align-items-center gap-2 mb-3">
                 <i class="fa-solid fa-shield-halved text-warning fs-5"></i>
-                <h5 class="fw-bold mb-0 text-warning">Quick 2FA Code (Single)</h5>
+                <h5 class="fw-bold mb-0 text-warning" data-i18n="tfa_single_title">Quick 2FA Code (Single)</h5>
               </div>
-              <p class="text-secondary small mb-3">
+              <p class="text-secondary small mb-3" data-i18n="tfa_single_desc">
                 Masukkan 2FA Secret Key (Base32) untuk mendapatkan kode verifikasi 6 digit instan.
               </p>
 
               <div class="mb-3">
                 <div class="d-flex justify-content-between align-items-center mb-1">
-                  <label class="form-label small text-secondary fw-semibold mb-0">2FA SECRET KEY</label>
+                  <label class="form-label small text-secondary fw-semibold mb-0" data-i18n="tfa_single_label">2FA SECRET KEY</label>
                   <button class="btn btn-sm btn-link text-secondary p-0 text-decoration-none small" onclick="document.getElementById('single2faSecret').value=''; resetSingle2fa();">
                     <i class="fa-solid fa-trash-can fa-xs me-1"></i>Clear
                   </button>
                 </div>
                 <div class="input-group">
-                  <input type="text" id="single2faSecret" class="form-control form-control-theme" placeholder="Contoh: JBSWY3DPEHPK3PXP" autocomplete="off" spellcheck="false" oninput="if(!this.value.trim()) resetSingle2fa();" onkeydown="if(event.key==='Enter') generateSingle2fa()">
+                  <input type="text" id="single2faSecret" class="form-control form-control-theme" data-i18n-ph="tfa_single_ph" placeholder="Contoh: JBSWY3DPEHPK3PXP" autocomplete="off" spellcheck="false" oninput="if(!this.value.trim()) resetSingle2fa();" onkeydown="if(event.key==='Enter') generateSingle2fa()">
                   <button class="btn btn-gold px-3" type="button" onclick="generateSingle2fa()">
-                    <i class="fa-solid fa-bolt me-1"></i> Get Code
+                    <i class="fa-solid fa-bolt me-1"></i> <span data-i18n="tfa_btn_get">Get Code</span>
                   </button>
                 </div>
               </div>
 
               <!-- Single Result Card -->
               <div id="single2faResultBox" class="p-3 rounded border border-secondary text-center my-auto" style="background: #120b06;">
-                <div class="text-secondary small mb-1">AUTHENTICATOR CODE</div>
+                <div class="text-secondary small mb-1" data-i18n="tfa_auth_code_label">AUTHENTICATOR CODE</div>
                 <div id="single2faCodeDisplay" class="display-5 fw-bold text-warning font-monospace letter-spacing-2 py-2" style="letter-spacing: 4px;">
                   ------
                 </div>
@@ -1616,7 +1590,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
                 </div>
                 <div class="mt-3">
                   <button id="btnCopySingle2fa" class="btn btn-sm btn-outline-gold px-3" onclick="copySingle2fa()" disabled>
-                    <i class="fa-regular fa-copy me-1"></i> Salin Kode
+                    <i class="fa-regular fa-copy me-1"></i> <span data-i18n="tfa_btn_copy_code">Salin Kode</span>
                   </button>
                 </div>
               </div>
@@ -1630,41 +1604,41 @@ HTML_TEMPLATE = """<!DOCTYPE html>
               <div class="d-flex justify-content-between align-items-center mb-3">
                 <div class="d-flex align-items-center gap-2">
                   <i class="fa-solid fa-list-check text-warning fs-5"></i>
-                  <h5 class="fw-bold mb-0 text-warning">Bulk 2FA Generator</h5>
+                  <h5 class="fw-bold mb-0 text-warning" data-i18n="tfa_bulk_title">Bulk 2FA Generator</h5>
                 </div>
               </div>
-              <p class="text-secondary small mb-3">
+              <p class="text-secondary small mb-3" data-i18n="tfa_bulk_desc">
                 Mendukung paste banyak Secret Key atau baris combo (format <code>email|pass|secret</code> atau secret per baris).
               </p>
 
               <div class="mb-3">
                 <div class="d-flex justify-content-between align-items-center mb-1">
-                  <label class="form-label small text-secondary fw-semibold mb-0">INPUT LIST SECRETS / COMBOS</label>
+                  <label class="form-label small text-secondary fw-semibold mb-0" data-i18n="tfa_bulk_label">INPUT LIST SECRETS / COMBOS</label>
                   <button class="btn btn-sm btn-link text-secondary p-0 text-decoration-none small" onclick="clearBulk2fa()">
                     <i class="fa-solid fa-trash-can fa-xs me-1"></i>Clear
                   </button>
                 </div>
-                <textarea id="bulk2faInput" class="form-control form-control-theme" rows="6" placeholder="Contoh format:&#10;user1@email.com|pass1|JBSWY3DPEHPK3PXP&#10;user2@email.com:pass2:4X72J6...&#10;HXDMVJZTGNCDESRR..." oninput="if(!this.value.trim()) clearBulk2fa()"></textarea>
+                <textarea id="bulk2faInput" class="form-control form-control-theme" rows="6" data-i18n-ph="tfa_bulk_ph" placeholder="Contoh format:&#10;user1@email.com|pass1|JBSWY3DPEHPK3PXP&#10;user2@email.com:pass2:4X72J6...&#10;HXDMVJZTGNCDESRR..." oninput="if(!this.value.trim()) clearBulk2fa()"></textarea>
               </div>
 
               <div class="d-flex gap-2 mb-3">
                 <button id="btnRunBulk2fa" class="btn btn-gold flex-grow-1 py-2" onclick="generateBulk2fa()">
-                  <i class="fa-solid fa-arrows-rotate me-1"></i> Generate All Codes
+                  <i class="fa-solid fa-arrows-rotate me-1"></i> <span data-i18n="tfa_btn_gen_all">Generate All Codes</span>
                 </button>
-                <button class="btn btn-outline-gold px-3" onclick="copyField('bulk2faOutput')" title="Salin Hasil">
+                <button class="btn btn-outline-gold px-3" onclick="copyField('bulk2faOutput')" title="Copy Output">
                   <i class="fa-regular fa-copy me-1"></i> Copy
                 </button>
-                <button class="btn btn-outline-gold px-3" onclick="downloadField('bulk2faOutput', '2fa_codes.txt')" title="Simpan ke file TXT">
+                <button class="btn btn-outline-gold px-3" onclick="downloadField('bulk2faOutput', '2fa_codes.txt')" title="Save TXT">
                   <i class="fa-solid fa-download me-1"></i> Save
                 </button>
               </div>
 
               <div class="mb-0">
                 <div class="d-flex justify-content-between align-items-center mb-1">
-                  <label class="form-label small text-secondary fw-semibold mb-0">HASIL (FORMAT COMBO + 2FA CODE)</label>
+                  <label class="form-label small text-secondary fw-semibold mb-0" data-i18n="tfa_bulk_res_label">HASIL (FORMAT COMBO + 2FA CODE)</label>
                   <span id="bulk2faCount" class="badge bg-dark border border-secondary text-warning small">0 generated</span>
                 </div>
-                <textarea id="bulk2faOutput" class="form-control form-control-theme border-warning" rows="6" readonly placeholder="Hasil kode 2FA akan muncul di sini..."></textarea>
+                <textarea id="bulk2faOutput" class="form-control form-control-theme border-warning" rows="6" readonly data-i18n-ph="tfa_bulk_res_ph" placeholder="Hasil kode 2FA akan muncul di sini..."></textarea>
               </div>
 
             </div>
@@ -1674,7 +1648,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       </div>
     </div>
 
-    <!-- TAB PROXY CHECKER -->
+    <!-- TAB 4: PROXY CHECKER -->
     <div id="tab-proxy" class="tab-pane-custom">
       <div class="capcut-container">
         <div class="row g-3">
@@ -1685,46 +1659,46 @@ HTML_TEMPLATE = """<!DOCTYPE html>
               <div class="d-flex justify-content-between align-items-center mb-2">
                 <div class="d-flex align-items-center gap-2">
                   <i class="fa-solid fa-server text-warning fs-5"></i>
-                  <h5 class="fw-bold mb-0 text-warning">Proxy Checker</h5>
+                  <h5 class="fw-bold mb-0 text-warning" data-i18n="prx_title">Proxy Checker</h5>
                 </div>
                 <span class="badge bg-dark border border-warning text-warning px-2 py-1 small">HTTP / SOCKS</span>
               </div>
-              <p class="text-secondary small mb-2">
+              <p class="text-secondary small mb-2" data-i18n="prx_desc">
                 Dukungan format: <code>HOST:PORT</code>, <code>HOST:PORT:USER:PASS</code>, <code>USER:PASS:HOST:PORT</code>, atau <code>scheme://...</code>
               </p>
 
               <!-- Proxy Textarea Input -->
               <div class="mb-2 flex-grow-1 d-flex flex-column">
                 <div class="d-flex justify-content-between align-items-center mb-1">
-                  <label class="form-label small text-secondary fw-semibold mb-0">INPUT PROXY LIST</label>
+                  <label class="form-label small text-secondary fw-semibold mb-0" data-i18n="prx_input_label">INPUT PROXY LIST</label>
                   <div class="d-flex gap-2">
                     <button class="btn btn-sm btn-link text-warning p-0 text-decoration-none small" onclick="loadSampleProxies()">
-                      <i class="fa-solid fa-lightbulb fa-xs me-1"></i>Sample
+                      <i class="fa-solid fa-lightbulb fa-xs me-1"></i><span data-i18n="prx_btn_sample">Sample</span>
                     </button>
                     <button class="btn btn-sm btn-link text-secondary p-0 text-decoration-none small" onclick="clearProxyInput()">
-                      <i class="fa-solid fa-trash-can fa-xs me-1"></i>Clear
+                      <i class="fa-solid fa-trash-can fa-xs me-1"></i><span data-i18n="prx_btn_clear">Clear</span>
                     </button>
                   </div>
                 </div>
-                <textarea id="proxyInput" class="form-control form-control-theme flex-grow-1" style="min-height: 140px;" placeholder="Contoh format:&#10;192.168.1.1:8080&#10;192.168.1.1:8080:username:password&#10;username:password:192.168.1.1:8080&#10;http://user:pass@192.168.1.1:8080"></textarea>
+                <textarea id="proxyInput" class="form-control form-control-theme flex-grow-1" style="min-height: 140px;" data-i18n-ph="prx_input_ph" placeholder="Contoh format:&#10;192.168.1.1:8080&#10;192.168.1.1:8080:username:password&#10;username:password:192.168.1.1:8080&#10;http://user:pass@192.168.1.1:8080"></textarea>
               </div>
 
               <!-- Options / Settings -->
               <div class="card p-2 mb-3 bg-dark border-secondary">
                 <div class="row g-2">
                   <div class="col-6">
-                    <label class="form-label small text-secondary mb-1">THREADS</label>
+                    <label class="form-label small text-secondary mb-1" data-i18n="prx_threads_label">THREADS</label>
                     <input type="number" id="proxyConcurrency" class="form-control form-control-sm form-control-theme" value="5" min="1" max="20">
                   </div>
                   <div class="col-6">
-                    <label class="form-label small text-secondary mb-1">TIMEOUT (s)</label>
+                    <label class="form-label small text-secondary mb-1" data-i18n="prx_timeout_label">TIMEOUT (s)</label>
                     <input type="number" id="proxyTimeout" class="form-control form-control-sm form-control-theme" value="15" min="2" max="60">
                   </div>
                   <div class="col-12">
                     <div class="form-check form-switch mt-1">
                       <input class="form-check-input" type="checkbox" id="checkScamalyticsToggle">
                       <label class="form-check-label small text-light" for="checkScamalyticsToggle">
-                        Scamalytics Fraud Score Check <span class="badge bg-secondary text-warning" style="font-size: 0.65rem;">Deep</span>
+                        <span data-i18n="prx_scamalytics_toggle">Scamalytics Fraud Score Check</span> <span class="badge bg-secondary text-warning" style="font-size: 0.65rem;">Deep</span>
                       </label>
                     </div>
                   </div>
@@ -1734,10 +1708,10 @@ HTML_TEMPLATE = """<!DOCTYPE html>
               <!-- Action Buttons -->
               <div class="d-flex gap-2">
                 <button id="btnStartProxy" class="btn btn-gold flex-grow-1 py-2 fw-semibold" onclick="startProxyChecking()">
-                  <i class="fa-solid fa-play me-1"></i> Start Checking
+                  <i class="fa-solid fa-play me-1"></i> <span data-i18n="prx_btn_start">Start Checking</span>
                 </button>
                 <button id="btnStopProxy" class="btn btn-outline-danger px-3 py-2" onclick="stopProxyChecking()" disabled>
-                  <i class="fa-solid fa-stop me-1"></i> Stop
+                  <i class="fa-solid fa-stop me-1"></i> <span data-i18n="prx_btn_stop">Stop</span>
                 </button>
               </div>
             </div>
@@ -1750,31 +1724,31 @@ HTML_TEMPLATE = """<!DOCTYPE html>
               <div class="row g-2 mb-3">
                 <div class="col-sm-2 col-4">
                   <div class="p-2 text-center rounded bg-dark border border-secondary">
-                    <div class="text-secondary small fw-semibold" style="font-size: 0.7rem;">TOTAL</div>
+                    <div class="text-secondary small fw-semibold" style="font-size: 0.7rem;" data-i18n="prx_stat_total">TOTAL</div>
                     <div id="proxyStatTotal" class="fs-5 fw-bold text-light">0</div>
                   </div>
                 </div>
                 <div class="col-sm-2 col-4">
                   <div class="p-2 text-center rounded bg-dark border border-success">
-                    <div class="text-success small fw-semibold" style="font-size: 0.7rem;">LIVE</div>
+                    <div class="text-success small fw-semibold" style="font-size: 0.7rem;" data-i18n="prx_stat_live">LIVE</div>
                     <div id="proxyStatLive" class="fs-5 fw-bold text-success">0</div>
                   </div>
                 </div>
                 <div class="col-sm-2 col-4">
                   <div class="p-2 text-center rounded bg-dark border border-danger">
-                    <div class="text-danger small fw-semibold" style="font-size: 0.7rem;">DEAD</div>
+                    <div class="text-danger small fw-semibold" style="font-size: 0.7rem;" data-i18n="prx_stat_dead">DEAD</div>
                     <div id="proxyStatDead" class="fs-5 fw-bold text-danger">0</div>
                   </div>
                 </div>
                 <div class="col-sm-3 col-6">
                   <div class="p-2 text-center rounded bg-dark border border-warning">
-                    <div class="text-warning small fw-semibold" style="font-size: 0.7rem;">AVG LATENCY</div>
+                    <div class="text-warning small fw-semibold" style="font-size: 0.7rem;" data-i18n="prx_stat_latency">AVG LATENCY</div>
                     <div id="proxyStatLatency" class="fs-5 fw-bold text-warning">-</div>
                   </div>
                 </div>
                 <div class="col-sm-3 col-6">
                   <div class="p-2 text-center rounded bg-dark border border-info">
-                    <div class="text-info small fw-semibold" style="font-size: 0.7rem;">LOW FRAUD (&lt;25)</div>
+                    <div class="text-info small fw-semibold" style="font-size: 0.7rem;" data-i18n="prx_stat_clean">LOW FRAUD (&lt;25)</div>
                     <div id="proxyStatLowFraud" class="fs-5 fw-bold text-info">0</div>
                   </div>
                 </div>
@@ -1788,29 +1762,29 @@ HTML_TEMPLATE = """<!DOCTYPE html>
               <!-- Filter & Search Toolbar -->
               <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
                 <div class="btn-group btn-group-sm" role="group">
-                  <button type="button" class="btn btn-outline-warning active" id="filterProxyAll" onclick="setProxyFilter('all')">All (<span id="countFilterAll">0</span>)</button>
-                  <button type="button" class="btn btn-outline-success" id="filterProxyLive" onclick="setProxyFilter('live')">Live (<span id="countFilterLive">0</span>)</button>
-                  <button type="button" class="btn btn-outline-danger" id="filterProxyDead" onclick="setProxyFilter('dead')">Dead (<span id="countFilterDead">0</span>)</button>
-                  <button type="button" class="btn btn-outline-info" id="filterProxyClean" onclick="setProxyFilter('clean')">Low Fraud (<span id="countFilterClean">0</span>)</button>
+                  <button type="button" class="btn btn-outline-warning active" id="filterProxyAll" onclick="setProxyFilter('all')"><span data-i18n="prx_filter_all">All</span> (<span id="countFilterAll">0</span>)</button>
+                  <button type="button" class="btn btn-outline-success" id="filterProxyLive" onclick="setProxyFilter('live')"><span data-i18n="prx_filter_live">Live</span> (<span id="countFilterLive">0</span>)</button>
+                  <button type="button" class="btn btn-outline-danger" id="filterProxyDead" onclick="setProxyFilter('dead')"><span data-i18n="prx_filter_dead">Dead</span> (<span id="countFilterDead">0</span>)</button>
+                  <button type="button" class="btn btn-outline-info" id="filterProxyClean" onclick="setProxyFilter('clean')"><span data-i18n="prx_filter_clean">Low Fraud</span> (<span id="countFilterClean">0</span>)</button>
                 </div>
 
                 <div class="d-flex gap-2 align-items-center">
                   <div class="input-group input-group-sm" style="max-width: 170px;">
                     <span class="input-group-text bg-dark border-secondary text-secondary"><i class="fa-solid fa-magnifying-glass"></i></span>
-                    <input type="text" id="proxySearchInput" class="form-control form-control-sm form-control-theme" placeholder="Cari IP / Negara..." oninput="renderProxyTable()">
+                    <input type="text" id="proxySearchInput" class="form-control form-control-sm form-control-theme" data-i18n-ph="prx_search_ph" placeholder="Cari IP / Negara..." oninput="renderProxyTable()">
                   </div>
 
                   <!-- Export Dropdown -->
                   <div class="dropdown">
                     <button class="btn btn-sm btn-gold dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                      <i class="fa-solid fa-download me-1"></i> Export
+                      <i class="fa-solid fa-download me-1"></i> <span data-i18n="prx_btn_export">Export</span>
                     </button>
                     <ul class="dropdown-menu dropdown-menu-dark dropdown-menu-end border-warning shadow">
-                      <li><a class="dropdown-item" href="javascript:void(0)" onclick="copyLiveProxies('raw')"><i class="fa-regular fa-copy me-2 text-warning"></i>Copy Live (Original Format)</a></li>
-                      <li><a class="dropdown-item" href="javascript:void(0)" onclick="copyLiveProxies('ipport')"><i class="fa-solid fa-network-wired me-2 text-warning"></i>Copy Live (HOST:PORT)</a></li>
+                      <li><a class="dropdown-item" href="javascript:void(0)" onclick="copyLiveProxies('raw')" data-i18n="prx_exp_live_raw"><i class="fa-regular fa-copy me-2 text-warning"></i>Copy Live (Original Format)</a></li>
+                      <li><a class="dropdown-item" href="javascript:void(0)" onclick="copyLiveProxies('ipport')" data-i18n="prx_exp_live_ipport"><i class="fa-solid fa-network-wired me-2 text-warning"></i>Copy Live (HOST:PORT)</a></li>
                       <li><hr class="dropdown-divider border-secondary"></li>
-                      <li><a class="dropdown-item" href="javascript:void(0)" onclick="downloadLiveProxiesTxt()"><i class="fa-regular fa-file-lines me-2 text-warning"></i>Download Live (.TXT)</a></li>
-                      <li><a class="dropdown-item" href="javascript:void(0)" onclick="downloadProxyReportJson()"><i class="fa-solid fa-code me-2 text-warning"></i>Download Full Report (.JSON)</a></li>
+                      <li><a class="dropdown-item" href="javascript:void(0)" onclick="downloadLiveProxiesTxt()" data-i18n="prx_exp_live_txt"><i class="fa-regular fa-file-lines me-2 text-warning"></i>Download Live (.TXT)</a></li>
+                      <li><a class="dropdown-item" href="javascript:void(0)" onclick="downloadProxyReportJson()" data-i18n="prx_exp_report_json"><i class="fa-solid fa-code me-2 text-warning"></i>Download Full Report (.JSON)</a></li>
                     </ul>
                   </div>
                 </div>
@@ -1822,18 +1796,18 @@ HTML_TEMPLATE = """<!DOCTYPE html>
                   <thead class="sticky-top" style="background-color: #1a0f07; z-index: 1;">
                     <tr class="text-secondary small">
                       <th style="width: 40px;">#</th>
-                      <th>PROXY</th>
-                      <th style="width: 80px;">STATUS</th>
-                      <th style="width: 85px;">PING</th>
-                      <th>EXIT IP &amp; LOCATION</th>
-                      <th>ISP / ORG</th>
-                      <th>FRAUD RISK</th>
-                      <th style="width: 50px;">ACT</th>
+                      <th data-i18n="prx_th_proxy">PROXY</th>
+                      <th style="width: 80px;" data-i18n="prx_th_status">STATUS</th>
+                      <th style="width: 85px;" data-i18n="prx_th_ping">PING</th>
+                      <th data-i18n="prx_th_loc">EXIT IP &amp; LOCATION</th>
+                      <th data-i18n="prx_th_isp">ISP / ORG</th>
+                      <th data-i18n="prx_th_fraud">FRAUD RISK</th>
+                      <th style="width: 50px;" data-i18n="prx_th_act">ACT</th>
                     </tr>
                   </thead>
                   <tbody id="proxyTableBody">
                     <tr>
-                      <td colspan="8" class="text-center py-5 text-secondary">
+                      <td colspan="8" class="text-center py-5 text-secondary" data-i18n="prx_empty_table">
                         <i class="fa-solid fa-server fa-2x mb-2 d-block opacity-50"></i>
                         Belum ada proxy yang diperiksa. Masukkan list proxy dan klik <b>Start Checking</b>.
                       </td>
@@ -1855,43 +1829,44 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content card-theme border-warning text-light">
         <div class="modal-header border-secondary">
-          <h5 class="modal-title fw-bold text-warning"><i class="fa-solid fa-circle-info me-2"></i>Proxy Diagnostic Details</h5>
+          <h5 class="modal-title fw-bold text-warning"><i class="fa-solid fa-circle-info me-2"></i><span data-i18n="prx_modal_title">Proxy Diagnostic Details</span></h5>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body" id="proxyDetailModalBody">
           <!-- Dynamic details content -->
         </div>
         <div class="modal-footer border-secondary">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="prx_modal_close">Tutup</button>
         </div>
       </div>
     </div>
   </div>
 
+  <!-- Modal Add Account -->
   <div class="modal fade" id="addAccountModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content card-theme border-warning text-light">
         <div class="modal-header border-secondary">
-          <h5 class="modal-title fw-bold text-warning"><i class="fa-solid fa-user-plus me-2"></i>Add Outlook / Hotmail Accounts</h5>
+          <h5 class="modal-title fw-bold text-warning"><i class="fa-solid fa-user-plus me-2"></i><span data-i18n="tm_modal_add_title">Add Outlook / Hotmail Accounts</span></h5>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
           <div class="mb-3">
-            <label class="form-label small text-secondary fw-semibold">UPLOAD FILE .TXT (Bulk Import)</label>
+            <label class="form-label small text-secondary fw-semibold" data-i18n="tm_modal_upload_label">UPLOAD FILE .TXT (Bulk Import)</label>
             <input type="file" id="modalFileInput" class="form-control form-control-sm form-control-theme" accept=".txt,.csv" onchange="handleModalFileSelect(event)">
           </div>
-          <label class="form-label small text-secondary fw-semibold">ATAU PASTE TOKENS (email|pass|refresh_token|client_id atau token saja)</label>
+          <label class="form-label small text-secondary fw-semibold" data-i18n="tm_modal_paste_label">ATAU PASTE TOKENS (email|pass|refresh_token|client_id atau token saja)</label>
           <textarea id="modalAccountInput" class="form-control form-control-theme" rows="6" placeholder="user@hotmail.com|password|M.R3_BAY...|9e5f94bc-e8a4-4e73-b8be-63364c29d753"></textarea>
           
           <div class="mt-3">
-            <label class="form-label small text-secondary fw-semibold">PROXY (Opsional: http://user:pass@host:port)</label>
-            <input type="text" id="modalProxyInput" class="form-control form-control-theme" placeholder="Kosongkan jika direct">
+            <label class="form-label small text-secondary fw-semibold" data-i18n="tm_modal_proxy_label">PROXY (Opsional: http://user:pass@host:port)</label>
+            <input type="text" id="modalProxyInput" class="form-control form-control-theme" data-i18n-ph="tm_modal_proxy_ph" placeholder="Kosongkan jika direct">
           </div>
         </div>
         <div class="modal-footer border-secondary">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="tm_modal_btn_cancel">Batal</button>
           <button type="button" class="btn btn-gold" onclick="submitNewOutlookAccounts()">
-            <i class="fa-solid fa-check me-1"></i> Import & Check
+            <i class="fa-solid fa-check me-1"></i> <span data-i18n="tm_modal_btn_import">Import & Check</span>
           </button>
         </div>
       </div>
@@ -1900,25 +1875,132 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script>
+    /* ================= INTERNATIONALIZATION (i18n) ================= */
+    const I18N_DICTS = {"id": {"brand_sub": "MULTI TOOLS • LAYANAN SOSMED", "tab_mail": "Mail Checker", "tab_capcut": "CapCut Checker", "tab_2fa": "2FA Generator", "tab_proxy": "Proxy Checker", "tm_accounts_title": "Accounts", "tm_clear_all_title": "Hapus Semua Akun", "tm_search_acc_ph": "Cari email akun...", "tm_upload_txt": "Upload .TXT", "tm_upload_txt_title": "Upload File .TXT (Bulk Auto-read)", "tm_add_btn": "Add", "tm_add_btn_title": "Tambah Akun Manual", "tm_mode_search": "Mode: Cari Email", "tm_mode_all": "Mode: Semua Akun", "tm_show_all": "Tampilkan Semua", "tm_search_only": "Mode Cari Saja", "tm_empty_acc_msg": "Belum ada akun.<br>Upload file <b>.TXT</b> atau klik <b>Add</b>.", "tm_inbox_title": "INBOX", "tm_btn_accounts": "Akun", "tm_filter_msg_ph": "Filter pengirim / subjek...", "tm_empty_inbox_select": "Pilih akun di sebelah kiri untuk melihat pesan inbox.", "tm_active_email_placeholder": "Pilih Akun", "tm_badge_standby": "● Standby", "tm_badge_connected": "● Connected", "tm_badge_disconnected": "● Disconnected", "tm_btn_copy": "Copy", "tm_no_email_selected": "Belum ada email yang dipilih", "tm_click_inbox_hint": "Klik salah satu email dari daftar inbox untuk membaca isi surat.", "tm_otp_detected": "KODE VERIFIKASI / OTP TERDETEKSI", "tm_btn_copy_otp": "Salin OTP", "tm_copied": "Disalin!", "tm_search_another_title": "Cari Akun Lain", "tm_search_another_desc": "Ketik email di kolom pencarian di atas untuk memilih akun.", "tm_accounts_avail": "Akun Tersedia", "tm_inbox_empty": "Inbox kosong.", "tm_no_msg_filter": "Tidak ada pesan yang cocok dengan filter.", "tm_no_acc_match": "Tidak ada akun yang cocok dengan", "tm_delete_acc_confirm": "Hapus {email} dari daftar?", "tm_clear_all_confirm": "Hapus semua daftar akun Mail Checker?", "tm_extracting": "Mengekstrak & memeriksa akun...", "tm_modal_add_title": "Add Outlook / Hotmail Accounts", "tm_modal_upload_label": "UPLOAD FILE .TXT (Bulk Import)", "tm_modal_paste_label": "ATAU PASTE TOKENS (email|pass|refresh_token|client_id atau token saja)", "tm_modal_proxy_label": "PROXY (Opsional: http://user:pass@host:port)", "tm_modal_proxy_ph": "Kosongkan jika direct", "tm_modal_btn_cancel": "Batal", "tm_modal_btn_import": "Import & Check", "cc_card_title": "Input Akun CapCut", "cc_acc_label": "DAFTAR AKUN (email:pass, email|pass, dll)", "cc_acc_ph": "user1@example.com:password123\\nuser2@example.com|password456", "cc_proxy_label": "RESIDENTIAL PROXY URL (Wajib)", "cc_proxy_help": "Gunakan token <code>{sess}</code> untuk rotasi IP otomatis.", "cc_threads_label": "THREADS", "cc_retries_label": "IP RETRIES", "cc_btn_start": "Mulai Check CapCut", "cc_btn_stop": "Stop", "cc_results_title": "Hasil Pengecekan CapCut", "cc_pro_title": "PRO / VIP", "cc_pro_ph": "Akun PRO akan muncul di sini...", "cc_free_title": "FREE / REGULAR", "cc_free_ph": "Akun FREE akan muncul di sini...", "cc_dead_title": "DEAD / ERROR", "cc_dead_ph": "Akun Gagal akan muncul di sini...", "cc_btn_copy": "Copy", "cc_btn_save": "Save", "cc_alert_empty": "Silakan masukkan daftar akun CapCut!", "cc_alert_no_valid": "Tidak ada akun valid yang ditemukan!", "tfa_single_title": "Quick 2FA Code (Single)", "tfa_single_desc": "Masukkan 2FA Secret Key (Base32) untuk mendapatkan kode verifikasi 6 digit instan.", "tfa_single_label": "2FA SECRET KEY", "tfa_single_ph": "Contoh: JBSWY3DPEHPK3PXP", "tfa_btn_get": "Get Code", "tfa_auth_code_label": "AUTHENTICATOR CODE", "tfa_btn_copy_code": "Salin Kode", "tfa_bulk_title": "Bulk 2FA Generator", "tfa_bulk_desc": "Mendukung paste banyak Secret Key atau baris combo (format <code>email|pass|secret</code> atau secret per baris).", "tfa_bulk_label": "INPUT LIST SECRETS / COMBOS", "tfa_bulk_ph": "Contoh format:\\nuser1@email.com|pass1|JBSWY3DPEHPK3PXP\\nuser2@email.com:pass2:4X72J6...\\nHXDMVJZTGNCDESRR...", "tfa_btn_gen_all": "Generate All Codes", "tfa_bulk_res_label": "HASIL (FORMAT COMBO + 2FA CODE)", "tfa_bulk_res_ph": "Hasil kode 2FA akan muncul di sini...", "tfa_alert_empty_single": "Silakan masukkan 2FA Secret Key!", "tfa_alert_empty_bulk": "Silakan masukkan list secret / combo!", "tfa_processing": "Memproses...", "prx_title": "Proxy Checker", "prx_desc": "Dukungan format: <code>HOST:PORT</code>, <code>HOST:PORT:USER:PASS</code>, <code>USER:PASS:HOST:PORT</code>, atau <code>scheme://...</code>", "prx_input_label": "INPUT PROXY LIST", "prx_btn_sample": "Sample", "prx_btn_clear": "Clear", "prx_input_ph": "Contoh format:\\n192.168.1.1:8080\\n192.168.1.1:8080:username:password\\nusername:password:192.168.1.1:8080\\nhttp://user:pass@192.168.1.1:8080", "prx_threads_label": "THREADS", "prx_timeout_label": "TIMEOUT (s)", "prx_scamalytics_toggle": "Scamalytics Fraud Score Check", "prx_btn_start": "Start Checking", "prx_btn_stop": "Stop", "prx_stat_total": "TOTAL", "prx_stat_live": "LIVE", "prx_stat_dead": "DEAD", "prx_stat_latency": "AVG LATENCY", "prx_stat_clean": "LOW FRAUD (<25)", "prx_filter_all": "All", "prx_filter_live": "Live", "prx_filter_dead": "Dead", "prx_filter_clean": "Low Fraud", "prx_search_ph": "Cari IP / Negara...", "prx_btn_export": "Export", "prx_exp_live_raw": "Copy Live (Original Format)", "prx_exp_live_ipport": "Copy Live (HOST:PORT)", "prx_exp_live_txt": "Download Live (.TXT)", "prx_exp_report_json": "Download Full Report (.JSON)", "prx_th_proxy": "PROXY", "prx_th_status": "STATUS", "prx_th_ping": "PING", "prx_th_loc": "EXIT IP & LOCATION", "prx_th_isp": "ISP / ORG", "prx_th_fraud": "FRAUD RISK", "prx_th_act": "ACT", "prx_empty_table": "Belum ada proxy yang diperiksa. Masukkan list proxy dan klik <b>Start Checking</b>.", "prx_no_match": "Tidak ada proxy yang cocok dengan filter atau pencarian.", "prx_modal_title": "Proxy Diagnostic Details", "prx_modal_close": "Tutup", "prx_alert_empty": "Silakan masukkan list proxy!", "prx_no_live_copy": "Tidak ada proxy LIVE untuk disalin.", "prx_no_live_dl": "Tidak ada proxy LIVE untuk diunduh."}, "en": {"brand_sub": "MULTI TOOLS • SOCIAL MEDIA SUITE", "tab_mail": "Mail Checker", "tab_capcut": "CapCut Checker", "tab_2fa": "2FA Generator", "tab_proxy": "Proxy Checker", "tm_accounts_title": "Accounts", "tm_clear_all_title": "Clear All Accounts", "tm_search_acc_ph": "Search account email...", "tm_upload_txt": "Upload .TXT", "tm_upload_txt_title": "Upload .TXT File (Bulk Auto-read)", "tm_add_btn": "Add", "tm_add_btn_title": "Add Account Manually", "tm_mode_search": "Mode: Search Email", "tm_mode_all": "Mode: All Accounts", "tm_show_all": "Show All", "tm_search_only": "Search Only Mode", "tm_empty_acc_msg": "No accounts yet.<br>Upload a <b>.TXT</b> file or click <b>Add</b>.", "tm_inbox_title": "INBOX", "tm_btn_accounts": "Accounts", "tm_filter_msg_ph": "Filter sender / subject...", "tm_empty_inbox_select": "Select an account on the left to view inbox messages.", "tm_active_email_placeholder": "Select Account", "tm_badge_standby": "● Standby", "tm_badge_connected": "● Connected", "tm_badge_disconnected": "● Disconnected", "tm_btn_copy": "Copy", "tm_no_email_selected": "No email selected", "tm_click_inbox_hint": "Click an email from the inbox list to read its contents.", "tm_otp_detected": "VERIFICATION CODE / OTP DETECTED", "tm_btn_copy_otp": "Copy OTP", "tm_copied": "Copied!", "tm_search_another_title": "Search Another Account", "tm_search_another_desc": "Type an email in the search box above to pick an account.", "tm_accounts_avail": "Accounts Available", "tm_inbox_empty": "Inbox is empty.", "tm_no_msg_filter": "No messages match your filter.", "tm_no_acc_match": "No accounts matching", "tm_delete_acc_confirm": "Delete {email} from list?", "tm_clear_all_confirm": "Clear all Mail Checker accounts?", "tm_extracting": "Extracting & verifying accounts...", "tm_modal_add_title": "Add Outlook / Hotmail Accounts", "tm_modal_upload_label": "UPLOAD .TXT FILE (Bulk Import)", "tm_modal_paste_label": "OR PASTE TOKENS (email|pass|refresh_token|client_id or token only)", "tm_modal_proxy_label": "PROXY (Optional: http://user:pass@host:port)", "tm_modal_proxy_ph": "Leave blank if direct connection", "tm_modal_btn_cancel": "Cancel", "tm_modal_btn_import": "Import & Check", "cc_card_title": "CapCut Account Input", "cc_acc_label": "ACCOUNT LIST (email:pass, email|pass, etc)", "cc_acc_ph": "user1@example.com:password123\\nuser2@example.com|password456", "cc_proxy_label": "RESIDENTIAL PROXY URL (Required)", "cc_proxy_help": "Use token <code>{sess}</code> for automatic IP rotation.", "cc_threads_label": "THREADS", "cc_retries_label": "IP RETRIES", "cc_btn_start": "Start CapCut Check", "cc_btn_stop": "Stop", "cc_results_title": "CapCut Check Results", "cc_pro_title": "PRO / VIP", "cc_pro_ph": "PRO accounts will appear here...", "cc_free_title": "FREE / REGULAR", "cc_free_ph": "FREE accounts will appear here...", "cc_dead_title": "DEAD / ERROR", "cc_dead_ph": "Failed accounts will appear here...", "cc_btn_copy": "Copy", "cc_btn_save": "Save", "cc_alert_empty": "Please enter CapCut account list!", "cc_alert_no_valid": "No valid accounts found!", "tfa_single_title": "Quick 2FA Code (Single)", "tfa_single_desc": "Enter a 2FA Secret Key (Base32) to generate instant 6-digit verification codes.", "tfa_single_label": "2FA SECRET KEY", "tfa_single_ph": "Example: JBSWY3DPEHPK3PXP", "tfa_btn_get": "Get Code", "tfa_auth_code_label": "AUTHENTICATOR CODE", "tfa_btn_copy_code": "Copy Code", "tfa_bulk_title": "Bulk 2FA Generator", "tfa_bulk_desc": "Supports pasting multiple Secret Keys or combo lines (format <code>email|pass|secret</code> or secret per line).", "tfa_bulk_label": "INPUT LIST SECRETS / COMBOS", "tfa_bulk_ph": "Example format:\\nuser1@email.com|pass1|JBSWY3DPEHPK3PXP\\nuser2@email.com:pass2:4X72J6...\\nHXDMVJZTGNCDESRR...", "tfa_btn_gen_all": "Generate All Codes", "tfa_bulk_res_label": "RESULTS (COMBO + 2FA CODE FORMAT)", "tfa_bulk_res_ph": "Generated 2FA codes will appear here...", "tfa_alert_empty_single": "Please enter a 2FA Secret Key!", "tfa_alert_empty_bulk": "Please enter secret list or combo lines!", "tfa_processing": "Processing...", "prx_title": "Proxy Checker", "prx_desc": "Supported formats: <code>HOST:PORT</code>, <code>HOST:PORT:USER:PASS</code>, <code>USER:PASS:HOST:PORT</code>, or <code>scheme://...</code>", "prx_input_label": "INPUT PROXY LIST", "prx_btn_sample": "Sample", "prx_btn_clear": "Clear", "prx_input_ph": "Example format:\\n192.168.1.1:8080\\n192.168.1.1:8080:username:password\\nusername:password:192.168.1.1:8080\\nhttp://user:pass@192.168.1.1:8080", "prx_threads_label": "THREADS", "prx_timeout_label": "TIMEOUT (s)", "prx_scamalytics_toggle": "Scamalytics Fraud Score Check", "prx_btn_start": "Start Checking", "prx_btn_stop": "Stop", "prx_stat_total": "TOTAL", "prx_stat_live": "LIVE", "prx_stat_dead": "DEAD", "prx_stat_latency": "AVG LATENCY", "prx_stat_clean": "LOW FRAUD (<25)", "prx_filter_all": "All", "prx_filter_live": "Live", "prx_filter_dead": "Dead", "prx_filter_clean": "Low Fraud", "prx_search_ph": "Search IP / Country...", "prx_btn_export": "Export", "prx_exp_live_raw": "Copy Live (Original Format)", "prx_exp_live_ipport": "Copy Live (HOST:PORT)", "prx_exp_live_txt": "Download Live (.TXT)", "prx_exp_report_json": "Download Full Report (.JSON)", "prx_th_proxy": "PROXY", "prx_th_status": "STATUS", "prx_th_ping": "PING", "prx_th_loc": "EXIT IP & LOCATION", "prx_th_isp": "ISP / ORG", "prx_th_fraud": "FRAUD RISK", "prx_th_act": "ACT", "prx_empty_table": "No proxies checked yet. Enter proxy list and click <b>Start Checking</b>.", "prx_no_match": "No proxies match your search or filter.", "prx_modal_title": "Proxy Diagnostic Details", "prx_modal_close": "Close", "prx_alert_empty": "Please enter a proxy list!", "prx_no_live_copy": "No LIVE proxies to copy.", "prx_no_live_dl": "No LIVE proxies to download."}, "vi": {"brand_sub": "ĐA CÔNG CỤ • DỊCH VỤ MẠNG XÃ HỘI", "tab_mail": "Kiểm Tra Mail", "tab_capcut": "Kiểm Tra CapCut", "tab_2fa": "Tạo Mã 2FA", "tab_proxy": "Kiểm Tra Proxy", "tm_accounts_title": "Tài Khoản", "tm_clear_all_title": "Xóa Tất Cả Tài Khoản", "tm_search_acc_ph": "Tìm kiếm email tài khoản...", "tm_upload_txt": "Tải Lên .TXT", "tm_upload_txt_title": "Tải Tệp .TXT (Nhập Tự Động Hàng Loạt)", "tm_add_btn": "Thêm", "tm_add_btn_title": "Thêm Tài Khoản Thủ Công", "tm_mode_search": "Chế độ: Tìm Email", "tm_mode_all": "Chế độ: Tất Cả", "tm_show_all": "Hiện Tất Cả", "tm_search_only": "Chỉ Tìm Kiếm", "tm_empty_acc_msg": "Chưa có tài khoản.<br>Tải lên tệp <b>.TXT</b> hoặc bấm <b>Thêm</b>.", "tm_inbox_title": "HỘP THƯ ĐẾN", "tm_btn_accounts": "Tài Khoản", "tm_filter_msg_ph": "Lọc người gửi / tiêu đề...", "tm_empty_inbox_select": "Chọn một tài khoản ở bên trái để xem tin nhắn.", "tm_active_email_placeholder": "Chọn Tài Khoản", "tm_badge_standby": "● Chờ", "tm_badge_connected": "● Đã Kết Nối", "tm_badge_disconnected": "● Ngắt Kết Nối", "tm_btn_copy": "Sao Chép", "tm_no_email_selected": "Chưa chọn thư nào", "tm_click_inbox_hint": "Bấm vào một thư trong danh sách để đọc nội dung.", "tm_otp_detected": "PHÁT HIỆN MÃ XÁC THỰC / OTP", "tm_btn_copy_otp": "Sao Chép OTP", "tm_copied": "Đã sao chép!", "tm_search_another_title": "Tìm Tài Khoản Khác", "tm_search_another_desc": "Gõ email vào ô tìm kiếm phía trên để chọn tài khoản.", "tm_accounts_avail": "Tài Khoản Khả Dụng", "tm_inbox_empty": "Hộp thư rỗng.", "tm_no_msg_filter": "Không có thư nào khớp bộ lọc.", "tm_no_acc_match": "Không tìm thấy tài khoản", "tm_delete_acc_confirm": "Xóa {email} khỏi danh sách?", "tm_clear_all_confirm": "Xóa toàn bộ tài khoản Mail Checker?", "tm_extracting": "Đang trích xuất & kiểm tra...", "tm_modal_add_title": "Thêm Tài Khoản Outlook / Hotmail", "tm_modal_upload_label": "TẢI TỆP .TXT (Nhập Hàng Loạt)", "tm_modal_paste_label": "HOẶC DÁN TOKEN (email|pass|refresh_token|client_id)", "tm_modal_proxy_label": "PROXY (Tùy chọn: http://user:pass@host:port)", "tm_modal_proxy_ph": "Để trống nếu kết nối trực tiếp", "tm_modal_btn_cancel": "Hủy", "tm_modal_btn_import": "Nhập & Kiểm Tra", "cc_card_title": "Nhập Tài Khoản CapCut", "cc_acc_label": "DANH SÁCH (email:pass, email|pass,...)", "cc_acc_ph": "user1@example.com:password123\\nuser2@example.com|password456", "cc_proxy_label": "URL PROXY RESIDENTIAL (Bắt buộc)", "cc_proxy_help": "Dùng <code>{sess}</code> để tự động xoay IP.", "cc_threads_label": "LUỒNG", "cc_retries_label": "THỬ LẠI IP", "cc_btn_start": "Bắt Đầu Check CapCut", "cc_btn_stop": "Dừng", "cc_results_title": "Kết Quả Check CapCut", "cc_pro_title": "PRO / VIP", "cc_pro_ph": "Tài khoản PRO sẽ hiển thị ở đây...", "cc_free_title": "FREE / THƯỜNG", "cc_free_ph": "Tài khoản FREE sẽ hiển thị ở đây...", "cc_dead_title": "DEAD / LỖI", "cc_dead_ph": "Tài khoản lỗi sẽ hiển thị ở đây...", "cc_btn_copy": "Sao Chép", "cc_btn_save": "Lưu", "cc_alert_empty": "Vui lòng nhập danh sách tài khoản CapCut!", "cc_alert_no_valid": "Không tìm thấy tài khoản hợp lệ!", "tfa_single_title": "Mã 2FA Nhanh (Đơn)", "tfa_single_desc": "Nhập 2FA Secret Key (Base32) để nhận mã xác minh 6 số tức thì.", "tfa_single_label": "2FA SECRET KEY", "tfa_single_ph": "Ví dụ: JBSWY3DPEHPK3PXP", "tfa_btn_get": "Lấy Mã", "tfa_auth_code_label": "MÃ XÁC THỰC", "tfa_btn_copy_code": "Sao Chép Mã", "tfa_bulk_title": "Tạo 2FA Hàng Loạt", "tfa_bulk_desc": "Hỗ trợ dán nhiều Secret Key hoặc dòng combo (định dạng <code>email|pass|secret</code> hoặc secret mỗi dòng).", "tfa_bulk_label": "NHẬP DANH SÁCH SECRETS / COMBOS", "tfa_bulk_ph": "Ví dụ:\\nuser1@email.com|pass1|JBSWY3DPEHPK3PXP\\nuser2@email.com:pass2:4X72J6...", "tfa_btn_gen_all": "Tạo Tất Cả Mã", "tfa_bulk_res_label": "KẾT QUẢ (COMBO + MÃ 2FA)", "tfa_bulk_res_ph": "Mã 2FA sẽ xuất hiện tại đây...", "tfa_alert_empty_single": "Vui lòng nhập Secret Key 2FA!", "tfa_alert_empty_bulk": "Vui lòng nhập danh sách secret/combo!", "tfa_processing": "Đang xử lý...", "prx_title": "Kiểm Tra Proxy", "prx_desc": "Hỗ trợ: <code>HOST:PORT</code>, <code>HOST:PORT:USER:PASS</code>, <code>USER:PASS:HOST:PORT</code>, hoặc <code>scheme://...</code>", "prx_input_label": "DANH SÁCH PROXY", "prx_btn_sample": "Mẫu", "prx_btn_clear": "Xóa", "prx_input_ph": "Ví dụ:\\n192.168.1.1:8080\\n192.168.1.1:8080:user:pass", "prx_threads_label": "LUỒNG", "prx_timeout_label": "THỜI GIAN CHỜ (s)", "prx_scamalytics_toggle": "Kiểm Tra Điểm Gian Lận Scamalytics", "prx_btn_start": "Bắt Đầu Kiểm Tra", "prx_btn_stop": "Dừng", "prx_stat_total": "TỔNG SỐ", "prx_stat_live": "SỐNG (LIVE)", "prx_stat_dead": "CHẾT (DEAD)", "prx_stat_latency": "ĐỘ TRỄ TB", "prx_stat_clean": "RỦI RO THẤP (<25)", "prx_filter_all": "Tất Cả", "prx_filter_live": "Sống", "prx_filter_dead": "Chết", "prx_filter_clean": "Sạch (Low Fraud)", "prx_search_ph": "Tìm IP / Quốc gia...", "prx_btn_export": "Xuất Dữ Liệu", "prx_exp_live_raw": "Sao Chép Live (Định Dạng Gốc)", "prx_exp_live_ipport": "Sao Chép Live (HOST:PORT)", "prx_exp_live_txt": "Tải Xuống Live (.TXT)", "prx_exp_report_json": "Tải Báo Cáo Đầy Đủ (.JSON)", "prx_th_proxy": "PROXY", "prx_th_status": "TRẠNG THÁI", "prx_th_ping": "PING", "prx_th_loc": "IP THOÁT & VỊ TRÍ", "prx_th_isp": "NHÀ MẠNG / TỔ CHỨC", "prx_th_fraud": "ĐIỂM RỦI RO", "prx_th_act": "CHI TIẾT", "prx_empty_table": "Chưa kiểm tra proxy nào. Nhập danh sách và bấm <b>Bắt Đầu Kiểm Tra</b>.", "prx_no_match": "Không có proxy nào khớp bộ lọc.", "prx_modal_title": "Chi Tiết Chẩn Đoán Proxy", "prx_modal_close": "Đóng", "prx_alert_empty": "Vui lòng nhập danh sách proxy!", "prx_no_live_copy": "Không có proxy LIVE nào để sao chép.", "prx_no_live_dl": "Không có proxy LIVE nào để tải về."}, "zh": {"brand_sub": "多功能工具箱 • 社交媒体服务", "tab_mail": "邮箱检测器", "tab_capcut": "CapCut检测器", "tab_2fa": "2FA生成器", "tab_proxy": "代理检测器", "tm_accounts_title": "账号列表", "tm_clear_all_title": "清空所有账号", "tm_search_acc_ph": "搜索账号邮箱...", "tm_upload_txt": "上传 .TXT", "tm_upload_txt_title": "上传 .TXT 文件 (批量自动读取)", "tm_add_btn": "添加", "tm_add_btn_title": "手动添加账号", "tm_mode_search": "模式: 搜索邮箱", "tm_mode_all": "模式: 全部账号", "tm_show_all": "显示全部", "tm_search_only": "仅搜索模式", "tm_empty_acc_msg": "暂无账号。<br>上传 <b>.TXT</b> 文件或点击 <b>添加</b>。", "tm_inbox_title": "收件箱", "tm_btn_accounts": "账号", "tm_filter_msg_ph": "过滤发件人 / 主题...", "tm_empty_inbox_select": "请在左侧选择账号以查看收件箱消息。", "tm_active_email_placeholder": "选择账号", "tm_badge_standby": "● 待命", "tm_badge_connected": "● 已连接", "tm_badge_disconnected": "● 已断开", "tm_btn_copy": "复制", "tm_no_email_selected": "未选择邮件", "tm_click_inbox_hint": "点击收件箱列表中的邮件以阅读详细内容。", "tm_otp_detected": "已检测到验证码 / OTP", "tm_btn_copy_otp": "复制验证码", "tm_copied": "已复制!", "tm_search_another_title": "搜索其他账号", "tm_search_another_desc": "在上方搜索框输入邮箱以选取账号。", "tm_accounts_avail": "个可用账号", "tm_inbox_empty": "收件箱为空。", "tm_no_msg_filter": "没有符合过滤条件的消息。", "tm_no_acc_match": "未找到匹配账号", "tm_delete_acc_confirm": "确定从列表中删除 {email} 吗？", "tm_clear_all_confirm": "确定清空所有邮箱检测账号吗？", "tm_extracting": "正在提取并检测账号...", "tm_modal_add_title": "添加 Outlook / Hotmail 账号", "tm_modal_upload_label": "上传 .TXT 文件 (批量导入)", "tm_modal_paste_label": "或粘贴令牌 (email|pass|refresh_token|client_id 或仅token)", "tm_modal_proxy_label": "代理 (可选: http://user:pass@host:port)", "tm_modal_proxy_ph": "直接连接请留空", "tm_modal_btn_cancel": "取消", "tm_modal_btn_import": "导入并检测", "cc_card_title": "输入 CapCut 账号", "cc_acc_label": "账号列表 (email:pass, email|pass 等)", "cc_acc_ph": "user1@example.com:password123\\nuser2@example.com|password456", "cc_proxy_label": "住宅代理 URL (必填)", "cc_proxy_help": "使用 <code>{sess}</code> 变量实现自动轮换 IP。", "cc_threads_label": "线程数", "cc_retries_label": "IP重试次数", "cc_btn_start": "开始检测 CapCut", "cc_btn_stop": "停止", "cc_results_title": "CapCut 检测结果", "cc_pro_title": "PRO / VIP 会员", "cc_pro_ph": "PRO 账号将在此显示...", "cc_free_title": "FREE / 普通账号", "cc_free_ph": "FREE 账号将在此显示...", "cc_dead_title": "DEAD / 错误账号", "cc_dead_ph": "失败账号将在此显示...", "cc_btn_copy": "复制", "cc_btn_save": "保存", "cc_alert_empty": "请输入 CapCut 账号列表！", "cc_alert_no_valid": "未找到有效账号！", "tfa_single_title": "快捷 2FA 验证码 (单条)", "tfa_single_desc": "输入 2FA Secret Key (Base32) 即刻生成6位动态验证码。", "tfa_single_label": "2FA 密钥 (SECRET KEY)", "tfa_single_ph": "示例: JBSWY3DPEHPK3PXP", "tfa_btn_get": "获取验证码", "tfa_auth_code_label": "动态验证码", "tfa_btn_copy_code": "复制代码", "tfa_bulk_title": "批量 2FA 生成器", "tfa_bulk_desc": "支持批量粘贴密钥或组合行 (格式: <code>email|pass|secret</code> 或每行一个密钥)。", "tfa_bulk_label": "输入密钥列表 / 组合数据", "tfa_bulk_ph": "示例格式:\\nuser1@email.com|pass1|JBSWY3DPEHPK3PXP\\nuser2@email.com:pass2:4X72J6...", "tfa_btn_gen_all": "批量生成所有验证码", "tfa_bulk_res_label": "生成结果 (组合格式 + 2FA 码)", "tfa_bulk_res_ph": "2FA 结果将在此显示...", "tfa_alert_empty_single": "请输入 2FA 密钥！", "tfa_alert_empty_bulk": "请输入密钥列表或组合数据！", "tfa_processing": "处理中...", "prx_title": "代理检测器", "prx_desc": "支持格式: <code>HOST:PORT</code>, <code>HOST:PORT:USER:PASS</code>, <code>USER:PASS:HOST:PORT</code>, 或 <code>scheme://...</code>", "prx_input_label": "输入代理列表", "prx_btn_sample": "示例", "prx_btn_clear": "清空", "prx_input_ph": "示例格式:\\n192.168.1.1:8080\\n192.168.1.1:8080:username:password", "prx_threads_label": "并发线程", "prx_timeout_label": "超时时间 (秒)", "prx_scamalytics_toggle": "Scamalytics 欺诈风险深度检测", "prx_btn_start": "开始检测", "prx_btn_stop": "停止", "prx_stat_total": "总数", "prx_stat_live": "存活 (LIVE)", "prx_stat_dead": "失效 (DEAD)", "prx_stat_latency": "平均延迟", "prx_stat_clean": "低风险 (<25)", "prx_filter_all": "全部", "prx_filter_live": "存活", "prx_filter_dead": "失效", "prx_filter_clean": "纯净 (低风险)", "prx_search_ph": "搜索 IP / 国家...", "prx_btn_export": "导出数据", "prx_exp_live_raw": "复制存活 (原始格式)", "prx_exp_live_ipport": "复制存活 (HOST:PORT)", "prx_exp_live_txt": "下载存活 (.TXT)", "prx_exp_report_json": "下载完整报告 (.JSON)", "prx_th_proxy": "代理地址", "prx_th_status": "状态", "prx_th_ping": "延迟", "prx_th_loc": "出口IP与归属地", "prx_th_isp": "运营商 / 组织", "prx_th_fraud": "欺诈评分", "prx_th_act": "详情", "prx_empty_table": "尚未检测任何代理。输入代理列表并点击 <b>开始检测</b>。", "prx_no_match": "没有匹配的代理数据。", "prx_modal_title": "代理诊断详情", "prx_modal_close": "关闭", "prx_alert_empty": "请输入代理列表！", "prx_no_live_copy": "没有存活的代理可供复制。", "prx_no_live_dl": "没有存活的代理可供下载。"}, "ru": {"brand_sub": "МУЛЬТИ-ИНСТРУМЕНТЫ • SMM СЕРВИС", "tab_mail": "Чекер Почты", "tab_capcut": "Чекер CapCut", "tab_2fa": "Генератор 2FA", "tab_proxy": "Чекер Прокси", "tm_accounts_title": "Аккаунты", "tm_clear_all_title": "Удалить все аккаунты", "tm_search_acc_ph": "Поиск email аккаунта...", "tm_upload_txt": "Загрузить .TXT", "tm_upload_txt_title": "Загрузить файл .TXT (Массовый импорт)", "tm_add_btn": "Добавить", "tm_add_btn_title": "Добавить аккаунт вручную", "tm_mode_search": "Режим: Поиск Email", "tm_mode_all": "Режим: Все Аккаунты", "tm_show_all": "Показать все", "tm_search_only": "Только поиск", "tm_empty_acc_msg": "Нет аккаунтов.<br>Загрузите файл <b>.TXT</b> или нажмите <b>Добавить</b>.", "tm_inbox_title": "ВХОДЯЩИЕ", "tm_btn_accounts": "Аккаунты", "tm_filter_msg_ph": "Фильтр отправителя / темы...", "tm_empty_inbox_select": "Выберите аккаунт слева для просмотра входящих сообщений.", "tm_active_email_placeholder": "Выберите аккаунт", "tm_badge_standby": "● Ожидание", "tm_badge_connected": "● Подключено", "tm_badge_disconnected": "● Отключено", "tm_btn_copy": "Копировать", "tm_no_email_selected": "Письмо не выбрано", "tm_click_inbox_hint": "Нажмите на письмо в списке входящих, чтобы прочитать его.", "tm_otp_detected": "ОБНАРУЖЕН КОД ПОДТВЕРЖДЕНИЯ / OTP", "tm_btn_copy_otp": "Скопировать OTP", "tm_copied": "Скопировано!", "tm_search_another_title": "Найти другой аккаунт", "tm_search_another_desc": "Введите email в строке поиска выше, чтобы выбрать аккаунт.", "tm_accounts_avail": "Доступно аккаунтов", "tm_inbox_empty": "Входящие пусты.", "tm_no_msg_filter": "Нет сообщений, соответствующих фильтру.", "tm_no_acc_match": "Аккаунты не найдены", "tm_delete_acc_confirm": "Удалить {email} из списка?", "tm_clear_all_confirm": "Очистить все аккаунты чекера почты?", "tm_extracting": "Извлечение и проверка аккаунтов...", "tm_modal_add_title": "Добавить аккаунты Outlook / Hotmail", "tm_modal_upload_label": "ЗАГРУЗИТЬ ФАЙЛ .TXT (Массовый импорт)", "tm_modal_paste_label": "ИЛИ ВСТАВИТЬ ТОКЕНЫ (email|pass|refresh_token|client_id)", "tm_modal_proxy_label": "ПРОКСИ (Опционально: http://user:pass@host:port)", "tm_modal_proxy_ph": "Оставьте пустым для прямого соединения", "tm_modal_btn_cancel": "Отмена", "tm_modal_btn_import": "Импорт и проверка", "cc_card_title": "Ввод аккаунтов CapCut", "cc_acc_label": "СПИСОК АККАУНТОВ (email:pass, email|pass и т.д.)", "cc_acc_ph": "user1@example.com:password123\\nuser2@example.com|password456", "cc_proxy_label": "URL РЕЗИДЕНТСКИХ ПРОКСИ (Обязательно)", "cc_proxy_help": "Используйте <code>{sess}</code> для авто-ротации IP.", "cc_threads_label": "ПОТОКИ", "cc_retries_label": "ПОВТОРЫ IP", "cc_btn_start": "Начать проверку CapCut", "cc_btn_stop": "Стоп", "cc_results_title": "Результаты проверки CapCut", "cc_pro_title": "PRO / VIP", "cc_pro_ph": "PRO аккаунты появятся здесь...", "cc_free_title": "FREE / ОБЫЧНЫЕ", "cc_free_ph": "FREE аккаунты появятся здесь...", "cc_dead_title": "DEAD / ОШИБКА", "cc_dead_ph": "Невалидные аккаунты появятся здесь...", "cc_btn_copy": "Копировать", "cc_btn_save": "Сохранить", "cc_alert_empty": "Пожалуйста, введите список аккаунтов CapCut!", "cc_alert_no_valid": "Валидные аккаунты не найдены!", "tfa_single_title": "Быстрый 2FA код (Одиночный)", "tfa_single_desc": "Введите 2FA Secret Key (Base32) для мгновенной генерации 6-значного кода.", "tfa_single_label": "СЕКРЕТНЫЙ КЛЮЧ 2FA", "tfa_single_ph": "Пример: JBSWY3DPEHPK3PXP", "tfa_btn_get": "Получить код", "tfa_auth_code_label": "КОД АУТЕНТИФИКАЦИИ", "tfa_btn_copy_code": "Скопировать код", "tfa_bulk_title": "Массовый генератор 2FA", "tfa_bulk_desc": "Поддерживает вставку нескольких ключей или combo строк (формат <code>email|pass|secret</code>).", "tfa_bulk_label": "СПИСОК КЛЮЧЕЙ / COMBO", "tfa_bulk_ph": "Пример:\\nuser1@email.com|pass1|JBSWY3DPEHPK3PXP\\nuser2@email.com:pass2:4X72J6...", "tfa_btn_gen_all": "Сгенерировать все коды", "tfa_bulk_res_label": "РЕЗУЛЬТАТ (ФОРМАТ COMBO + 2FA КОД)", "tfa_bulk_res_ph": "Результаты 2FA появятся здесь...", "tfa_alert_empty_single": "Пожалуйста, введите секретный ключ 2FA!", "tfa_alert_empty_bulk": "Пожалуйста, введите список ключей или combo строк!", "tfa_processing": "Обработка...", "prx_title": "Чекер Прокси", "prx_desc": "Форматы: <code>HOST:PORT</code>, <code>HOST:PORT:USER:PASS</code>, <code>USER:PASS:HOST:PORT</code>, или <code>scheme://...</code>", "prx_input_label": "СПИСОК ПРОКСИ", "prx_btn_sample": "Пример", "prx_btn_clear": "Очистить", "prx_input_ph": "Пример:\\n192.168.1.1:8080\\n192.168.1.1:8080:user:pass", "prx_threads_label": "ПОТОКИ", "prx_timeout_label": "ТАЙМАУТ (сек)", "prx_scamalytics_toggle": "Глубокая проверка фрода Scamalytics", "prx_btn_start": "Начать проверку", "prx_btn_stop": "Стоп", "prx_stat_total": "ВСЕГО", "prx_stat_live": "ЖИВЫЕ (LIVE)", "prx_stat_dead": "МЕРТВЫЕ (DEAD)", "prx_stat_latency": "СР. ПИНГ", "prx_stat_clean": "НИЗКИЙ РИСК (<25)", "prx_filter_all": "Все", "prx_filter_live": "Живые", "prx_filter_dead": "Мертвые", "prx_filter_clean": "Чистые (<25)", "prx_search_ph": "Поиск IP / Страны...", "prx_btn_export": "Экспорт", "prx_exp_live_raw": "Копировать Live (Исходный формат)", "prx_exp_live_ipport": "Копировать Live (HOST:PORT)", "prx_exp_live_txt": "Скачать Live (.TXT)", "prx_exp_report_json": "Скачать полный отчет (.JSON)", "prx_th_proxy": "ПРОКСИ", "prx_th_status": "СТАТУС", "prx_th_ping": "ПИНГ", "prx_th_loc": "ВЫХОДНОЙ IP И ЛОКАЦИЯ", "prx_th_isp": "ПРОВАЙДЕР / ОРГ", "prx_th_fraud": "РИСК ФРОДА", "prx_th_act": "ИНФО", "prx_empty_table": "Прокси еще не проверены. Вставьте список и нажмите <b>Начать проверку</b>.", "prx_no_match": "Нет прокси, соответствующих фильтру.", "prx_modal_title": "Диагностика Прокси", "prx_modal_close": "Закрыть", "prx_alert_empty": "Пожалуйста, введите список прокси!", "prx_no_live_copy": "Нет LIVE прокси для копирования.", "prx_no_live_dl": "Нет LIVE прокси для скачивания."}, "es": {"brand_sub": "HERRAMIENTAS MÚLTIPLES • SERVICIOS SOCIALES", "tab_mail": "Verificador de Mail", "tab_capcut": "Verificador CapCut", "tab_2fa": "Generador 2FA", "tab_proxy": "Verificador de Proxy", "tm_accounts_title": "Cuentas", "tm_clear_all_title": "Borrar todas las cuentas", "tm_search_acc_ph": "Buscar correo de cuenta...", "tm_upload_txt": "Subir .TXT", "tm_upload_txt_title": "Subir archivo .TXT (Lectura masiva)", "tm_add_btn": "Añadir", "tm_add_btn_title": "Añadir cuenta manual", "tm_mode_search": "Modo: Buscar Correo", "tm_mode_all": "Modo: Todas las Cuentas", "tm_show_all": "Mostrar Todo", "tm_search_only": "Solo Buscar", "tm_empty_acc_msg": "Aún no hay cuentas.<br>Sube un archivo <b>.TXT</b> o pulsa <b>Añadir</b>.", "tm_inbox_title": "BANDEJA DE ENTRADA", "tm_btn_accounts": "Cuentas", "tm_filter_msg_ph": "Filtrar remitente / asunto...", "tm_empty_inbox_select": "Selecciona una cuenta a la izquierda para ver los mensajes.", "tm_active_email_placeholder": "Seleccionar Cuenta", "tm_badge_standby": "● En espera", "tm_badge_connected": "● Conectado", "tm_badge_disconnected": "● Desconectado", "tm_btn_copy": "Copiar", "tm_no_email_selected": "Ningún correo seleccionado", "tm_click_inbox_hint": "Haz clic en un correo de la lista para leer su contenido.", "tm_otp_detected": "CÓDIGO DE VERIFICACIÓN / OTP DETECTADO", "tm_btn_copy_otp": "Copiar OTP", "tm_copied": "¡Copiado!", "tm_search_another_title": "Buscar Otra Cuenta", "tm_search_another_desc": "Escribe el correo en el cuadro de búsqueda para elegir una cuenta.", "tm_accounts_avail": "Cuentas Disponibles", "tm_inbox_empty": "Bandeja vacía.", "tm_no_msg_filter": "No hay mensajes que coincidan con el filtro.", "tm_no_acc_match": "No se encontraron cuentas", "tm_delete_acc_confirm": "¿Eliminar {email} de la lista?", "tm_clear_all_confirm": "¿Borrar todas las cuentas del verificador?", "tm_extracting": "Extrayendo y verificando cuentas...", "tm_modal_add_title": "Añadir Cuentas Outlook / Hotmail", "tm_modal_upload_label": "SUBIR ARCHIVO .TXT (Importación Masiva)", "tm_modal_paste_label": "O PEGAR TOKENS (email|pass|refresh_token|client_id)", "tm_modal_proxy_label": "PROXY (Opcional: http://user:pass@host:port)", "tm_modal_proxy_ph": "Dejar en blanco si es directo", "tm_modal_btn_cancel": "Cancelar", "tm_modal_btn_import": "Importar y Verificar", "cc_card_title": "Entrada de Cuentas CapCut", "cc_acc_label": "LISTA DE CUENTAS (email:pass, email|pass, etc)", "cc_acc_ph": "user1@example.com:password123\\nuser2@example.com|password456", "cc_proxy_label": "URL PROXY RESIDENCIAL (Obligatorio)", "cc_proxy_help": "Usa <code>{sess}</code> para rotación automática de IP.", "cc_threads_label": "HILOS", "cc_retries_label": "REINTENTOS IP", "cc_btn_start": "Iniciar Verificación CapCut", "cc_btn_stop": "Detener", "cc_results_title": "Resultados de Verificación CapCut", "cc_pro_title": "PRO / VIP", "cc_pro_ph": "Las cuentas PRO aparecerán aquí...", "cc_free_title": "FREE / REGULAR", "cc_free_ph": "Las cuentas FREE aparecerán aquí...", "cc_dead_title": "DEAD / ERROR", "cc_dead_ph": "Las cuentas fallidas aparecerán aquí...", "cc_btn_copy": "Copiar", "cc_btn_save": "Guardar", "cc_alert_empty": "¡Por favor ingresa la lista de cuentas CapCut!", "cc_alert_no_valid": "¡No se encontraron cuentas válidas!", "tfa_single_title": "Código 2FA Rápido (Individual)", "tfa_single_desc": "Ingresa la clave secreta 2FA (Base32) para obtener códigos instantáneos de 6 dígitos.", "tfa_single_label": "CLAVE SECRETA 2FA", "tfa_single_ph": "Ejemplo: JBSWY3DPEHPK3PXP", "tfa_btn_get": "Obtener Código", "tfa_auth_code_label": "CÓDIGO DE AUTENTICACIÓN", "tfa_btn_copy_code": "Copiar Código", "tfa_bulk_title": "Generador 2FA Masivo", "tfa_bulk_desc": "Soporta pegar múltiples claves o líneas combo (formato <code>email|pass|secret</code>).", "tfa_bulk_label": "LISTA DE CLAVES / COMBOS", "tfa_bulk_ph": "Ejemplo:\\nuser1@email.com|pass1|JBSWY3DPEHPK3PXP\\nuser2@email.com:pass2:4X72J6...", "tfa_btn_gen_all": "Generar Todos los Códigos", "tfa_bulk_res_label": "RESULTADOS (FORMATO COMBO + CÓDIGO 2FA)", "tfa_bulk_res_ph": "Los códigos 2FA aparecerán aquí...", "tfa_alert_empty_single": "¡Por favor ingresa la clave secreta 2FA!", "tfa_alert_empty_bulk": "¡Por favor ingresa la lista de claves o combos!", "tfa_processing": "Procesando...", "prx_title": "Verificador de Proxy", "prx_desc": "Formatos: <code>HOST:PORT</code>, <code>HOST:PORT:USER:PASS</code>, <code>USER:PASS:HOST:PORT</code>, o <code>scheme://...</code>", "prx_input_label": "LISTA DE PROXIES", "prx_btn_sample": "Ejemplo", "prx_btn_clear": "Limpiar", "prx_input_ph": "Ejemplo:\\n192.168.1.1:8080\\n192.168.1.1:8080:user:pass", "prx_threads_label": "HILOS", "prx_timeout_label": "TIEMPO DE ESPERA (s)", "prx_scamalytics_toggle": "Verificación de Riesgo de Fraude Scamalytics", "prx_btn_start": "Iniciar Verificación", "prx_btn_stop": "Detener", "prx_stat_total": "TOTAL", "prx_stat_live": "VIVOS (LIVE)", "prx_stat_dead": "MUERTOS (DEAD)", "prx_stat_latency": "PING PROMEDIO", "prx_stat_clean": "BAJO FRAUDE (<25)", "prx_filter_all": "Todos", "prx_filter_live": "Vivos", "prx_filter_dead": "Muertos", "prx_filter_clean": "Bajo Fraude", "prx_search_ph": "Buscar IP / País...", "prx_btn_export": "Exportar", "prx_exp_live_raw": "Copiar Live (Formato Original)", "prx_exp_live_ipport": "Copiar Live (HOST:PORT)", "prx_exp_live_txt": "Descargar Live (.TXT)", "prx_exp_report_json": "Descargar Reporte Completo (.JSON)", "prx_th_proxy": "PROXY", "prx_th_status": "ESTADO", "prx_th_ping": "PING", "prx_th_loc": "IP SALIDA Y UBICACIÓN", "prx_th_isp": "PROVEEDOR / ORG", "prx_th_fraud": "RIESGO FRAUDE", "prx_th_act": "DETALLES", "prx_empty_table": "No se han verificado proxies aún. Ingresa la lista y pulsa <b>Iniciar Verificación</b>.", "prx_no_match": "No hay proxies que coincidan con el filtro.", "prx_modal_title": "Detalles de Diagnóstico de Proxy", "prx_modal_close": "Cerrar", "prx_alert_empty": "¡Por favor ingresa la lista de proxies!", "prx_no_live_copy": "No hay proxies LIVE para copiar.", "prx_no_live_dl": "No hay proxies LIVE para descargar."}, "pt": {"brand_sub": "MULTI FERRAMENTAS • PAINEL SOCIAL", "tab_mail": "Verificador de E-mail", "tab_capcut": "Verificador CapCut", "tab_2fa": "Gerador 2FA", "tab_proxy": "Verificador de Proxy", "tm_accounts_title": "Contas", "tm_clear_all_title": "Limpar Todas as Contas", "tm_search_acc_ph": "Buscar e-mail da conta...", "tm_upload_txt": "Upload .TXT", "tm_upload_txt_title": "Enviar Arquivo .TXT (Importação em Massa)", "tm_add_btn": "Adicionar", "tm_add_btn_title": "Adicionar Conta Manualmente", "tm_mode_search": "Modo: Buscar E-mail", "tm_mode_all": "Modo: Todas as Contas", "tm_show_all": "Mostrar Todas", "tm_search_only": "Apenas Busca", "tm_empty_acc_msg": "Nenhuma conta ainda.<br>Envie um arquivo <b>.TXT</b> ou clique em <b>Adicionar</b>.", "tm_inbox_title": "CAIXA DE ENTRADA", "tm_btn_accounts": "Contas", "tm_filter_msg_ph": "Filtrar remetente / assunto...", "tm_empty_inbox_select": "Selecione uma conta à esquerda para ver os e-mails.", "tm_active_email_placeholder": "Selecionar Conta", "tm_badge_standby": "● Em espera", "tm_badge_connected": "● Conectado", "tm_badge_disconnected": "● Desconectado", "tm_btn_copy": "Copiar", "tm_no_email_selected": "Nenhum e-mail selecionado", "tm_click_inbox_hint": "Clique em um e-mail na lista para ler seu conteúdo.", "tm_otp_detected": "CÓDIGO DE VERIFICAÇÃO / OTP DETECTADO", "tm_btn_copy_otp": "Copiar OTP", "tm_copied": "Copiado!", "tm_search_another_title": "Buscar Outra Conta", "tm_search_another_desc": "Digite o e-mail na busca acima para selecionar uma conta.", "tm_accounts_avail": "Contas Disponíveis", "tm_inbox_empty": "Caixa de entrada vazia.", "tm_no_msg_filter": "Nenhuma mensagem corresponde ao filtro.", "tm_no_acc_match": "Nenhuma conta encontrada", "tm_delete_acc_confirm": "Remover {email} da lista?", "tm_clear_all_confirm": "Limpar todas as contas do verificador?", "tm_extracting": "Extraindo e verificando contas...", "tm_modal_add_title": "Adicionar Contas Outlook / Hotmail", "tm_modal_upload_label": "ENVIAR ARQUIVO .TXT (Importação em Massa)", "tm_modal_paste_label": "OU COLAR TOKENS (email|pass|refresh_token|client_id)", "tm_modal_proxy_label": "PROXY (Opcional: http://user:pass@host:port)", "tm_modal_proxy_ph": "Deixe em branco se for conexão direta", "tm_modal_btn_cancel": "Cancelar", "tm_modal_btn_import": "Importar e Verificar", "cc_card_title": "Entrada de Contas CapCut", "cc_acc_label": "LISTA DE CONTAS (email:pass, email|pass, etc)", "cc_acc_ph": "user1@example.com:password123\\nuser2@example.com|password456", "cc_proxy_label": "URL PROXY RESIDENCIAL (Obrigatório)", "cc_proxy_help": "Use <code>{sess}</code> para rotação automática de IP.", "cc_threads_label": "THREADS", "cc_retries_label": "TENTATIVAS IP", "cc_btn_start": "Iniciar Checagem CapCut", "cc_btn_stop": "Parar", "cc_results_title": "Resultados de Checagem CapCut", "cc_pro_title": "PRO / VIP", "cc_pro_ph": "Contas PRO aparecerão aqui...", "cc_free_title": "FREE / REGULAR", "cc_free_ph": "Contas FREE aparecerão aqui...", "cc_dead_title": "DEAD / ERRO", "cc_dead_ph": "Contas com erro aparecerão aqui...", "cc_btn_copy": "Copiar", "cc_btn_save": "Salvar", "cc_alert_empty": "Por favor, insira a lista de contas CapCut!", "cc_alert_no_valid": "Nenhuma conta válida encontrada!", "tfa_single_title": "Código 2FA Rápido (Individual)", "tfa_single_desc": "Insira a chave secreta 2FA (Base32) para gerar códigos de verificação de 6 dígitos instantaneamente.", "tfa_single_label": "CHAVE SECRETA 2FA", "tfa_single_ph": "Exemplo: JBSWY3DPEHPK3PXP", "tfa_btn_get": "Obter Código", "tfa_auth_code_label": "CÓDIGO DE AUTENTICAÇÃO", "tfa_btn_copy_code": "Copiar Código", "tfa_bulk_title": "Gerador 2FA em Massa", "tfa_bulk_desc": "Suporta colar várias chaves ou linhas combo (formato <code>email|pass|secret</code>).", "tfa_bulk_label": "LISTA DE CHAVES / COMBOS", "tfa_bulk_ph": "Exemplo:\\nuser1@email.com|pass1|JBSWY3DPEHPK3PXP\\nuser2@email.com:pass2:4X72J6...", "tfa_btn_gen_all": "Gerar Todos os Códigos", "tfa_bulk_res_label": "RESULTADOS (FORMATO COMBO + CÓDIGO 2FA)", "tfa_bulk_res_ph": "Os códigos 2FA gerados aparecerão aqui...", "tfa_alert_empty_single": "Por favor, insira a chave secreta 2FA!", "tfa_alert_empty_bulk": "Por favor, insira a lista de chaves ou combos!", "tfa_processing": "Processando...", "prx_title": "Verificador de Proxy", "prx_desc": "Formatos: <code>HOST:PORT</code>, <code>HOST:PORT:USER:PASS</code>, <code>USER:PASS:HOST:PORT</code>, ou <code>scheme://...</code>", "prx_input_label": "LISTA DE PROXIES", "prx_btn_sample": "Exemplo", "prx_btn_clear": "Limpar", "prx_input_ph": "Exemplo:\\n192.168.1.1:8080\\n192.168.1.1:8080:user:pass", "prx_threads_label": "THREADS", "prx_timeout_label": "TIMEOUT (s)", "prx_scamalytics_toggle": "Verificação de Score de Fraude Scamalytics", "prx_btn_start": "Iniciar Checagem", "prx_btn_stop": "Parar", "prx_stat_total": "TOTAL", "prx_stat_live": "VIVOS (LIVE)", "prx_stat_dead": "MORTOS (DEAD)", "prx_stat_latency": "PING MÉDIO", "prx_stat_clean": "BAIXO RISCO (<25)", "prx_filter_all": "Todos", "prx_filter_live": "Vivos", "prx_filter_dead": "Mortos", "prx_filter_clean": "Baixo Risco", "prx_search_ph": "Buscar IP / País...", "prx_btn_export": "Exportar", "prx_exp_live_raw": "Copiar Live (Formato Original)", "prx_exp_live_ipport": "Copiar Live (HOST:PORT)", "prx_exp_live_txt": "Baixar Live (.TXT)", "prx_exp_report_json": "Baixar Relatório Completo (.JSON)", "prx_th_proxy": "PROXY", "prx_th_status": "STATUS", "prx_th_ping": "PING", "prx_th_loc": "IP DE SAÍDA E LOCALIZAÇÃO", "prx_th_isp": "PROVEDOR / ORG", "prx_th_fraud": "RISCO DE FRAUDE", "prx_th_act": "DETALHES", "prx_empty_table": "Nenhum proxy verificado ainda. Insira a lista e clique em <b>Iniciar Checagem</b>.", "prx_no_match": "Nenhum proxy corresponde ao filtro.", "prx_modal_title": "Detalhes de Diagnóstico do Proxy", "prx_modal_close": "Fechar", "prx_alert_empty": "Por favor, insira a lista de proxies!", "prx_no_live_copy": "Nenhum proxy LIVE para copiar.", "prx_no_live_dl": "Nenhum proxy LIVE para baixar."}};
+    const LANG_META = {
+  "id": { "flag": "🇮🇩", "code": "ID", "name": "Bahasa Indonesia" },
+  "en": { "flag": "🇬🇧", "code": "EN", "name": "English" },
+  "vi": { "flag": "🇻🇳", "code": "VI", "name": "Tiếng Việt" },
+  "zh": { "flag": "🇨🇳", "code": "ZH", "name": "简体中文" },
+  "ru": { "flag": "🇷🇺", "code": "RU", "name": "Русский" },
+  "es": { "flag": "🇪🇸", "code": "ES", "name": "Español" },
+  "pt": { "flag": "🇧🇷", "code": "PT", "name": "Português" }
+};
+    let currentAppLang = 'id';
+
+    function getI18nText(key, fallback = '') {
+      if (I18N_DICTS[currentAppLang] && I18N_DICTS[currentAppLang][key] !== undefined) {
+        return I18N_DICTS[currentAppLang][key];
+      }
+      if (I18N_DICTS['id'] && I18N_DICTS['id'][key] !== undefined) {
+        return I18N_DICTS['id'][key];
+      }
+      return fallback;
+    }
+
+    function toggleLangMenu(e) {
+      if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+      const menu = document.getElementById('langDropdownList');
+      if (menu) {
+        menu.classList.toggle('show');
+      }
+    }
+
+    function selectAppLanguage(lang, e) {
+      if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+      setAppLanguage(lang);
+      const menu = document.getElementById('langDropdownList');
+      if (menu) {
+        menu.classList.remove('show');
+      }
+    }
+
+    function setAppLanguage(lang) {
+      if (!I18N_DICTS[lang]) lang = 'id';
+      currentAppLang = lang;
+      try {
+        localStorage.setItem('chenstore_app_lang', lang);
+      } catch(e) {}
+
+      // Update flag & code in top navbar
+      const meta = LANG_META[lang] || LANG_META['id'];
+      const flagEl = document.getElementById('currentLangFlag');
+      const codeEl = document.getElementById('currentLangCode');
+      if (flagEl) flagEl.textContent = meta.flag;
+      if (codeEl) codeEl.textContent = meta.code;
+
+      // Update active state in dropdown
+      document.querySelectorAll('.lang-dropdown-item').forEach(item => {
+        const onClickAttr = item.getAttribute('onclick') || '';
+        if (onClickAttr.includes("'" + lang + "'")) {
+          item.classList.add('active');
+        } else {
+          item.classList.remove('active');
+        }
+      });
+
+      // Update text in elements with data-i18n
+      document.querySelectorAll('[data-i18n]').forEach(el => {
+        const k = el.getAttribute('data-i18n');
+        const val = getI18nText(k);
+        if (val) {
+          if (val.includes('<')) el.innerHTML = val;
+          else el.textContent = val;
+        }
+      });
+
+      // Update placeholders
+      document.querySelectorAll('[data-i18n-ph]').forEach(el => {
+        const k = el.getAttribute('data-i18n-ph');
+        const val = getI18nText(k);
+        if (val) el.placeholder = val;
+      });
+
+      // Update titles
+      document.querySelectorAll('[data-i18n-title]').forEach(el => {
+        const k = el.getAttribute('data-i18n-title');
+        const val = getI18nText(k);
+        if (val) el.title = val;
+      });
+
+      // Safely re-render components if available
+      try { if (typeof renderAccountsList === 'function') renderAccountsList(); } catch(e) {}
+      try { if (typeof renderCurrentMessages === 'function') renderCurrentMessages(); } catch(e) {}
+      try { if (typeof updateProxyStats === 'function') updateProxyStats(); } catch(e) {}
+      try { if (typeof renderProxyTable === 'function') renderProxyTable(); } catch(e) {}
+      try { if (typeof updateCapcutCount === 'function') updateCapcutCount(); } catch(e) {}
+    }
+
+    // Close language dropdown when clicking outside
+    document.addEventListener('click', function(e) {
+      const wrapper = document.getElementById('langSelectorWrapper');
+      if (wrapper && !wrapper.contains(e.target)) {
+        const menu = document.getElementById('langDropdownList');
+        if (menu) menu.classList.remove('show');
+      }
+    });
+
     window.switchTab = function(tabName) {
       const allTabs = ['mail', 'capcut', '2fa', 'proxy'];
       allTabs.forEach(name => {
         const btn = document.getElementById('btn-tab-' + name);
         const pane = document.getElementById('tab-' + name);
         if (btn) {
-          if (name === tabName) {
-            btn.classList.add('active');
-          } else {
-            btn.classList.remove('active');
-          }
+          btn.classList.toggle('active', name === tabName);
         }
         if (pane) {
           if (name === tabName) {
             pane.classList.add('active');
-            pane.style.setProperty('display', 'flex', 'important');
+            pane.style.display = 'flex';
           } else {
             pane.classList.remove('active');
-            pane.style.setProperty('display', 'none', 'important');
+            pane.style.display = 'none';
           }
         }
       });
@@ -1927,6 +2009,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       window.switchTab(tabName);
     }
 
+    
     /* ================= 2FA GENERATOR LOGIC ================= */
     let single2faTimerInterval = null;
     let currentSingle2faCode = "";
@@ -1992,7 +2075,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       let secret = (input ? input.value : '').trim();
       if (!secret) {
         resetSingle2fa();
-        return alert('Silakan masukkan 2FA Secret Key!');
+        return alert(getI18nText('tfa_alert_empty_single', 'Silakan masukkan 2FA Secret Key!'));
       }
 
       // Extract secret if user pasted combo line (email|pass|secret)
@@ -2033,13 +2116,13 @@ HTML_TEMPLATE = """<!DOCTYPE html>
           resetSingle2fa();
           display.textContent = 'INVALID';
           copyBtn.disabled = true;
-          alert('Secret Key tidak valid atau gagal digenerate!');
+          alert('Secret Key invalid / error!');
         }
       } catch (err) {
         resetSingle2fa();
         display.textContent = 'ERROR';
         copyBtn.disabled = true;
-        alert('Gagal mengambil kode 2FA: ' + err.message);
+        alert('Failed: ' + err.message);
       }
     }
 
@@ -2048,7 +2131,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       navigator.clipboard.writeText(currentSingle2faCode).then(() => {
         const btn = document.getElementById('btnCopySingle2fa');
         const orig = btn.innerHTML;
-        btn.innerHTML = '<i class="fa-solid fa-check me-1 text-success"></i> Disalin!';
+        btn.innerHTML = `<i class="fa-solid fa-check me-1 text-success"></i> ${getI18nText('tm_copied', 'Disalin!')}`;
         setTimeout(() => { btn.innerHTML = orig; }, 1500);
       });
     }
@@ -2056,7 +2139,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     async function generateBulk2fa() {
       const input = document.getElementById('bulk2faInput');
       const rawText = (input ? input.value : '').trim();
-      if (!rawText) return alert('Silakan masukkan list secret / combo!');
+      if (!rawText) return alert(getI18nText('tfa_alert_empty_bulk', 'Silakan masukkan list secret / combo!'));
 
       const lines = (rawText || '').split(String.fromCharCode(10)).map(l => l.trim()).filter(l => l);
       if (lines.length === 0) return;
@@ -2064,7 +2147,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       const btn = document.getElementById('btnRunBulk2fa');
       const origBtn = btn.innerHTML;
       btn.disabled = true;
-      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Memproses...';
+      btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin me-1"></i> ${getI18nText('tfa_processing', 'Memproses...')}`;
 
       const parsedItems = [];
       const secretList = [];
@@ -2185,10 +2268,10 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 
     async function startProxyChecking() {
       const rawText = document.getElementById('proxyInput').value.trim();
-      if (!rawText) return alert('Silakan masukkan list proxy!');
+      if (!rawText) return alert(getI18nText('prx_alert_empty', 'Silakan masukkan list proxy!'));
 
       const lines = (rawText || '').split(String.fromCharCode(10)).map(l => l.trim()).filter(l => l && !l.startsWith('#'));
-      if (lines.length === 0) return alert('Tidak ada proxy yang valid untuk dicek.');
+      if (lines.length === 0) return alert(getI18nText('prx_alert_empty', 'Tidak ada proxy yang valid untuk dicek.'));
 
       const concurrency = Math.min(20, Math.max(1, parseInt(document.getElementById('proxyConcurrency').value) || 5));
       const timeout = Math.min(60, Math.max(2, parseInt(document.getElementById('proxyTimeout').value) || 15));
@@ -2307,7 +2390,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
           <tr>
             <td colspan="8" class="text-center py-5 text-secondary">
               <i class="fa-solid fa-server fa-2x mb-2 d-block opacity-50"></i>
-              Belum ada proxy yang diperiksa. Masukkan list proxy dan klik <b>Start Checking</b>.
+              ${getI18nText('prx_empty_table', 'Belum ada proxy yang diperiksa. Masukkan list proxy dan klik <b>Start Checking</b>.')}
             </td>
           </tr>
         `;
@@ -2330,7 +2413,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         tbody.innerHTML = `
           <tr>
             <td colspan="8" class="text-center py-4 text-secondary">
-              Tidak ada proxy yang cocok dengan filter atau pencarian.
+              ${getI18nText('prx_no_match', 'Tidak ada proxy yang cocok dengan filter atau pencarian.')}
             </td>
           </tr>
         `;
@@ -2435,7 +2518,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 
     function copyLiveProxies(format) {
       const live = proxyResults.filter(r => r.live);
-      if (live.length === 0) return alert('Tidak ada proxy LIVE untuk disalin.');
+      if (live.length === 0) return alert(getI18nText('prx_no_live_copy', 'Tidak ada proxy LIVE untuk disalin.'));
 
       let lines = [];
       if (format === 'ipport') {
@@ -2445,13 +2528,13 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       }
 
       navigator.clipboard.writeText(lines.join(String.fromCharCode(10))).then(() => {
-        alert(`Berhasil menyalin ${live.length} proxy LIVE!`);
+        alert(`${getI18nText('tm_copied', 'Disalin!')} (${live.length} LIVE)`);
       });
     }
 
     function downloadLiveProxiesTxt() {
       const live = proxyResults.filter(r => r.live);
-      if (live.length === 0) return alert('Tidak ada proxy LIVE untuk diunduh.');
+      if (live.length === 0) return alert(getI18nText('prx_no_live_dl', 'Tidak ada proxy LIVE untuk diunduh.'));
       const content = live.map(r => r.raw || r.display).join(String.fromCharCode(10));
       const blob = new Blob([content], { type: 'text/plain;charset=utf-8;' });
       const link = document.createElement('a');
@@ -2470,16 +2553,15 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       link.click();
     }
 
-
     function copyField(elementId) {
       const el = document.getElementById(elementId);
       if (!el.value.trim()) return;
-      navigator.clipboard.writeText(el.value).then(() => alert('Disalin ke clipboard!'));
+      navigator.clipboard.writeText(el.value).then(() => alert(getI18nText('tm_copied', 'Disalin ke clipboard!')));
     }
 
     function downloadField(elementId, filename) {
       const content = document.getElementById(elementId).value;
-      if (!content.trim()) return alert('Field masih kosong.');
+      if (!content.trim()) return alert('Field is empty.');
       const blob = new Blob([content], { type: 'text/plain;charset=utf-8;' });
       const link = document.createElement('a');
       link.href = URL.createObjectURL(blob);
@@ -2493,7 +2575,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       try {
         return JSON.parse(text);
       } catch (e) {
-        throw new Error(`Respon server tidak valid (${res.status}): ` + (text.slice(0, 120).replace(/<[^>]+>/g, '').trim() || 'Error internal server'));
+        throw new Error(`Invalid response (${res.status}): ` + (text.slice(0, 120).replace(/<[^>]+>/g, '').trim() || 'Internal error'));
       }
     }
 
@@ -2666,7 +2748,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       if (event) event.stopPropagation();
       if (!otp) return;
       navigator.clipboard.writeText(otp).then(() => {
-        alert(`Kode OTP disalin: ${otp}`);
+        alert(`${getI18nText('tm_copied', 'Disalin!')}: ${otp}`);
       });
     }
 
@@ -2698,10 +2780,10 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       const btn = document.getElementById('btnToggleShowAll');
       const status = document.getElementById('tmAccountModeStatus');
       if (btn) {
-        btn.innerHTML = showAllAccounts ? '<i class="fa-solid fa-filter me-1"></i>Mode Cari Saja' : '<i class="fa-solid fa-eye me-1"></i>Tampilkan Semua';
+        btn.innerHTML = showAllAccounts ? `<i class="fa-solid fa-filter me-1"></i>${getI18nText('tm_search_only', 'Mode Cari Saja')}` : `<i class="fa-solid fa-eye me-1"></i>${getI18nText('tm_show_all', 'Tampilkan Semua')}`;
       }
       if (status) {
-        status.textContent = showAllAccounts ? 'Mode: Semua Akun' : 'Mode: Cari Email';
+        status.textContent = showAllAccounts ? getI18nText('tm_mode_all', 'Mode: Semua Akun') : getI18nText('tm_mode_search', 'Mode: Cari Email');
       }
       renderAccountsList();
     }
@@ -2720,19 +2802,20 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     function renderAccountsList() {
       const container = document.getElementById('tmAccountsContainer');
       const search = (document.getElementById('tmAccountSearch')?.value || '').toLowerCase().trim();
-      document.getElementById('tmAccountCount').textContent = outlookAccounts.length;
+      const countEl = document.getElementById('tmAccountCount');
+      if (countEl) countEl.textContent = outlookAccounts.length;
 
       const btn = document.getElementById('btnToggleShowAll');
       const status = document.getElementById('tmAccountModeStatus');
       if (btn) {
-        btn.innerHTML = showAllAccounts ? '<i class="fa-solid fa-filter me-1"></i>Mode Cari Saja' : '<i class="fa-solid fa-eye me-1"></i>Tampilkan Semua';
+        btn.innerHTML = showAllAccounts ? `<i class="fa-solid fa-filter me-1"></i>${getI18nText('tm_search_only', 'Mode Cari Saja')}` : `<i class="fa-solid fa-eye me-1"></i>${getI18nText('tm_show_all', 'Tampilkan Semua')}`;
       }
       if (status) {
-        status.textContent = showAllAccounts ? 'Mode: Semua Akun' : 'Mode: Cari Email';
+        status.textContent = showAllAccounts ? getI18nText('tm_mode_all', 'Mode: Semua Akun') : getI18nText('tm_mode_search', 'Mode: Cari Email');
       }
 
       if (outlookAccounts.length === 0) {
-        container.innerHTML = `<div class="text-center text-muted py-5 small">Belum ada akun.<br>Upload file <b>.TXT</b> atau klik <b>Add</b>.</div>`;
+        container.innerHTML = `<div class="text-center text-muted py-5 small">${getI18nText('tm_empty_acc_msg', 'Belum ada akun.<br>Upload file <b>.TXT</b> atau klik <b>Add</b>.')}</div>`;
         return;
       }
 
@@ -2746,7 +2829,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
           activeAccHtml = `
             <div class="mb-3">
               <div class="small text-warning fw-bold mb-1" style="font-size: 0.7rem; letter-spacing: 0.5px;">
-                <i class="fa-solid fa-circle-check me-1 text-success"></i> AKUN AKTIF:
+                <i class="fa-solid fa-circle-check me-1 text-success"></i> ACTIVE ACCOUNT:
               </div>
               <div class="tm-account-item active" style="margin-bottom: 0;">
                 <div class="tm-avatar">${initial}</div>
@@ -2766,13 +2849,13 @@ HTML_TEMPLATE = """<!DOCTYPE html>
           ${activeAccHtml}
           <div class="text-center text-muted py-4 px-2 small">
             <i class="fa-solid fa-magnifying-glass fa-2x mb-2 text-warning opacity-75"></i>
-            <div class="text-light fw-semibold mb-1">Cari Akun Lain</div>
+            <div class="text-light fw-semibold mb-1">${getI18nText('tm_search_another_title', 'Cari Akun Lain')}</div>
             <div class="text-secondary mb-3" style="font-size: 0.74rem;">
-              Ketik email di kolom pencarian di atas untuk memilih akun.<br>
-              <span class="badge bg-dark border border-warning text-warning mt-1">${outlookAccounts.length} Akun Tersedia</span>
+              ${getI18nText('tm_search_another_desc', 'Ketik email di kolom pencarian di atas untuk memilih akun.')}<br>
+              <span class="badge bg-dark border border-warning text-warning mt-1">${outlookAccounts.length} ${getI18nText('tm_accounts_avail', 'Akun Tersedia')}</span>
             </div>
             <button class="btn btn-sm btn-outline-gold px-3 py-1" style="font-size: 0.75rem;" onclick="toggleShowAllAccounts()">
-              <i class="fa-solid fa-eye me-1"></i> Tampilkan Semua (${outlookAccounts.length})
+              <i class="fa-solid fa-eye me-1"></i> ${getI18nText('tm_show_all', 'Tampilkan Semua')} (${outlookAccounts.length})
             </button>
           </div>
         `;
@@ -2787,8 +2870,8 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       if (filtered.length === 0) {
         container.innerHTML = `
           <div class="text-center text-muted py-4 small">
-            Tidak ada akun yang cocok dengan "<b>${escapeHtml(search)}</b>"<br>
-            <button class="btn btn-sm btn-link text-warning mt-2 small" onclick="toggleShowAllAccounts()">Tampilkan semua akun</button>
+            ${getI18nText('tm_no_acc_match', 'Tidak ada akun yang cocok dengan')} "<b>${escapeHtml(search)}</b>"<br>
+            <button class="btn btn-sm btn-link text-warning mt-2 small" onclick="toggleShowAllAccounts()">${getI18nText('tm_show_all', 'Tampilkan semua akun')}</button>
           </div>
         `;
         return;
@@ -2811,7 +2894,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
               </div>
               <small class="text-muted d-block text-truncate" style="font-size: 0.72rem;">${acc.ok ? (escapeHtml(acc.latest_subject) || 'Live') : (escapeHtml(acc.error) || 'Dead')}</small>
             </div>
-            <button class="btn btn-sm btn-link text-secondary p-0 px-1 opacity-50 hover-opacity-100" title="Hapus akun ini" onclick="deleteOutlookAccount(${idx}, event)">
+            <button class="btn btn-sm btn-link text-secondary p-0 px-1 opacity-50 hover-opacity-100" title="Delete account" onclick="deleteOutlookAccount(${idx}, event)">
               <i class="fa-solid fa-xmark fa-sm text-danger"></i>
             </button>
           </div>
@@ -2826,7 +2909,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       const reader = new FileReader();
       reader.onload = async function(e) {
         const text = e.target.result;
-        if (!text) return alert('File kosong!');
+        if (!text) return alert('File is empty!');
         await importAccountsFromText(text);
         event.target.value = '';
       };
@@ -2847,7 +2930,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 
     async function importAccountsFromText(text, proxy = '') {
       const container = document.getElementById('tmAccountsContainer');
-      container.innerHTML = `<div class="text-center text-muted py-5 small"><i class="fa-solid fa-spinner fa-spin me-2 text-warning"></i>Mengekstrak & memeriksa akun...</div>`;
+      container.innerHTML = `<div class="text-center text-muted py-5 small"><i class="fa-solid fa-spinner fa-spin me-2 text-warning"></i>${getI18nText('tm_extracting', 'Mengekstrak & memeriksa akun...')}</div>`;
 
       try {
         let items = parseOutlookLinesJS(text);
@@ -2863,7 +2946,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 
         if (!items || items.length === 0) {
           renderAccountsList();
-          return alert('Format tidak dikenali / token tidak ditemukan! Pastikan format baris berisi email & refresh token.');
+          return alert('Format not recognized / tokens missing!');
         }
 
         let currentIndex = 0;
@@ -2918,7 +3001,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         saveOutlookAccountsStorage();
 
       } catch (err) {
-        alert('Gagal memproses file akun: ' + err.message);
+        alert('Failed: ' + err.message);
         renderAccountsList();
       }
     }
@@ -2926,8 +3009,9 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     function deleteOutlookAccount(idx, event) {
       if (event) event.stopPropagation();
       const acc = outlookAccounts[idx];
-      const emailName = acc ? acc.email : 'akun ini';
-      if (confirm(`Hapus ${emailName} dari daftar?`)) {
+      const emailName = acc ? acc.email : 'this account';
+      const promptText = getI18nText('tm_delete_acc_confirm', 'Hapus {email} dari daftar?').replace('{email}', emailName);
+      if (confirm(promptText)) {
         outlookAccounts.splice(idx, 1);
         saveOutlookAccountsStorage();
         if (selectedAccountIndex === idx) {
@@ -2940,12 +3024,12 @@ HTML_TEMPLATE = """<!DOCTYPE html>
           selectOutlookAccount(selectedAccountIndex);
         } else {
           setMailView('accounts');
-          document.getElementById('tmActiveEmailLabel').textContent = 'Pilih Akun';
+          document.getElementById('tmActiveEmailLabel').textContent = getI18nText('tm_active_email_placeholder', 'Pilih Akun');
           document.getElementById('tmConnectionBadge').className = 'badge bg-dark border border-secondary text-secondary px-2 py-1';
-          document.getElementById('tmConnectionBadge').innerHTML = '● Standby';
-          document.getElementById('tmInboxTitle').innerHTML = '<i class="fa-regular fa-folder-open me-1"></i> INBOX (0)';
-          document.getElementById('tmMessagesContainer').innerHTML = `<div class="text-center text-muted py-5 small">Pilih akun di sebelah kiri untuk melihat pesan inbox.</div>`;
-          document.getElementById('tmReaderContent').innerHTML = `<div class="text-center text-muted my-auto"><i class="fa-regular fa-envelope-open fa-3x mb-3 text-warning"></i><h5 class="text-light">Belum ada email yang dipilih</h5></div>`;
+          document.getElementById('tmConnectionBadge').innerHTML = getI18nText('tm_badge_standby', '● Standby');
+          document.getElementById('tmInboxTitle').innerHTML = `<i class="fa-regular fa-folder-open me-1"></i> ${getI18nText('tm_inbox_title', 'INBOX')} (0)`;
+          document.getElementById('tmMessagesContainer').innerHTML = `<div class="text-center text-muted py-5 small">${getI18nText('tm_empty_inbox_select', 'Pilih akun di sebelah kiri untuk melihat pesan inbox.')}</div>`;
+          document.getElementById('tmReaderContent').innerHTML = `<div class="text-center text-muted my-auto"><i class="fa-regular fa-envelope-open fa-3x mb-3 text-warning"></i><h5 class="text-light">${getI18nText('tm_no_email_selected', 'Belum ada email yang dipilih')}</h5></div>`;
         }
       }
     }
@@ -2980,16 +3064,16 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     }
 
     function clearAllOutlookAccounts() {
-      if (confirm('Hapus semua daftar akun Mail Checker?')) {
+      if (confirm(getI18nText('tm_clear_all_confirm', 'Hapus semua daftar akun Mail Checker?'))) {
         outlookAccounts = [];
         selectedAccountIndex = -1;
         currentInboxMessages = [];
         try { localStorage.removeItem('chenstore_outlook_accounts'); } catch(e) {}
         renderAccountsList();
         setMailView('accounts');
-        document.getElementById('tmInboxTitle').innerHTML = '<i class="fa-regular fa-folder-open me-1"></i> INBOX (0)';
-        document.getElementById('tmMessagesContainer').innerHTML = `<div class="text-center text-muted py-5 small">Pilih akun di sebelah kiri untuk melihat pesan inbox.</div>`;
-        document.getElementById('tmReaderContent').innerHTML = `<div class="text-center text-muted my-auto"><i class="fa-regular fa-envelope-open fa-3x mb-3 text-warning"></i><h5 class="text-light">Belum ada email yang dipilih</h5></div>`;
+        document.getElementById('tmInboxTitle').innerHTML = `<i class="fa-regular fa-folder-open me-1"></i> ${getI18nText('tm_inbox_title', 'INBOX')} (0)`;
+        document.getElementById('tmMessagesContainer').innerHTML = `<div class="text-center text-muted py-5 small">${getI18nText('tm_empty_inbox_select', 'Pilih akun di sebelah kiri untuk melihat pesan inbox.')}</div>`;
+        document.getElementById('tmReaderContent').innerHTML = `<div class="text-center text-muted my-auto"><i class="fa-regular fa-envelope-open fa-3x mb-3 text-warning"></i><h5 class="text-light">${getI18nText('tm_no_email_selected', 'Belum ada email yang dipilih')}</h5></div>`;
       }
     }
 
@@ -3006,17 +3090,17 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       const badge = document.getElementById('tmConnectionBadge');
       if (acc.ok) {
         badge.className = 'badge bg-success text-light px-2 py-1';
-        badge.innerHTML = '● Connected';
+        badge.innerHTML = getI18nText('tm_badge_connected', '● Connected');
         await loadInboxMessages(acc);
       } else {
         badge.className = 'badge bg-danger text-light px-2 py-1';
-        badge.innerHTML = '● Disconnected';
-        document.getElementById('tmMessagesContainer').innerHTML = `<div class="text-center py-5 small text-danger"><i class="fa-solid fa-circle-exclamation fa-2x mb-2 text-danger"></i><br>Tidak dapat memuat inbox.<br><small class="text-secondary">${acc.error || 'Akun DEAD / Token tidak valid'}</small></div>`;
+        badge.innerHTML = getI18nText('tm_badge_disconnected', '● Disconnected');
+        document.getElementById('tmMessagesContainer').innerHTML = `<div class="text-center py-5 small text-danger"><i class="fa-solid fa-circle-exclamation fa-2x mb-2 text-danger"></i><br>Error loading inbox.<br><small class="text-secondary">${acc.error || 'Dead Account / Token Expired'}</small></div>`;
         document.getElementById('tmReaderContent').innerHTML = `
           <div class="text-center text-muted my-auto">
             <i class="fa-solid fa-triangle-exclamation fa-3x mb-3 text-danger"></i>
-            <h5 class="text-danger">Akun Disconnected / DEAD</h5>
-            <p class="small text-secondary px-3">${acc.error || 'Token tidak valid, kedaluwarsa, atau rusak.'}</p>
+            <h5 class="text-danger">Disconnected / DEAD</h5>
+            <p class="small text-secondary px-3">${acc.error || 'Token invalid or expired.'}</p>
           </div>
         `;
       }
@@ -3035,7 +3119,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       const search = (document.getElementById('tmMessageSearch')?.value || '').toLowerCase().trim();
 
       if (!currentInboxMessages || currentInboxMessages.length === 0) {
-        container.innerHTML = `<div class="text-center text-muted py-5 small">Inbox kosong.</div>`;
+        container.innerHTML = `<div class="text-center text-muted py-5 small">${getI18nText('tm_inbox_empty', 'Inbox kosong.')}</div>`;
         return;
       }
 
@@ -3057,10 +3141,10 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         return true;
       });
 
-      document.getElementById('tmInboxTitle').innerHTML = `<i class="fa-regular fa-folder-open me-1"></i> INBOX (${filtered.length}/${currentInboxMessages.length})`;
+      document.getElementById('tmInboxTitle').innerHTML = `<i class="fa-regular fa-folder-open me-1"></i> ${getI18nText('tm_inbox_title', 'INBOX')} (${filtered.length}/${currentInboxMessages.length})`;
 
       if (filtered.length === 0) {
-        container.innerHTML = `<div class="text-center text-muted py-5 small">Tidak ada pesan yang cocok dengan filter.</div>`;
+        container.innerHTML = `<div class="text-center text-muted py-5 small">${getI18nText('tm_no_msg_filter', 'Tidak ada pesan yang cocok dengan filter.')}</div>`;
         return;
       }
 
@@ -3077,12 +3161,12 @@ HTML_TEMPLATE = """<!DOCTYPE html>
               ${!msg.is_read ? '<span class="tm-unread-dot"></span>' : ''}"${escapeHtml(msg.subject)}"
             </div>
             <div class="text-muted text-truncate" style="font-size: 0.75rem;">
-              ${escapeHtml(msg.preview || 'Tidak ada preview')}
+              ${escapeHtml(msg.preview || 'No preview')}
             </div>
             ${otp ? `
               <div class="mt-2 d-flex align-items-center gap-1">
                 <span class="badge bg-warning text-dark fw-bold font-monospace py-1 px-2"><i class="fa-solid fa-key me-1"></i>OTP: ${otp}</span>
-                <button class="btn btn-xs btn-outline-warning py-0 px-2 fw-semibold" onclick="copyOtpDirect('${otp}', event)">Salin</button>
+                <button class="btn btn-xs btn-outline-warning py-0 px-2 fw-semibold" onclick="copyOtpDirect('${otp}', event)">${getI18nText('tm_btn_copy', 'Salin')}</button>
               </div>
             ` : ''}
           </div>
@@ -3152,11 +3236,11 @@ HTML_TEMPLATE = """<!DOCTYPE html>
           otpHtml = `
             <div class="otp-highlight-card mb-3">
               <div>
-                <div class="small text-warning fw-bold text-uppercase"><i class="fa-solid fa-key me-1"></i> KODE VERIFIKASI / OTP TERDETEKSI</div>
+                <div class="small text-warning fw-bold text-uppercase"><i class="fa-solid fa-key me-1"></i> ${getI18nText('tm_otp_detected', 'KODE VERIFIKASI / OTP TERDETEKSI')}</div>
                 <div class="otp-code-text">${otp}</div>
               </div>
               <button class="btn btn-gold px-3 py-2 fw-bold shadow-sm" onclick="copyOtpDirect('${otp}', event)">
-                <i class="fa-regular fa-copy me-1"></i> Salin OTP
+                <i class="fa-regular fa-copy me-1"></i> ${getI18nText('tm_btn_copy_otp', 'Salin OTP')}
               </button>
             </div>
           `;
@@ -3200,7 +3284,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       if (selectedAccountIndex >= 0) {
         const email = outlookAccounts[selectedAccountIndex].email;
         if (email) {
-          navigator.clipboard.writeText(email).then(() => alert('Email disalin: ' + email));
+          navigator.clipboard.writeText(email).then(() => alert(`${getI18nText('tm_copied', 'Disalin!')}: ${email}`));
         }
       }
     }
@@ -3213,7 +3297,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       const countEl = document.getElementById('ccAccountCount');
       if (el && countEl) {
         const lines = el.value.split(String.fromCharCode(10)).map(l => l.trim()).filter(l => l.length > 0);
-        countEl.textContent = 'Total: ' + lines.length + ' akun';
+        countEl.textContent = 'Total: ' + lines.length + ' accounts';
       }
     }
 
@@ -3287,7 +3371,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       const workers = parseInt(document.getElementById('ccWorkersInput').value) || 6;
       const retries = parseInt(document.getElementById('ccRetriesInput').value) || 6;
 
-      if (!text) return alert('Silakan masukkan daftar akun CapCut!');
+      if (!text) return alert(getI18nText('cc_alert_empty', 'Silakan masukkan daftar akun CapCut!'));
 
       document.getElementById('proResult').value = '';
       document.getElementById('freeResult').value = '';
@@ -3316,7 +3400,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         const total = accounts ? accounts.length : 0;
 
         if (total === 0) {
-          alert('Tidak ada akun valid yang ditemukan!');
+          alert(getI18nText('cc_alert_no_valid', 'Tidak ada akun valid yang ditemukan!'));
           document.getElementById('btnStartCapcut').disabled = false;
           document.getElementById('btnStopCapcut').disabled = true;
           return;
@@ -3395,17 +3479,14 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       document.getElementById('btnStopCapcut').disabled = true;
     }
 
-    // Load saved accounts on startup and attach tab handlers
+    // Load saved accounts & i18n on startup and attach tab handlers
     document.addEventListener('DOMContentLoaded', () => {
-      ['mail', 'capcut', '2fa', 'proxy'].forEach(name => {
-        const b = document.getElementById('btn-tab-' + name);
-        if (b) {
-          b.addEventListener('click', (e) => {
-            e.preventDefault();
-            switchTab(name);
-          });
-        }
-      });
+      // Load stored language preference or default to ID
+      let savedLang = 'id';
+      try {
+        savedLang = localStorage.getItem('chenstore_app_lang') || 'id';
+      } catch(e) {}
+      setAppLanguage(savedLang);
 
       // Cleanup any stuck modal backdrops
       document.querySelectorAll('.modal-backdrop').forEach(b => b.remove());
@@ -3418,7 +3499,621 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 </html>
 """
 
+# ==================== API DOCS HTML TEMPLATE ====================
+DOCS_TEMPLATE = """<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>API Documentation | ChenStore Multi Tools</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Fira+Code:wght@400;500;600&display=swap');
+
+    :root {
+      --bg-dark: #0f0a06;
+      --bg-sidebar: #140d07;
+      --bg-card: #18110b;
+      --border-bronze: #382415;
+      --border-gold: #b45309;
+      --gold-main: #f59e0b;
+      --gold-light: #fef08a;
+      --gold-glow: rgba(245, 158, 11, 0.35);
+      --text-main: #fef3c7;
+      --text-muted: #a89f91;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+
+    /* Top Navbar */
+    .docs-topbar {
+      background-color: var(--bg-sidebar);
+      border-bottom: 2px solid var(--border-bronze);
+      padding: 10px 24px;
+      position: sticky;
+      top: 0;
+      z-index: 1030;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+    }
+    .brand-title {
+      font-family: 'Cinzel', serif;
+      font-weight: 800;
+      font-size: 1.2rem;
+      background: linear-gradient(180deg, #fffbeb 0%, #fcd34d 50%, #d97706 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    /* Layout */
+    .docs-container {
+      display: flex;
+      min-height: calc(100vh - 65px);
+    }
+
+    /* Left Sidebar */
+    .docs-sidebar {
+      width: 280px;
+      background-color: var(--bg-sidebar);
+      border-right: 1px solid var(--border-bronze);
+      padding: 20px 14px;
+      position: sticky;
+      top: 65px;
+      height: calc(100vh - 65px);
+      overflow-y: auto;
+      flex-shrink: 0;
+    }
+    .docs-nav-group {
+      margin-bottom: 20px;
+    }
+    .docs-group-title {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: #b45309;
+      font-weight: 800;
+      margin-bottom: 8px;
+      padding-left: 10px;
+    }
+    .docs-nav-link {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 12px;
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.83rem;
+      font-weight: 600;
+      border-radius: 6px;
+      transition: all 0.15s;
+    }
+    .docs-nav-link:hover {
+      color: var(--gold-light);
+      background-color: #24160d;
+    }
+    .docs-nav-link.active {
+      color: #180f07 !important;
+      background: linear-gradient(135deg, #fcd34d 0%, #f59e0b 100%);
+      font-weight: 700;
+      box-shadow: 0 2px 8px var(--gold-glow);
+    }
+    .docs-nav-link .badge-method {
+      font-size: 0.65rem;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: 800;
+      font-family: 'Fira Code', monospace;
+    }
+
+    /* Main Content */
+    .docs-content {
+      flex: 1;
+      padding: 36px 48px;
+      max-width: 1050px;
+      overflow-y: auto;
+    }
+
+    .doc-section {
+      margin-bottom: 48px;
+      scroll-margin-top: 85px;
+    }
+    .doc-section-title {
+      font-size: 1.6rem;
+      font-weight: 800;
+      color: #fcd34d;
+      margin-bottom: 12px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border-bronze);
+    }
+    .doc-card {
+      background-color: var(--bg-card);
+      border: 1px solid var(--border-bronze);
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 24px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    }
+
+    /* Method Badges */
+    .badge-post { background-color: #059669; color: #ffffff; }
+    .badge-get { background-color: #0284c7; color: #ffffff; }
+
+    /* Tables */
+    .table-theme {
+      color: var(--text-main);
+      border-color: var(--border-bronze);
+      font-size: 0.85rem;
+    }
+    .table-theme th {
+      background-color: #120b06;
+      color: var(--gold-main);
+      font-weight: 700;
+      border-color: var(--border-bronze);
+    }
+    .table-theme td {
+      background-color: #18110b;
+      border-color: #2b1a0d;
+      vertical-align: middle;
+    }
+
+    /* Code Blocks */
+    .code-container {
+      background-color: #0a0603;
+      border: 1px solid var(--border-bronze);
+      border-radius: 8px;
+      overflow: hidden;
+      margin-top: 10px;
+      margin-bottom: 16px;
+    }
+    .code-header {
+      background-color: #140d07;
+      border-bottom: 1px solid var(--border-bronze);
+      padding: 6px 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--gold-main);
+    }
+    .code-block {
+      padding: 14px;
+      margin: 0;
+      font-family: 'Fira Code', monospace;
+      font-size: 0.82rem;
+      color: #fef3c7;
+      overflow-x: auto;
+      white-space: pre;
+    }
+
+    .btn-gold {
+      background: linear-gradient(135deg, #d97706 0%, #f59e0b 100%);
+      color: #180f07;
+      font-weight: 700;
+      border: none;
+    }
+    .btn-gold:hover {
+      background: linear-gradient(135deg, #b45309 0%, #d97706 100%);
+      color: #ffffff;
+    }
+
+    @media (max-width: 991px) {
+      .docs-container { flex-direction: column; }
+      .docs-sidebar {
+        width: 100%;
+        height: auto;
+        position: static;
+        border-right: none;
+        border-bottom: 1px solid var(--border-bronze);
+      }
+      .docs-content { padding: 20px 14px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Navbar -->
+  <header class="docs-topbar">
+    <div class="d-flex align-items-center gap-3">
+      <img src="/logo.png" alt="ChenStore" style="height: 38px; border-radius: 6px; border: 1px solid #78471c;" onerror="this.style.display='none'">
+      <div>
+        <div class="brand-title">ChenStore API Docs</div>
+        <div class="small text-secondary" style="font-size: 0.7rem; letter-spacing: 1px;">REST API REFERENCE FOR DEVELOPERS</div>
+      </div>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="/" class="btn btn-sm btn-gold px-3">
+        <i class="fa-solid fa-arrow-left me-1"></i> Dashboard App
+      </a>
+    </div>
+  </header>
+
+  <div class="docs-container">
+    
+    <!-- Sidebar Navigation -->
+    <nav class="docs-sidebar">
+      <div class="docs-nav-group">
+        <div class="docs-group-title">GETTING STARTED</div>
+        <a class="docs-nav-link" href="#overview"><i class="fa-solid fa-bolt me-1 text-warning"></i>Overview &amp; Base URL</a>
+        <a class="docs-nav-link" href="#authentication"><i class="fa-solid fa-shield-halved me-1 text-warning"></i>Request &amp; Auth</a>
+      </div>
+
+      <div class="docs-nav-group">
+        <div class="docs-group-title">MAIL &amp; OUTLOOK API</div>
+        <a class="docs-nav-link" href="#ep-check-outlook"><span class="badge badge-method badge-post">POST</span> /api/check_single_outlook</a>
+        <a class="docs-nav-link" href="#ep-mail-inbox"><span class="badge badge-method badge-post">POST</span> /api/mail/inbox</a>
+        <a class="docs-nav-link" href="#ep-mail-message"><span class="badge badge-method badge-post">POST</span> /api/mail/message</a>
+      </div>
+
+      <div class="docs-nav-group">
+        <div class="docs-group-title">CAPCUT CHECKER API</div>
+        <a class="docs-nav-link" href="#ep-check-capcut"><span class="badge badge-method badge-post">POST</span> /api/check_single_capcut</a>
+        <a class="docs-nav-link" href="#ep-bulk-capcut"><span class="badge badge-method badge-post">POST</span> /api/check (Bulk Stream)</a>
+      </div>
+
+      <div class="docs-nav-group">
+        <div class="docs-group-title">2FA TOTP API</div>
+        <a class="docs-nav-link" href="#ep-2fa-generate"><span class="badge badge-method badge-post">POST</span> /api/2fa/generate</a>
+      </div>
+
+      <div class="docs-nav-group">
+        <div class="docs-group-title">PROXY CHECKER API</div>
+        <a class="docs-nav-link" href="#ep-check-proxy"><span class="badge badge-method badge-post">POST</span> /api/check_single_proxy</a>
+      </div>
+
+      <div class="docs-nav-group">
+        <div class="docs-group-title">PARSER HELPER API</div>
+        <a class="docs-nav-link" href="#ep-parse-accounts"><span class="badge badge-method badge-post">POST</span> /api/parse_accounts</a>
+      </div>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main class="docs-content">
+      
+      <!-- Section: Overview -->
+      <section id="overview" class="doc-section">
+        <h2 class="doc-section-title">Overview &amp; Base URL</h2>
+        <p class="text-secondary">
+          Selamat datang di <b>ChenStore Multi Tools Developer API</b>. Semua endpoint REST API dirancang untuk integrasi mudah menggunakan format payload JSON standar.
+        </p>
+
+        <div class="doc-card">
+          <h6 class="fw-bold text-warning mb-2"><i class="fa-solid fa-server me-2"></i>Base URL</h6>
+          <p class="text-secondary small mb-2">Semua request API dapat diarahkan ke Base URL domain Anda:</p>
+          <div class="code-container">
+            <div class="code-header">
+              <span>BASE API URL</span>
+              <button class="btn btn-xs btn-outline-warning py-0 px-2" onclick="copyCode(this)">Copy</button>
+            </div>
+            <pre class="code-block"><span id="baseUrlDisplay">https://your-domain.vercel.app</span>/api</pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section: Authentication -->
+      <section id="authentication" class="doc-section">
+        <h2 class="doc-section-title">Request &amp; Header Format</h2>
+        <div class="doc-card">
+          <p class="text-secondary small">Pastikan setiap request POST menyertakan header <code>Content-Type: application/json</code>:</p>
+          <div class="table-responsive">
+            <table class="table table-theme table-bordered">
+              <thead>
+                <tr>
+                  <th>Header</th>
+                  <th>Value</th>
+                  <th>Description</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="font-monospace text-warning">Content-Type</td>
+                  <td class="font-monospace text-light">application/json</td>
+                  <td>Format data request body JSON</td>
+                </tr>
+                <tr>
+                  <td class="font-monospace text-warning">Accept</td>
+                  <td class="font-monospace text-light">application/json</td>
+                  <td>Format respon yang diharapkan</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- Endpoint: Check Single Outlook -->
+      <section id="ep-check-outlook" class="doc-section">
+        <h2 class="doc-section-title"><span class="badge badge-post fs-6 me-2">POST</span> /api/check_single_outlook</h2>
+        <p class="text-secondary">Memvalidasi status akun Hotmail/Outlook (LIVE/DEAD) menggunakan OAuth Refresh Token dan mengambil subjek email terbaru.</p>
+
+        <div class="doc-card">
+          <h6 class="fw-bold text-warning mb-2">Request Body (JSON)</h6>
+          <div class="table-responsive mb-3">
+            <table class="table table-theme table-bordered">
+              <thead>
+                <tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr>
+              </thead>
+              <tbody>
+                <tr><td class="font-monospace text-warning">refresh_token</td><td>string</td><td><span class="badge bg-danger">Wajib</span></td><td>Microsoft OAuth2 Refresh Token (M.C555_... atau M.R3_...)</td></tr>
+                <tr><td class="font-monospace text-warning">email</td><td>string</td><td>Opsional</td><td>Alamat email Hotmail / Outlook</td></tr>
+                <tr><td class="font-monospace text-warning">client_id</td><td>string</td><td>Opsional</td><td>Default: <code>9e5f94bc-e8a4-4e73-b8be-63364c29d753</code></td></tr>
+                <tr><td class="font-monospace text-warning">proxy</td><td>string</td><td>Opsional</td><td>Proxy URL: <code>http://user:pass@host:port</code></td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h6 class="fw-bold text-warning mb-2">Example Response (JSON)</h6>
+          <div class="code-container">
+            <div class="code-header"><span>200 OK Response</span><button class="btn btn-xs btn-outline-warning py-0 px-2" onclick="copyCode(this)">Copy</button></div>
+            <pre class="code-block">{
+  "ok": true,
+  "status": "LIVE",
+  "email": "user@hotmail.com",
+  "latest_subject": "Welcome to CapCut and your verification code is 829587",
+  "latest_from": "CapCut",
+  "latest_date": "2026-07-20",
+  "error": ""
+}</pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- Endpoint: Mail Inbox -->
+      <section id="ep-mail-inbox" class="doc-section">
+        <h2 class="doc-section-title"><span class="badge badge-post fs-6 me-2">POST</span> /api/mail/inbox</h2>
+        <p class="text-secondary">Mengambil daftar pesan kotak masuk (inbox) terbaru beserta preview dan status keterbacaan.</p>
+
+        <div class="doc-card">
+          <h6 class="fw-bold text-warning mb-2">Request Body (JSON)</h6>
+          <div class="table-responsive mb-3">
+            <table class="table table-theme table-bordered">
+              <thead>
+                <tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr>
+              </thead>
+              <tbody>
+                <tr><td class="font-monospace text-warning">refresh_token</td><td>string</td><td><span class="badge bg-danger">Wajib</span></td><td>Microsoft OAuth2 Refresh Token</td></tr>
+                <tr><td class="font-monospace text-warning">client_id</td><td>string</td><td>Opsional</td><td>Default: <code>9e5f94bc-e8a4-4e73-b8be-63364c29d753</code></td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h6 class="fw-bold text-warning mb-2">Example Response (JSON)</h6>
+          <div class="code-container">
+            <div class="code-header"><span>200 OK Response</span><button class="btn btn-xs btn-outline-warning py-0 px-2" onclick="copyCode(this)">Copy</button></div>
+            <pre class="code-block">{
+  "ok": true,
+  "messages": [
+    {
+      "id": "AAMkAD...",
+      "subject": "Kode verifikasi CapCut Anda adalah 463394",
+      "sender_name": "CapCut",
+      "sender_email": "verify@capcut.com",
+      "preview": "Gunakan kode ini untuk menyelesaikan verifikasi...",
+      "time_display": "5m lalu",
+      "raw_date": "2026-07-20T10:15:30Z",
+      "is_read": false
+    }
+  ]
+}</pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- Endpoint: Mail Message Detail -->
+      <section id="ep-mail-message" class="doc-section">
+        <h2 class="doc-section-title"><span class="badge badge-post fs-6 me-2">POST</span> /api/mail/message</h2>
+        <p class="text-secondary">Mengambil detail lengkap isi surat email (HTML Body, from, to, date) berdasarkan Message ID.</p>
+
+        <div class="doc-card">
+          <h6 class="fw-bold text-warning mb-2">Request Body (JSON)</h6>
+          <div class="table-responsive mb-3">
+            <table class="table table-theme table-bordered">
+              <thead>
+                <tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr>
+              </thead>
+              <tbody>
+                <tr><td class="font-monospace text-warning">message_id</td><td>string</td><td><span class="badge bg-danger">Wajib</span></td><td>ID Pesan dari respon <code>/api/mail/inbox</code></td></tr>
+                <tr><td class="font-monospace text-warning">refresh_token</td><td>string</td><td><span class="badge bg-danger">Wajib</span></td><td>Microsoft OAuth2 Refresh Token</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h6 class="fw-bold text-warning mb-2">Example Response (JSON)</h6>
+          <div class="code-container">
+            <div class="code-header"><span>200 OK Response</span><button class="btn btn-xs btn-outline-warning py-0 px-2" onclick="copyCode(this)">Copy</button></div>
+            <pre class="code-block">{
+  "ok": true,
+  "id": "AAMkAD...",
+  "subject": "Kode verifikasi CapCut Anda adalah 463394",
+  "from": "CapCut <verify@capcut.com>",
+  "to": "user@hotmail.com",
+  "date": "20 Jul 2026, 17:15",
+  "body": "<html><body>...</body></html>",
+  "body_type": "html"
+}</pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- Endpoint: Check Single CapCut -->
+      <section id="ep-check-capcut" class="doc-section">
+        <h2 class="doc-section-title"><span class="badge badge-post fs-6 me-2">POST</span> /api/check_single_capcut</h2>
+        <p class="text-secondary">Memvalidasi login akun CapCut dan memeriksa status langganan PRO / VIP / FREE serta masa aktifnya.</p>
+
+        <div class="doc-card">
+          <h6 class="fw-bold text-warning mb-2">Request Body (JSON)</h6>
+          <div class="table-responsive mb-3">
+            <table class="table table-theme table-bordered">
+              <thead>
+                <tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr>
+              </thead>
+              <tbody>
+                <tr><td class="font-monospace text-warning">email</td><td>string</td><td><span class="badge bg-danger">Wajib</span></td><td>Email akun CapCut</td></tr>
+                <tr><td class="font-monospace text-warning">password</td><td>string</td><td><span class="badge bg-danger">Wajib</span></td><td>Password akun CapCut</td></tr>
+                <tr><td class="font-monospace text-warning">proxy</td><td>string</td><td>Opsional</td><td>Residential Proxy URL (format <code>{sess}</code>)</td></tr>
+                <tr><td class="font-monospace text-warning">retries</td><td>int</td><td>Opsional</td><td>Maksimal percobaan IP (default: 6)</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h6 class="fw-bold text-warning mb-2">Example Response (JSON)</h6>
+          <div class="code-container">
+            <div class="code-header"><span>200 OK Response</span><button class="btn btn-xs btn-outline-warning py-0 px-2" onclick="copyCode(this)">Copy</button></div>
+            <pre class="code-block">{
+  "ok": true,
+  "status": "PRO",
+  "email": "user@example.com",
+  "password": "password123",
+  "is_pro": true,
+  "plan": "Pro (vip)",
+  "expiry": "2026-12-31",
+  "user_id": "7182930491823",
+  "error": ""
+}</pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- Endpoint: 2FA Generate -->
+      <section id="ep-2fa-generate" class="doc-section">
+        <h2 class="doc-section-title"><span class="badge badge-post fs-6 me-2">POST</span> /api/2fa/generate</h2>
+        <p class="text-secondary">Menghasilkan kode verifikasi TOTP (Google Authenticator) 6 digit instan dari 1 atau banyak Secret Key (Base32).</p>
+
+        <div class="doc-card">
+          <h6 class="fw-bold text-warning mb-2">Request Body (JSON)</h6>
+          <div class="table-responsive mb-3">
+            <table class="table table-theme table-bordered">
+              <thead>
+                <tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr>
+              </thead>
+              <tbody>
+                <tr><td class="font-monospace text-warning">secrets</td><td>array</td><td><span class="badge bg-danger">Wajib</span></td><td>Array berisi Base32 Secret Keys, misal <code>["JBSWY3DPEHPK3PXP", "4X72J6..."]</code></td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h6 class="fw-bold text-warning mb-2">Example Response (JSON)</h6>
+          <div class="code-container">
+            <div class="code-header"><span>200 OK Response</span><button class="btn btn-xs btn-outline-warning py-0 px-2" onclick="copyCode(this)">Copy</button></div>
+            <pre class="code-block">{
+  "ok": true,
+  "data": [
+    {
+      "secret": "JBSWY3DPEHPK3PXP",
+      "code": "849201",
+      "error": ""
+    }
+  ]
+}</pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- Endpoint: Proxy Check -->
+      <section id="ep-check-proxy" class="doc-section">
+        <h2 class="doc-section-title"><span class="badge badge-post fs-6 me-2">POST</span> /api/check_single_proxy</h2>
+        <p class="text-secondary">Menguji konektivitas proxy, mengukur latency ping (ms), melacak exit IP &amp; Geolocation, serta Scamalytics Fraud Score.</p>
+
+        <div class="doc-card">
+          <h6 class="fw-bold text-warning mb-2">Request Body (JSON)</h6>
+          <div class="table-responsive mb-3">
+            <table class="table table-theme table-bordered">
+              <thead>
+                <tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr>
+              </thead>
+              <tbody>
+                <tr><td class="font-monospace text-warning">proxy</td><td>string</td><td><span class="badge bg-danger">Wajib</span></td><td>Format: <code>HOST:PORT</code>, <code>HOST:PORT:USER:PASS</code>, atau <code>USER:PASS:HOST:PORT</code></td></tr>
+                <tr><td class="font-monospace text-warning">timeout</td><td>float</td><td>Opsional</td><td>Timeout detik (default: 8.0)</td></tr>
+                <tr><td class="font-monospace text-warning">check_scamalytics</td><td>bool</td><td>Opsional</td><td>Set <code>true</code> untuk cek Fraud Score (default: false)</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h6 class="fw-bold text-warning mb-2">Example Response (JSON)</h6>
+          <div class="code-container">
+            <div class="code-header"><span>200 OK Response</span><button class="btn btn-xs btn-outline-warning py-0 px-2" onclick="copyCode(this)">Copy</button></div>
+            <pre class="code-block">{
+  "ok": true,
+  "live": true,
+  "latency_ms": 142,
+  "exit_ip": "104.28.19.45",
+  "country": "United States",
+  "country_code": "US",
+  "city": "Los Angeles",
+  "isp": "Cloudflare, Inc.",
+  "fraud_score": 0,
+  "fraud_risk": "very low"
+}</pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- Endpoint: Parse Accounts -->
+      <section id="ep-parse-accounts" class="doc-section">
+        <h2 class="doc-section-title"><span class="badge badge-post fs-6 me-2">POST</span> /api/parse_accounts</h2>
+        <p class="text-secondary">Mem-parsing teks mentah multiline menjadi daftar akun JSON terstruktur untuk CapCut atau Outlook.</p>
+
+        <div class="doc-card">
+          <h6 class="fw-bold text-warning mb-2">Request Body (JSON)</h6>
+          <div class="table-responsive mb-3">
+            <table class="table table-theme table-bordered">
+              <thead>
+                <tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr>
+              </thead>
+              <tbody>
+                <tr><td class="font-monospace text-warning">text</td><td>string</td><td><span class="badge bg-danger">Wajib</span></td><td>Teks multiline dari file .txt</td></tr>
+                <tr><td class="font-monospace text-warning">mode</td><td>string</td><td>Opsional</td><td><code>"outlook"</code> atau <code>"capcut"</code> (default: "capcut")</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const baseEl = document.getElementById('baseUrlDisplay');
+      if (baseEl) {
+        baseEl.textContent = window.location.origin;
+      }
+    });
+
+    function copyCode(btn) {
+      const container = btn.closest('.code-container');
+      const code = container.querySelector('.code-block').innerText;
+      navigator.clipboard.writeText(code).then(() => {
+        const orig = btn.innerText;
+        btn.innerText = 'Copied!';
+        btn.classList.replace('btn-outline-warning', 'btn-success');
+        setTimeout(() => {
+          btn.innerText = orig;
+          btn.classList.replace('btn-success', 'btn-outline-warning');
+        }, 1500);
+      });
+    }
+  </script>
+</body>
+</html>
+"""
+
 # ==================== FLASK ROUTES ====================
+
+@app.route("/docs")
+@app.route("/api/docs")
+def serve_docs():
+    return render_template_string(DOCS_TEMPLATE)
 
 @app.route("/", methods=["GET", "POST"])
 @app.route("/api/index.py", methods=["GET", "POST"])
