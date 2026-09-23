@@ -1832,16 +1832,6 @@ HTML_TEMPLATE = """<!DOCTYPE html>
                   <div class="cc-progress-bar" id="ccProgressBar" style="width: 0%; height: 8px; border-radius: 6px; background: linear-gradient(90deg, #d97706, #f59e0b); box-shadow: 0 0 10px rgba(245, 158, 11, 0.35); transition: width 0.2s ease;"></div>
                 </div>
               </div>
-
-              <div class="mt-4">
-                <div class="d-flex justify-content-between small text-secondary mb-1">
-                  <span>Progress</span>
-                  <span id="ccProgressText" class="text-warning">0 / 0 (0%)</span>
-                </div>
-                <div class="progress" style="height: 6px; background-color: #0f0a06;">
-                  <div id="ccProgressBar" class="progress-bar bg-warning" style="width: 0%;"></div>
-                </div>
-              </div>
             </div>
           </div>
 
@@ -2507,6 +2497,64 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       if (cntEl) cntEl.textContent = '0 generated';
     }
 
+    async function generateBulk2fa() {
+      const inEl = document.getElementById('bulk2faInput');
+      const outEl = document.getElementById('bulk2faOutput');
+      const cntEl = document.getElementById('bulk2faCount');
+      const raw = (inEl ? inEl.value : '').trim();
+      if (!raw) return showToast(getI18nText('tfa_alert_empty_bulk', 'Silakan masukkan list secret / combo!'), 'fa-solid fa-triangle-exclamation text-warning');
+
+      const lines = raw.split(String.fromCharCode(10)).map(l => l.trim()).filter(Boolean);
+      if (lines.length === 0) return showToast(getI18nText('tfa_alert_empty_bulk', 'Tidak ada data yang valid.'), 'fa-solid fa-triangle-exclamation text-warning');
+
+      if (outEl) outEl.value = getI18nText('tfa_processing', 'Memproses...');
+
+      try {
+        const secretsToExtract = [];
+        const comboMap = [];
+
+        lines.forEach((line) => {
+          const parts = line.split(/[:|\s\t,;]+/);
+          let sec = '';
+          if (parts.length > 1) {
+            for (const p of parts) {
+              if (p.length >= 10 && !p.includes('@')) {
+                sec = p;
+                break;
+              }
+            }
+          } else {
+            sec = line;
+          }
+          sec = (sec || '').replace(/[\s\-]+/g, '').toUpperCase();
+          secretsToExtract.push(sec);
+          comboMap.push({ raw: line, secret: sec });
+        });
+
+        const res = await safeFetchJson('/api/2fa/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ secrets: secretsToExtract })
+        });
+
+        if (res && res.data) {
+          const outLines = [];
+          comboMap.forEach((item, idx) => {
+            const match = res.data[idx] || {};
+            const code = match.code && match.code !== 'error' ? match.code : 'INVALID';
+            outLines.push(`${item.raw} | 2FA: ${code}`);
+          });
+          if (outEl) outEl.value = outLines.join(String.fromCharCode(10));
+          if (cntEl) cntEl.textContent = `${res.data.length} generated`;
+        } else {
+          if (outEl) outEl.value = 'Failed to generate 2FA codes.';
+        }
+      } catch (err) {
+        if (outEl) outEl.value = 'Error: ' + err.message;
+        showToast('Bulk 2FA error: ' + err.message, 'fa-solid fa-circle-xmark text-danger');
+      }
+    }
+
     function start2faCountdown(onExpired) {
       if (single2faTimerInterval) clearInterval(single2faTimerInterval);
       
@@ -2595,49 +2643,62 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       copyToClipboard(currentSingle2faCode, '✓ ' + getI18nText('tm_copied', 'Disalin!') + ': ' + currentSingle2faCode, 'fa-solid fa-key text-warning');
     }
 
-    function copyLiveProxies(format = 'raw') {
-      const live = proxyResults.filter(r => r.live);
-      if (live.length === 0) return showToast(getI18nText('prx_no_live_copy', 'Tidak ada proxy LIVE untuk disalin.'), 'fa-solid fa-triangle-exclamation text-warning');
+    // === PROXY CHECKER MODULE ===
+    let proxyList = [];
+    let proxyResults = [];
+    let proxyAbortController = null;
+    let proxyFilterMode = 'all';
 
-      let lines = [];
-      if (format === 'ipport') {
-        lines = live.map(r => `${r.host}:${r.port}`);
-      } else {
-        lines = live.map(r => r.raw || r.display);
-      }
-
-      copyToClipboard(lines.join(String.fromCharCode(10)), '✓ ' + getI18nText('tm_copied', 'Disalin!') + ` (${live.length} LIVE)`, 'fa-solid fa-server text-success');
+    function loadSampleProxies() {
+      const sample = [
+        '5.45.36.142:5432:k8obp:alzx9cer',
+        '5.45.36.134:5432:k8obp:alzx9cer',
+        '5.45.36.141:5432:k8obp:alzx9cer',
+        '5.45.36.137:5432:k8obp:alzx9cer',
+        '104.28.16.1:8080'
+      ].join(String.fromCharCode(10));
+      const input = document.getElementById('proxyInput');
+      if (input) input.value = sample;
     }
 
-    function downloadLiveProxies() {
-      const live = proxyResults.filter(r => r.live);
-      if (live.length === 0) return showToast(getI18nText('prx_no_live_dl', 'Tidak ada proxy LIVE untuk diunduh.'), 'fa-solid fa-triangle-exclamation text-warning');
-      const content = live.map(r => r.raw || r.display).join(String.fromCharCode(10));
-      const blob = new Blob([content], { type: 'text/plain;charset=utf-8;' });
-      const link = document.createElement('a');
-      link.href = URL.createObjectURL(blob);
-      link.download = `live_proxies_${Date.now()}.txt`;
-      link.click();
+    function clearProxyInput() {
+      const input = document.getElementById('proxyInput');
+      if (input) input.value = '';
+    }
+
+    function setProxyFilter(mode) {
+      proxyFilterMode = mode;
+      ['All', 'Live', 'Dead', 'Clean'].forEach(k => {
+        const btn = document.getElementById('filterProxy' + k);
+        if (btn) {
+          if (k.toLowerCase() === mode.toLowerCase()) {
+            btn.classList.add('active');
+          } else {
+            btn.classList.remove('active');
+          }
+        }
+      });
+      renderProxyTable();
     }
 
     async function startProxyChecking() {
-      const rawText = document.getElementById('proxyInput').value.trim();
+      const rawText = (document.getElementById('proxyInput') ? document.getElementById('proxyInput').value : '').trim();
       if (!rawText) return showToast(getI18nText('prx_alert_empty', 'Silakan masukkan list proxy!'), 'fa-solid fa-triangle-exclamation text-warning');
 
-      const lines = (rawText || '').split(String.fromCharCode(10)).map(l => l.trim()).filter(l => l && !l.startsWith('#'));
+      const lines = rawText.split(String.fromCharCode(10)).map(l => l.trim()).filter(l => l && !l.startsWith('#'));
       if (lines.length === 0) return showToast(getI18nText('prx_alert_empty', 'Tidak ada proxy yang valid untuk dicek.'), 'fa-solid fa-triangle-exclamation text-warning');
 
       const concurrency = Math.min(20, Math.max(1, parseInt(document.getElementById('proxyConcurrency').value) || 5));
       const timeout = Math.min(60, Math.max(2, parseInt(document.getElementById('proxyTimeout').value) || 15));
-      const checkScamalytics = document.getElementById('checkScamalyticsToggle').checked;
+      const checkScamalytics = Boolean(document.getElementById('checkScamalyticsToggle') && document.getElementById('checkScamalyticsToggle').checked);
 
       proxyList = lines;
       proxyResults = [];
       proxyAbortController = new AbortController();
 
-      document.getElementById('btnStartProxy').disabled = true;
-      document.getElementById('btnStopProxy').disabled = false;
-      document.getElementById('proxyProgressBar').style.width = '0%';
+      if (document.getElementById('btnStartProxy')) document.getElementById('btnStartProxy').disabled = true;
+      if (document.getElementById('btnStopProxy')) document.getElementById('btnStopProxy').disabled = false;
+      if (document.getElementById('proxyProgressBar')) document.getElementById('proxyProgressBar').style.width = '0%';
 
       updateProxyStats();
       renderProxyTable();
@@ -2688,7 +2749,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
           }
 
           const pct = Math.round((proxyResults.length / total) * 100);
-          document.getElementById('proxyProgressBar').style.width = pct + '%';
+          if (document.getElementById('proxyProgressBar')) document.getElementById('proxyProgressBar').style.width = pct + '%';
           updateProxyStats();
           renderProxyTable();
         }
@@ -2701,132 +2762,161 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 
       await Promise.all(workers);
 
-      document.getElementById('btnStartProxy').disabled = false;
-      document.getElementById('btnStopProxy').disabled = true;
-      document.getElementById('proxyProgressBar').style.width = '100%';
+      if (document.getElementById('btnStartProxy')) document.getElementById('btnStartProxy').disabled = false;
+      if (document.getElementById('btnStopProxy')) document.getElementById('btnStopProxy').disabled = true;
+      if (document.getElementById('proxyProgressBar')) document.getElementById('proxyProgressBar').style.width = '100%';
     }
 
     function stopProxyChecking() {
       if (proxyAbortController) {
         proxyAbortController.abort();
       }
-      document.getElementById('btnStartProxy').disabled = false;
-      document.getElementById('btnStopProxy').disabled = true;
+      if (document.getElementById('btnStartProxy')) document.getElementById('btnStartProxy').disabled = false;
+      if (document.getElementById('btnStopProxy')) document.getElementById('btnStopProxy').disabled = true;
     }
 
     function updateProxyStats() {
       const total = proxyResults.length;
-      const live = proxyResults.filter(r => r.live).length;
-      const dead = proxyResults.filter(r => !r.live).length;
-      const clean = proxyResults.filter(r => r.live && r.fraud_score !== null && r.fraud_score < 25).length;
+      const live = proxyResults.filter(r => r && r.live).length;
+      const dead = proxyResults.filter(r => !r || !r.live).length;
+      const clean = proxyResults.filter(r => r && r.live && r.fraud_score !== null && r.fraud_score !== undefined && r.fraud_score < 25).length;
       
-      const liveItems = proxyResults.filter(r => r.live && r.latency_ms > 0);
-      const avgLat = liveItems.length > 0 ? Math.round(liveItems.reduce((a, b) => a + b.latency_ms, 0) / liveItems.length) : '-';
+      const liveItems = proxyResults.filter(r => r && r.live && r.latency_ms > 0);
+      const avgLat = liveItems.length > 0 ? Math.round(liveItems.reduce((a, b) => a + (b.latency_ms || 0), 0) / liveItems.length) : '-';
 
-      document.getElementById('proxyStatTotal').textContent = total;
-      document.getElementById('proxyStatLive').textContent = live;
-      document.getElementById('proxyStatDead').textContent = dead;
-      document.getElementById('proxyStatLatency').textContent = avgLat !== '-' ? avgLat + 'ms' : '-';
-      document.getElementById('proxyStatLowFraud').textContent = clean;
+      if (document.getElementById('proxyStatTotal')) document.getElementById('proxyStatTotal').textContent = total;
+      if (document.getElementById('proxyStatLive')) document.getElementById('proxyStatLive').textContent = live;
+      if (document.getElementById('proxyStatDead')) document.getElementById('proxyStatDead').textContent = dead;
+      if (document.getElementById('proxyStatLatency')) document.getElementById('proxyStatLatency').textContent = avgLat !== '-' ? avgLat + 'ms' : '-';
+      if (document.getElementById('proxyStatLowFraud')) document.getElementById('proxyStatLowFraud').textContent = clean;
 
-      document.getElementById('countFilterAll').textContent = total;
-      document.getElementById('countFilterLive').textContent = live;
-      document.getElementById('countFilterDead').textContent = dead;
-      document.getElementById('countFilterClean').textContent = clean;
+      if (document.getElementById('countFilterAll')) document.getElementById('countFilterAll').textContent = total;
+      if (document.getElementById('countFilterLive')) document.getElementById('countFilterLive').textContent = live;
+      if (document.getElementById('countFilterDead')) document.getElementById('countFilterDead').textContent = dead;
+      if (document.getElementById('countFilterClean')) document.getElementById('countFilterClean').textContent = clean;
     }
 
     function renderProxyTable() {
-      const tbody = document.getElementById('proxyTableBody');
-      const search = (document.getElementById('proxySearchInput').value || '').toLowerCase().trim();
+      try {
+        const tbody = document.getElementById('proxyTableBody');
+        if (!tbody) return;
+        const searchInput = document.getElementById('proxySearchInput');
+        const search = (searchInput && searchInput.value ? searchInput.value : '').toLowerCase().trim();
 
-      if (proxyResults.length === 0) {
-        tbody.innerHTML = `
-          <tr>
-            <td colspan="8" class="text-center py-5 text-secondary">
-              <i class="fa-solid fa-server fa-2x mb-2 d-block opacity-50"></i>
-              ${getI18nText('prx_empty_table', 'Belum ada proxy yang diperiksa. Masukkan list proxy dan klik <b>Start Checking</b>.')}
-            </td>
-          </tr>
-        `;
-        return;
-      }
-
-      let filtered = proxyResults.filter(item => {
-        if (proxyFilterMode === 'live' && !item.live) return false;
-        if (proxyFilterMode === 'dead' && item.live) return false;
-        if (proxyFilterMode === 'clean' && (!item.live || item.fraud_score === null || item.fraud_score >= 25)) return false;
-
-        if (search) {
-          const hay = `${item.display || ''} ${item.exit_ip || ''} ${item.country || ''} ${item.isp || ''} ${item.org || ''}`.toLowerCase();
-          if (!hay.includes(search)) return false;
-        }
-        return true;
-      });
-
-      if (filtered.length === 0) {
-        tbody.innerHTML = `
-          <tr>
-            <td colspan="8" class="text-center py-4 text-secondary">
-              ${getI18nText('prx_no_match', 'Tidak ada proxy yang cocok dengan filter atau pencarian.')}
-            </td>
-          </tr>
-        `;
-        return;
-      }
-
-      let html = '';
-      filtered.forEach((r, idx) => {
-        const isLive = r.live;
-        const pingClass = r.latency_ms < 500 ? 'text-success' : (r.latency_ms < 1200 ? 'text-warning' : 'text-danger');
-        
-        let fraudBadge = '<span class="text-secondary small">-</span>';
-        if (r.fraud_score !== undefined && r.fraud_score !== null) {
-          const s = r.fraud_score;
-          const scoreClass = s < 25 ? 'bg-success' : (s < 50 ? 'bg-warning text-dark' : 'bg-danger');
-          fraudBadge = `<span class="badge ${scoreClass} fw-bold me-1">${s}</span><span class="small text-secondary">${escapeHtml(r.fraud_risk || '')}</span>`;
+        if (!proxyResults || proxyResults.length === 0) {
+          tbody.innerHTML = `
+            <tr>
+              <td colspan="8" class="text-center py-5 text-secondary">
+                <i class="fa-solid fa-server fa-2x mb-2 d-block opacity-50"></i>
+                ${typeof getI18nText === 'function' ? getI18nText('prx_empty_table', 'Belum ada proxy yang diperiksa. Masukkan list proxy dan klik <b>Start Checking</b>.') : 'Belum ada proxy yang diperiksa.'}
+              </td>
+            </tr>
+          `;
+          return;
         }
 
-        const countryText = r.country ? `${r.country} ${r.country_code ? '(' + r.country_code + ')' : ''}` : '-';
-        const locText = r.city && r.city !== '-' ? `${r.city}, ${countryText}` : countryText;
+        const currentMode = typeof proxyFilterMode !== 'undefined' ? proxyFilterMode : 'all';
 
-        html += `
-          <tr>
-            <td class="text-secondary small font-monospace">${idx + 1}</td>
-            <td class="font-monospace text-light">
-              <span class="badge bg-dark border border-secondary text-warning me-1 small">${(r.scheme || 'http').toUpperCase()}</span>
-              ${escapeHtml(r.display || r.raw)}
-            </td>
-            <td>
-              ${isLive ? '<span class="badge bg-success"><i class="fa-solid fa-circle-check me-1"></i>LIVE</span>' : '<span class="badge bg-danger"><i class="fa-solid fa-circle-xmark me-1"></i>DEAD</span>'}
-            </td>
-            <td>
-              ${isLive ? `<span class="font-monospace fw-bold ${pingClass}"><i class="fa-solid fa-bolt fa-xs me-1"></i>${r.latency_ms}ms</span>` : '<span class="text-secondary small">-</span>'}
-            </td>
-            <td>
-              ${isLive ? `<div><span class="font-monospace fw-semibold text-warning">${escapeHtml(r.exit_ip || '-')}</span></div><div class="small text-secondary">${escapeHtml(locText)}</div>` : `<span class="text-danger small" title="${escapeHtml(r.error || '')}">${escapeHtml(r.error || 'Connection Failed')}</span>`}
-            </td>
-            <td class="small text-secondary" style="max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-              ${escapeHtml(r.isp || r.org || '-')}
-            </td>
-            <td>
-              ${fraudBadge}
-            </td>
-            <td>
-              <button class="btn btn-sm btn-outline-warning p-1 px-2" onclick="showProxyDetailModal(${proxyResults.indexOf(r)})" title="Detail Diagnostik">
-                <i class="fa-solid fa-eye fa-xs"></i>
-              </button>
-            </td>
-          </tr>
-        `;
-      });
+        let filtered = proxyResults.filter(item => {
+          if (!item) return false;
+          if (currentMode === 'live' && !item.live) return false;
+          if (currentMode === 'dead' && item.live) return false;
+          if (currentMode === 'clean' && (!item.live || item.fraud_score === null || item.fraud_score === undefined || item.fraud_score >= 25)) return false;
 
-      tbody.innerHTML = html;
+          if (search) {
+            const hay = `${item.display || ''} ${item.exit_ip || ''} ${item.country || ''} ${item.isp || ''} ${item.org || ''}`.toLowerCase();
+            if (!hay.includes(search)) return false;
+          }
+          return true;
+        });
+
+        if (filtered.length === 0) {
+          tbody.innerHTML = `
+            <tr>
+              <td colspan="8" class="text-center py-4 text-secondary">
+                ${typeof getI18nText === 'function' ? getI18nText('prx_no_match', 'Tidak ada proxy yang cocok dengan filter atau pencarian.') : 'Tidak ada proxy yang cocok.'}
+              </td>
+            </tr>
+          `;
+          return;
+        }
+
+        const esc = (s) => (s === null || s === undefined ? '' : String(s)).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+        let html = '';
+        filtered.forEach((r, idx) => {
+          const isLive = Boolean(r && r.live);
+          const lat = typeof r.latency_ms === 'number' ? r.latency_ms : 0;
+          const pingClass = lat < 500 ? 'text-success' : (lat < 1200 ? 'text-warning' : 'text-danger');
+          
+          let fraudBadge = '<span class="text-secondary small">-</span>';
+          if (r.fraud_score !== undefined && r.fraud_score !== null) {
+            const s = r.fraud_score;
+            const scoreClass = s < 25 ? 'bg-success' : (s < 50 ? 'bg-warning text-dark' : 'bg-danger');
+            fraudBadge = `<span class="badge ${scoreClass} fw-bold me-1">${s}</span><span class="small text-secondary">${esc(r.fraud_risk || '')}</span>`;
+          }
+
+          const countryText = r.country ? `${r.country} ${r.country_code ? '(' + r.country_code + ')' : ''}` : '-';
+          const locText = r.city && r.city !== '-' ? `${r.city}, ${countryText}` : countryText;
+          const originalIdx = proxyResults.indexOf(r);
+
+          html += `
+            <tr>
+              <td class="text-secondary small font-monospace">${idx + 1}</td>
+              <td class="font-monospace text-light">
+                <span class="badge bg-dark border border-secondary text-warning me-1 small">${esc((r.scheme || 'http').toUpperCase())}</span>
+                ${esc(r.display || r.raw || '')}
+              </td>
+              <td>
+                ${isLive ? '<span class="badge bg-success"><i class="fa-solid fa-circle-check me-1"></i>LIVE</span>' : '<span class="badge bg-danger"><i class="fa-solid fa-circle-xmark me-1"></i>DEAD</span>'}
+              </td>
+              <td>
+                ${isLive ? `<span class="font-monospace fw-bold ${pingClass}"><i class="fa-solid fa-bolt fa-xs me-1"></i>${lat}ms</span>` : '<span class="text-secondary small">-</span>'}
+              </td>
+              <td>
+                ${isLive ? `<div><span class="font-monospace fw-semibold text-warning">${esc(r.exit_ip || '-')}</span></div><div class="small text-secondary">${esc(locText)}</div>` : `<span class="text-danger small" title="${esc(r.error || '')}">${esc(r.error || 'Connection Failed')}</span>`}
+              </td>
+              <td class="small text-secondary" style="max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                ${esc(r.isp || r.org || '-')}
+              </td>
+              <td>
+                ${fraudBadge}
+              </td>
+              <td>
+                <div class="d-flex gap-1">
+                  <button class="btn btn-sm btn-outline-light p-1 px-2" onclick="copySingleProxyRaw(${originalIdx})" title="Salin Proxy">
+                    <i class="fa-regular fa-copy fa-xs"></i>
+                  </button>
+                  <button class="btn btn-sm btn-outline-warning p-1 px-2" onclick="showProxyDetailModal(${originalIdx})" title="Detail Diagnostik">
+                    <i class="fa-solid fa-eye fa-xs"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          `;
+        });
+
+        tbody.innerHTML = html;
+      } catch (err) {
+        console.error('renderProxyTable error:', err);
+      }
+    }
+
+    function copySingleProxyRaw(index) {
+      const r = proxyResults[index];
+      if (!r) return;
+      const textToCopy = r.raw || r.display || '';
+      if (!textToCopy) return;
+      copyToClipboard(textToCopy, '✓ ' + getI18nText('tm_copied', 'Disalin!') + ': ' + textToCopy, 'fa-solid fa-server text-success');
     }
 
     function showProxyDetailModal(index) {
       const r = proxyResults[index];
       if (!r) return;
       const modalBody = document.getElementById('proxyDetailModalBody');
+      if (!modalBody) return;
+
+      const esc = (s) => (s === null || s === undefined ? '' : String(s)).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
       let scamalyticsHtml = '';
       if (r.fraud_score !== undefined && r.fraud_score !== null) {
@@ -2835,10 +2925,10 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             <h6 class="fw-bold text-warning mb-2"><i class="fa-solid fa-shield-halved me-1"></i> Scamalytics Report</h6>
             <div class="row g-2 small">
               <div class="col-6"><span class="text-secondary">Fraud Score:</span> <b class="${r.fraud_score < 25 ? 'text-success' : (r.fraud_score < 50 ? 'text-warning' : 'text-danger')}">${r.fraud_score}/100</b></div>
-              <div class="col-6"><span class="text-secondary">Fraud Risk:</span> <b>${escapeHtml(r.fraud_risk || '-')}</b></div>
-              <div class="col-6"><span class="text-secondary">Residential:</span> <b>${escapeHtml(r.residential || 'no')}</b></div>
-              <div class="col-6"><span class="text-secondary">Datacenter:</span> <b>${escapeHtml(r.datacenter || 'no')}</b></div>
-              <div class="col-12"><span class="text-secondary">Blacklist Hits:</span> <b>${r.blacklist_hits && r.blacklist_hits.length > 0 ? r.blacklist_hits.join(', ') : 'None'}</b></div>
+              <div class="col-6"><span class="text-secondary">Fraud Risk:</span> <b>${esc(r.fraud_risk || '-')}</b></div>
+              <div class="col-6"><span class="text-secondary">Residential:</span> <b>${esc(r.residential || 'no')}</b></div>
+              <div class="col-6"><span class="text-secondary">Datacenter:</span> <b>${esc(r.datacenter || 'no')}</b></div>
+              <div class="col-12"><span class="text-secondary">Blacklist Hits:</span> <b>${r.blacklist_hits && r.blacklist_hits.length > 0 ? esc(r.blacklist_hits.join(', ')) : 'None'}</b></div>
             </div>
           </div>
         `;
@@ -2852,26 +2942,29 @@ HTML_TEMPLATE = """<!DOCTYPE html>
           </div>
           
           <table class="table table-dark table-sm border-secondary mb-0 small">
-            <tr><td class="text-secondary" style="width: 35%;">Proxy Display</td><td class="font-monospace text-warning">${escapeHtml(r.display || r.raw)}</td></tr>
-            <tr><td class="text-secondary">Scheme / Host</td><td>${escapeHtml(r.scheme || 'http')}://${escapeHtml(r.host || '')}:${escapeHtml(r.port || '')}</td></tr>
-            <tr><td class="text-secondary">Public Exit IP</td><td class="font-monospace fw-bold text-info">${escapeHtml(r.exit_ip || '-')}</td></tr>
-            <tr><td class="text-secondary">Country / Region</td><td>${escapeHtml(r.country || '-')} ${r.country_code ? '(' + r.country_code + ')' : ''} ${r.region ? '• ' + r.region : ''}</td></tr>
-            <tr><td class="text-secondary">City</td><td>${escapeHtml(r.city || '-')}</td></tr>
-            <tr><td class="text-secondary">ISP / Operator</td><td>${escapeHtml(r.isp || '-')}</td></tr>
-            <tr><td class="text-secondary">Organization / AS</td><td>${escapeHtml(r.org || '-')} ${r.as ? '• ' + r.as : ''}</td></tr>
-            ${!r.live && r.error ? `<tr><td class="text-danger">Error Detail</td><td class="text-danger">${escapeHtml(r.error)}</td></tr>` : ''}
+            <tr><td class="text-secondary" style="width: 35%;">Proxy Display</td><td class="font-monospace text-warning">${esc(r.display || r.raw || '')}</td></tr>
+            <tr><td class="text-secondary">Scheme / Host</td><td>${esc(r.scheme || 'http')}://${esc(r.host || '')}:${esc(r.port || '')}</td></tr>
+            <tr><td class="text-secondary">Public Exit IP</td><td class="font-monospace fw-bold text-info">${esc(r.exit_ip || '-')}</td></tr>
+            <tr><td class="text-secondary">Country / Region</td><td>${esc(r.country || '-')} ${r.country_code ? '(' + esc(r.country_code) + ')' : ''} ${r.region ? '• ' + esc(r.region) : ''}</td></tr>
+            <tr><td class="text-secondary">City</td><td>${esc(r.city || '-')}</td></tr>
+            <tr><td class="text-secondary">ISP / Operator</td><td>${esc(r.isp || '-')}</td></tr>
+            <tr><td class="text-secondary">Organization / AS</td><td>${esc(r.org || '-')} ${r.as ? '• ' + esc(r.as) : ''}</td></tr>
+            ${!r.live && r.error ? `<tr><td class="text-danger">Error Detail</td><td class="text-danger">${esc(r.error)}</td></tr>` : ''}
           </table>
 
           ${scamalyticsHtml}
         </div>
       `;
 
-      const modal = new bootstrap.Modal(document.getElementById('proxyDetailModal'));
-      modal.show();
+      const modalEl = document.getElementById('proxyDetailModal');
+      if (modalEl && typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+        const modal = new bootstrap.Modal(modalEl);
+        modal.show();
+      }
     }
 
-    function copyLiveProxies(format) {
-      const live = proxyResults.filter(r => r.live);
+    function copyLiveProxies(format = 'raw') {
+      const live = proxyResults.filter(r => r && r.live);
       if (live.length === 0) return showToast(getI18nText('prx_no_live_copy', 'Tidak ada proxy LIVE untuk disalin.'), 'fa-solid fa-triangle-exclamation text-warning');
 
       let lines = [];
@@ -2885,7 +2978,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     }
 
     function downloadLiveProxiesTxt() {
-      const live = proxyResults.filter(r => r.live);
+      const live = proxyResults.filter(r => r && r.live);
       if (live.length === 0) return showToast(getI18nText('prx_no_live_dl', 'Tidak ada proxy LIVE untuk diunduh.'), 'fa-solid fa-triangle-exclamation text-warning');
       const content = live.map(r => r.raw || r.display).join(String.fromCharCode(10));
       const blob = new Blob([content], { type: 'text/plain;charset=utf-8;' });
@@ -2896,7 +2989,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     }
 
     function downloadProxyReportJson() {
-      if (proxyResults.length === 0) return showToast('Belum ada data untuk diekspor.', 'fa-solid fa-triangle-exclamation text-warning');
+      if (!proxyResults || proxyResults.length === 0) return showToast('Belum ada data untuk diekspor.', 'fa-solid fa-triangle-exclamation text-warning');
       const content = JSON.stringify(proxyResults, null, 2);
       const blob = new Blob([content], { type: 'application/json;charset=utf-8;' });
       const link = document.createElement('a');
