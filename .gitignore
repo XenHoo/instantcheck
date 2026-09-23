@@ -1,46 +1,35 @@
-# Python
+# Python Cache
 __pycache__/
-*.py[cod]
-*$py.class
-*.so
+*.pyc
+*.pyo
+*.pyd
 .Python
 env/
 venv/
-.venv-build/
-ENV/
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
+.venv/
 
-# Token dan data sensitif
-accounts_with_tokens.txt
-email_list.txt
-*.token
-*.cache
-.tokens-*
-
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Logs
+# Environment & Temp Files
+.env
+.env.local
+.scamalytics-cache.json
 *.log
+
+# Large Binaries & Zip Archives
+*.exe
+*.zip
+*.rar
+*.7z
+cloudflared.exe
+instantcheck-main.zip
+
+# Output Results & Data
+results/
+results.csv
+results.txt
+accounts.txt
+*.bak
+
+# Non-essential sub-projects (if keeping repository lightweight for Vercel)
+# Outlook Commander TUI Executable/
+# Grok-Checker/
+# ULP TO COMBO/
