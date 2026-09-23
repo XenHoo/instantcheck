@@ -772,10 +772,13 @@ HTML_TEMPLATE = """<!DOCTYPE html>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ChenStore | MULTI TOOLS</title>
+  <link rel="icon" type="image/png" href="/logo.png">
+  <link rel="shortcut icon" type="image/png" href="/logo.png">
+  <link rel="apple-touch-icon" href="/logo.png">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap');
 
     :root {
       --bg-wood-dark: #0f0a06;
@@ -792,6 +795,11 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       --dot-red: #ef4444;
     }
 
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
     body {
       background-color: var(--bg-wood-dark);
       background-image: 
@@ -806,11 +814,12 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       flex-direction: column;
     }
 
+    /* Top Navbar */
     .top-navbar {
       background: linear-gradient(180deg, #1d1209 0%, #140c06 100%);
       border-bottom: 1px solid var(--border-bronze);
       box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
-      padding: 0.75rem 1.5rem;
+      padding: 0.55rem 1.25rem;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -820,33 +829,72 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       z-index: 1000;
     }
 
+    .brand-container {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      min-width: 0;
+    }
+
+    .brand-logo-img {
+      height: 38px;
+      width: 38px;
+      object-fit: cover;
+      border-radius: 8px;
+      border: 1px solid #78471c;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+      flex-shrink: 0;
+    }
+
     .brand-title {
       font-family: 'Cinzel', serif;
       font-weight: 800;
-      font-size: 1.45rem;
-      letter-spacing: 1.5px;
+      font-size: 1.35rem;
+      letter-spacing: 1.2px;
       background: linear-gradient(135deg, #fffbeb 0%, #fef08a 25%, #f59e0b 60%, #b45309 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       text-shadow: 0 2px 10px rgba(245, 158, 11, 0.3);
       line-height: 1.1;
+      white-space: nowrap;
     }
 
     .brand-sub {
-      font-size: 0.68rem;
-      letter-spacing: 2px;
+      font-size: 0.62rem;
+      letter-spacing: 1.5px;
       color: var(--gold-main);
       font-weight: 700;
       opacity: 0.9;
+      white-space: nowrap;
+    }
+
+    .navbar-right {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      min-width: 0;
+    }
+
+    .navbar-tabs-container {
+      display: flex;
+      align-items: center;
+      min-width: 0;
     }
 
     .nav-tabs-custom {
       display: flex;
-      gap: 0.4rem;
+      gap: 0.3rem;
       background-color: #0b0704;
-      padding: 0.3rem;
-      border-radius: 12px;
+      padding: 0.25rem;
+      border-radius: 10px;
       border: 1px solid var(--border-bronze);
+      overflow-x: auto;
+      max-width: 100%;
+      scrollbar-width: none;
+      -webkit-overflow-scrolling: touch;
+    }
+    .nav-tabs-custom::-webkit-scrollbar {
+      display: none;
     }
 
     .nav-tab-btn {
@@ -854,14 +902,16 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       border: 1px solid transparent;
       color: #d1c7bd;
       font-weight: 600;
-      font-size: 0.85rem;
-      padding: 0.45rem 1rem;
-      border-radius: 8px;
-      transition: all 0.2s ease;
+      font-size: 0.82rem;
+      padding: 0.4rem 0.85rem;
+      border-radius: 7px;
+      transition: all 0.15s ease;
       cursor: pointer;
       display: flex;
       align-items: center;
       white-space: nowrap;
+      flex-shrink: 0;
+      user-select: none;
     }
 
     .nav-tab-btn:hover {
@@ -881,6 +931,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       display: flex;
       flex-direction: column;
       position: relative;
+      min-height: 0;
     }
 
     .tab-pane-custom {
@@ -890,10 +941,70 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     }
 
     .tab-pane-custom.active {
-      display: flex !important;
+      display: flex;
       flex-direction: column;
     }
 
+    /* Container for CapCut, 2FA, Proxy */
+    .capcut-container {
+      flex: 1;
+      padding: 1.25rem;
+      overflow-y: auto;
+      max-width: 1320px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    .card-theme {
+      background-color: var(--bg-card);
+      border: 1px solid var(--border-bronze);
+      border-radius: 12px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+    }
+
+    .form-control-theme {
+      background-color: #0d0805 !important;
+      border: 1px solid var(--border-bronze) !important;
+      color: var(--text-main) !important;
+      border-radius: 8px !important;
+      font-size: 0.88rem !important;
+    }
+
+    .form-control-theme:focus {
+      border-color: var(--gold-main) !important;
+      box-shadow: 0 0 0 3px var(--gold-glow) !important;
+    }
+
+    .btn-gold {
+      background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+      color: #fff;
+      font-weight: 600;
+      border: 1px solid #f59e0b;
+      box-shadow: 0 2px 10px rgba(180, 83, 9, 0.3);
+      transition: all 0.2s ease;
+      border-radius: 8px;
+    }
+
+    .btn-gold:hover {
+      background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+      color: #fff;
+      box-shadow: 0 4px 15px var(--gold-glow);
+    }
+
+    .btn-outline-gold {
+      border: 1px solid var(--gold-main);
+      color: var(--gold-main);
+      background: transparent;
+      border-radius: 8px;
+      transition: all 0.15s ease;
+    }
+
+    .btn-outline-gold:hover, .btn-outline-gold:active {
+      background-color: var(--gold-main);
+      color: #180d05;
+    }
+
+    /* Trackmail 3-Column Layout */
     .trackmail-container {
       flex: 1;
       display: flex;
@@ -903,146 +1014,119 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     }
 
     .tm-sidebar {
-      width: 310px;
-      min-width: 280px;
+      width: 290px;
+      min-width: 260px;
       background-color: var(--bg-card);
       border-right: 1px solid var(--border-bronze);
       display: flex;
       flex-direction: column;
-      height: 100%;
+      flex-shrink: 0;
     }
 
-    .tm-sidebar-header {
-      padding: 0.85rem 1rem;
-      background: linear-gradient(180deg, #20140c 0%, #181009 100%);
+    .tm-messages-col {
+      width: 330px;
+      min-width: 280px;
+      background-color: var(--bg-card-secondary);
+      border-right: 1px solid var(--border-bronze);
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+    }
+
+    .tm-reader-col {
+      flex: 1;
+      background-color: var(--bg-wood-dark);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      min-width: 0;
+    }
+
+    .tm-sidebar-header, .tm-messages-header, .tm-reader-topbar {
+      padding: 0.65rem 0.9rem;
+      background: #140c06;
       border-bottom: 1px solid var(--border-bronze);
       display: flex;
       align-items: center;
       justify-content: space-between;
+      min-height: 48px;
     }
 
-    .tm-accounts-list {
+    .tm-accounts-list, .tm-messages-list {
       flex: 1;
       overflow-y: auto;
-      padding: 0.5rem;
+      padding: 0.4rem;
     }
 
     .tm-account-item {
-      padding: 0.65rem 0.85rem;
+      display: flex !important;
+      align-items: center !important;
+      gap: 0.65rem;
+      padding: 0.4rem 0.65rem;
       border-radius: 8px;
-      margin-bottom: 0.35rem;
-      background-color: rgba(34, 24, 16, 0.4);
+      margin-bottom: 0.25rem;
       border: 1px solid transparent;
       cursor: pointer;
       transition: all 0.15s ease;
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
+      background-color: rgba(255, 255, 255, 0.02);
+      min-height: 44px;
     }
 
     .tm-account-item:hover {
       background-color: rgba(245, 158, 11, 0.08);
-      border-color: rgba(180, 83, 9, 0.4);
+      border-color: rgba(180, 83, 9, 0.3);
     }
 
     .tm-account-item.active {
-      background: linear-gradient(135deg, #2e1d11 0%, #20130a 100%);
+      background-color: rgba(245, 158, 11, 0.15);
       border-color: var(--gold-main);
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+      box-shadow: inset 0 0 10px rgba(245, 158, 11, 0.1);
     }
 
     .tm-avatar {
-      width: 32px;
-      height: 32px;
+      width: 30px;
+      height: 30px;
+      min-width: 30px;
       border-radius: 50%;
-      background: linear-gradient(135deg, #78471c 0%, #45260e 100%);
-      color: var(--gold-light);
+      background: linear-gradient(135deg, #b45309 0%, #78350f 100%);
+      color: #fef08a;
+      font-weight: 700;
+      font-size: 0.8rem;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-weight: 700;
-      font-size: 0.8rem;
-      border: 1px solid var(--border-gold);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
       flex-shrink: 0;
     }
 
     .status-dot {
-      width: 8px;
-      height: 8px;
+      width: 7px;
+      height: 7px;
+      min-width: 7px;
       border-radius: 50%;
       display: inline-block;
       flex-shrink: 0;
     }
-    .status-dot.live { background-color: var(--dot-green); box-shadow: 0 0 6px rgba(34, 197, 94, 0.8); }
-    .status-dot.dead { background-color: var(--dot-red); box-shadow: 0 0 6px rgba(239, 68, 68, 0.8); }
 
-    .tm-messages-col {
-      width: 360px;
-      min-width: 320px;
-      background-color: #140d07;
-      border-right: 1px solid var(--border-bronze);
-      display: flex;
-      flex-direction: column;
-      height: 100%;
+    .status-dot.live {
+      background-color: var(--dot-green);
+      box-shadow: 0 0 6px rgba(34, 197, 94, 0.8);
     }
 
-    .tm-messages-header {
-      padding: 0.85rem 1rem;
-      background: linear-gradient(180deg, #1c1109 0%, #140d07 100%);
-      border-bottom: 1px solid var(--border-bronze);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-
-    .tm-platform-chips {
-      display: flex;
-      gap: 0.35rem;
-      padding: 0.4rem 0.75rem;
-      background: #0f0905;
-      border-bottom: 1px solid var(--border-bronze);
-      overflow-x: auto;
-      white-space: nowrap;
-    }
-
-    .tm-chip-btn {
-      background: #1e130b;
-      border: 1px solid var(--border-bronze);
-      color: var(--text-muted);
-      border-radius: 14px;
-      padding: 0.2rem 0.6rem;
-      font-size: 0.73rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.15s;
-    }
-
-    .tm-chip-btn:hover {
-      color: var(--gold-light);
-      border-color: var(--gold-main);
-    }
-
-    .tm-chip-btn.active {
-      background: var(--gold-main);
-      color: #180d05;
-      border-color: var(--gold-light);
-      font-weight: 700;
-    }
-
-    .tm-messages-list {
-      flex: 1;
-      overflow-y: auto;
-      padding: 0.5rem;
+    .status-dot.dead {
+      background-color: var(--dot-red);
+      box-shadow: 0 0 6px rgba(239, 68, 68, 0.8);
     }
 
     .tm-message-item {
-      padding: 0.75rem 0.85rem;
+      display: block;
+      padding: 0.4rem 0.65rem;
       border-radius: 8px;
-      margin-bottom: 0.4rem;
-      background-color: rgba(31, 20, 12, 0.4);
+      margin-bottom: 0.25rem;
       border: 1px solid transparent;
       cursor: pointer;
       transition: all 0.15s ease;
+      background-color: rgba(255, 255, 255, 0.02);
     }
 
     .tm-message-item:hover {
@@ -1051,164 +1135,177 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     }
 
     .tm-message-item.active {
-      background: linear-gradient(135deg, #2b1b0f 0%, #1e1208 100%);
-      border-color: var(--border-gold);
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+      background-color: rgba(245, 158, 11, 0.15);
+      border-color: var(--gold-main);
+      box-shadow: inset 0 0 10px rgba(245, 158, 11, 0.1);
     }
 
     .tm-unread-dot {
       width: 6px;
       height: 6px;
-      background-color: var(--gold-main);
       border-radius: 50%;
+      background-color: var(--gold-main);
       display: inline-block;
       margin-right: 4px;
+      vertical-align: middle;
+      box-shadow: 0 0 6px var(--gold-glow);
     }
 
-    .tm-reader-col {
-      flex: 1;
-      background-color: var(--bg-wood-dark);
-      display: flex;
-      flex-direction: column;
-      height: 100%;
-      overflow: hidden;
+    .tm-account-item:hover, .tm-message-item:hover {
+      background-color: rgba(245, 158, 11, 0.08);
+      border-color: rgba(180, 83, 9, 0.3);
     }
 
-    .tm-reader-topbar {
-      padding: 0.75rem 1.25rem;
-      background: linear-gradient(180deg, #1a0f07 0%, #120a05 100%);
-      border-bottom: 1px solid var(--border-bronze);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 1rem;
+    .tm-account-item.active, .tm-message-item.active {
+      background-color: rgba(245, 158, 11, 0.15);
+      border-color: var(--gold-main);
+      box-shadow: inset 0 0 10px rgba(245, 158, 11, 0.1);
     }
 
     .tm-reader-content {
       flex: 1;
-      overflow-y: auto;
       padding: 1.25rem;
-      display: flex;
-      flex-direction: column;
+      overflow-y: auto;
     }
 
+    
     .tm-meta-card {
-      background-color: var(--bg-card);
+      background: #140c06;
       border: 1px solid var(--border-bronze);
       border-radius: 10px;
-      padding: 1rem;
+      padding: 0.85rem 1.15rem;
       margin-bottom: 1rem;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
     }
 
-    .otp-highlight-card {
-      background: linear-gradient(135deg, #2a1a0b 0%, #1b0f06 100%);
-      border: 1.5px solid var(--gold-main);
-      border-radius: 12px;
-      padding: 1rem 1.25rem;
-      box-shadow: 0 4px 15px rgba(245, 158, 11, 0.15);
+    .tm-email-iframe-container {
+      flex: 1;
+      width: 100%;
+      min-height: 580px;
       display: flex;
-      align-items: center;
-      justify-content: space-between;
-      flex-wrap: wrap;
-      gap: 0.75rem;
-    }
-
-    .otp-code-text {
-      font-family: 'Courier New', monospace;
-      font-size: 1.8rem;
-      font-weight: 800;
-      color: var(--gold-light);
-      letter-spacing: 4px;
-      text-shadow: 0 0 10px rgba(245, 158, 11, 0.4);
+      flex-direction: column;
+      border-radius: 10px;
+      overflow: hidden;
+      border: 1px solid var(--border-bronze);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+      background-color: #ffffff;
     }
 
     .tm-email-iframe {
       width: 100%;
+      height: 100%;
+      min-height: 580px;
       flex: 1;
-      min-height: 480px;
-      border: 1px solid var(--border-bronze);
-      border-radius: 8px;
+      border: none;
       background-color: #ffffff;
+      display: block;
     }
-
-    .capcut-container {
-      flex: 1;
-      padding: 1.5rem;
-      overflow-y: auto;
-      max-width: 1300px;
-      margin: 0 auto;
-      width: 100%;
+    
+    
+    /* Platform Filter Chips */
+    .tm-platform-chips {
+      display: flex;
+      gap: 4px;
+      overflow-x: auto;
+      scrollbar-width: none;
+      -webkit-overflow-scrolling: touch;
+      padding: 2px 0 3px 0;
+      white-space: nowrap;
+      flex-wrap: nowrap;
     }
-
-    .card-theme {
-      background-color: var(--bg-card);
-      border: 1px solid var(--border-bronze);
-      border-radius: 12px;
+    .tm-platform-chips::-webkit-scrollbar {
+      display: none;
     }
-
-    .form-control-theme {
-      background-color: #100a06;
-      border: 1px solid var(--border-bronze);
-      color: #fff;
-    }
-
-    .form-control-theme:focus {
-      background-color: #160d08;
-      border-color: var(--gold-main);
-      box-shadow: 0 0 0 0.25rem rgba(245, 158, 11, 0.25);
-      color: #fff;
-    }
-
-    .btn-gold {
-      background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
-      color: #fff;
-      border: 1px solid #f59e0b;
+    .tm-chip-btn {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(120, 71, 28, 0.6);
+      color: #d1c7bd;
+      font-size: 0.73rem;
       font-weight: 600;
+      padding: 3px 9px;
+      border-radius: 20px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      display: inline-flex;
+      align-items: center;
+      white-space: nowrap;
+      flex-shrink: 0;
+      user-select: none;
+      line-height: 1.2;
+    }
+    .tm-chip-btn:hover {
+      color: var(--gold-light);
+      background: rgba(245, 158, 11, 0.15);
+      border-color: var(--gold-main);
+    }
+    .tm-chip-btn.active {
+      background: linear-gradient(135deg, #b45309 0%, #78350f 100%);
+      color: #ffffff;
+      font-weight: 700;
+      border-color: var(--gold-main);
+      box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
+    }
+    
+    
+    /* Mobile Tab Dropdown */
+    .mobile-tab-dropdown {
+      position: relative;
+      display: none;
+      flex-shrink: 0;
     }
 
-    .btn-gold:hover {
-      background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-      color: #fff;
-      box-shadow: 0 0 12px var(--gold-glow);
+    .mobile-tab-menu {
+      display: none;
+      position: absolute;
+      top: calc(100% + 6px);
+      right: 0;
+      background: #18110b;
+      border: 1px solid #78471c;
+      border-radius: 8px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.85);
+      min-width: 195px;
+      z-index: 99999;
+      padding: 6px 0;
+      margin: 0;
+      list-style: none;
     }
 
-    .btn-outline-gold {
-      border: 1px solid var(--gold-main);
-      color: var(--gold-main);
+    .mobile-tab-menu.show {
+      display: block !important;
     }
 
-    .btn-outline-gold:hover {
-      background-color: var(--gold-main);
-      color: #180d05;
+    .mobile-tab-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 14px;
+      color: #fef08a;
+      text-decoration: none;
+      font-size: 0.84rem;
+      font-weight: 500;
+      cursor: pointer;
+      user-select: none;
+      transition: background 0.15s ease, color 0.15s ease;
     }
 
-    @media (max-width: 991.98px) {
-      .top-navbar {
-        flex-direction: column;
-        align-items: stretch;
-        gap: 0.75rem;
-      }
-      .brand-container {
-        justify-content: center;
-      }
-      .trackmail-container {
-        height: calc(100vh - 125px);
-      }
-      .tm-sidebar, .tm-messages-col, .tm-reader-col {
-        width: 100% !important;
-        min-width: 100% !important;
-        display: none;
-      }
-      .tm-view-accounts .tm-sidebar { display: flex !important; }
-      .tm-view-inbox .tm-messages-col { display: flex !important; }
-      .tm-view-reader .tm-reader-col { display: flex !important; }
+    .mobile-tab-item:hover, .mobile-tab-item:active {
+      background: rgba(217, 119, 6, 0.25);
+      color: #ffffff;
     }
-  
+
+    .mobile-tab-item.active {
+      background: rgba(217, 119, 6, 0.4);
+      color: #fbbf24;
+      font-weight: 700;
+    }
+    
     /* Language Selector Custom Styles */
     .lang-wrapper {
       position: relative;
       display: inline-block;
+      flex-shrink: 0;
     }
+
     .lang-dropdown-menu {
       display: none;
       position: absolute;
@@ -1218,15 +1315,17 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       border: 1px solid #78471c;
       border-radius: 8px;
       box-shadow: 0 10px 30px rgba(0, 0, 0, 0.85);
-      min-width: 190px;
+      min-width: 180px;
       z-index: 99999;
       padding: 6px 0;
       margin: 0;
       list-style: none;
     }
+
     .lang-dropdown-menu.show {
       display: block !important;
     }
+
     .lang-dropdown-item {
       display: flex;
       align-items: center;
@@ -1240,60 +1339,161 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       user-select: none;
       transition: background 0.15s ease, color 0.15s ease;
     }
-    .lang-dropdown-item:hover {
+
+    .lang-dropdown-item:hover, .lang-dropdown-item:active {
       background: rgba(217, 119, 6, 0.25);
       color: #ffffff;
     }
+
     .lang-dropdown-item.active {
       background: rgba(217, 119, 6, 0.4);
       color: #fbbf24;
       font-weight: 700;
     }
-    
+
+    /* Responsive Design for Mobile & Tablet */
+    @media (max-width: 991.98px) {
+      .top-navbar {
+        display: grid !important;
+        grid-template-columns: 1fr auto !important;
+        grid-template-areas:
+          "brand lang"
+          "tabmenu tabmenu" !important;
+        padding: 0.5rem 0.75rem !important;
+        gap: 0.45rem 0.5rem !important;
+      }
+      .brand-container {
+        grid-area: brand;
+        min-width: 0;
+      }
+      .brand-title {
+        font-size: 1.15rem;
+      }
+      .brand-sub {
+        font-size: 0.56rem;
+      }
+      .navbar-right {
+        display: contents !important;
+      }
+      .navbar-tabs-container {
+        display: none !important;
+      }
+      .lang-wrapper {
+        grid-area: lang;
+        align-self: center;
+        justify-self: end;
+      }
+      .mobile-tab-dropdown {
+        grid-area: tabmenu;
+        display: block !important;
+        width: 100%;
+        position: relative;
+      }
+      .mobile-tab-dropdown > button {
+        width: 100%;
+        justify-content: space-between;
+        padding: 0.45rem 0.85rem;
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid var(--border-bronze);
+      }
+      .mobile-tab-menu {
+        width: 100%;
+        left: 0;
+        right: 0;
+        min-width: 100%;
+      }
+      .capcut-container {
+        padding: 0.75rem 0.5rem;
+      }
+      .trackmail-container {
+        height: calc(100vh - 105px);
+      }
+      .tm-sidebar, .tm-messages-col, .tm-reader-col {
+        width: 100% !important;
+        min-width: 100% !important;
+        display: none;
+      }
+      .tm-view-accounts .tm-sidebar { display: flex !important; }
+      .tm-view-inbox .tm-messages-col { display: flex !important; }
+      .tm-view-reader .tm-reader-col { display: flex !important; }
+
+      /* Mobile inputs: avoid iOS zoom on focus */
+      .form-control-theme, input, select, textarea {
+        font-size: 16px !important;
+      }
+    }
   </style>
 </head>
 <body>
 
   <!-- Top Navbar -->
   <div class="top-navbar">
-    <div class="d-flex align-items-center gap-3 brand-container">
-      <img src="/logo.png" alt="ChenStore" style="height: 42px; border-radius: 8px; border: 1px solid #78471c; box-shadow: 0 2px 8px rgba(0,0,0,0.5);" onerror="this.style.display='none'">
+    <div class="brand-container">
+      <img src="/logo.png" alt="ChenStore" class="brand-logo-img" onerror="this.style.display='none'">
       <div>
         <div class="brand-title">ChenStore</div>
         <div class="brand-sub" data-i18n="brand_sub">MULTI TOOLS • LAYANAN SOSMED</div>
       </div>
     </div>
     
-    <div class="d-flex align-items-center gap-2 flex-wrap justify-content-center">
-      <div class="nav-tabs-custom" id="mainTabs">
-        <button type="button" class="nav-tab-btn active" id="btn-tab-mail" onclick="switchTab('mail')">
-          <i class="fa-solid fa-inbox me-2 text-warning"></i><span data-i18n="tab_mail">Mail Checker</span>
-        </button>
-        <button type="button" class="nav-tab-btn" id="btn-tab-capcut" onclick="switchTab('capcut')">
-          <i class="fa-solid fa-film me-2 text-warning"></i><span data-i18n="tab_capcut">CapCut Checker</span>
-        </button>
-        <button type="button" class="nav-tab-btn" id="btn-tab-2fa" onclick="switchTab('2fa')">
-          <i class="fa-solid fa-key me-2 text-warning"></i><span data-i18n="tab_2fa">2FA Generator</span>
-        </button>
-        <button type="button" class="nav-tab-btn" id="btn-tab-proxy" onclick="switchTab('proxy')">
-          <i class="fa-solid fa-server me-2 text-warning"></i><span data-i18n="tab_proxy">Proxy Checker</span>
-        </button>
+    <div class="navbar-right">
+      <!-- Desktop Navigation Tabs (>= 992px) -->
+      <div class="navbar-tabs-container">
+        <div class="nav-tabs-custom" id="mainTabs">
+          <button type="button" class="nav-tab-btn active" id="btn-tab-mail" onclick="switchTab('mail')">
+            <i class="fa-solid fa-inbox me-1.5 text-warning"></i><span data-i18n="tab_mail">Mail Checker</span>
+          </button>
+          <button type="button" class="nav-tab-btn" id="btn-tab-capcut" onclick="switchTab('capcut')">
+            <i class="fa-solid fa-film me-1.5 text-warning"></i><span data-i18n="tab_capcut">CapCut Checker</span>
+          </button>
+          <button type="button" class="nav-tab-btn" id="btn-tab-2fa" onclick="switchTab('2fa')">
+            <i class="fa-solid fa-key me-1.5 text-warning"></i><span data-i18n="tab_2fa">2FA Generator</span>
+          </button>
+          <button type="button" class="nav-tab-btn" id="btn-tab-proxy" onclick="switchTab('proxy')">
+            <i class="fa-solid fa-server me-1.5 text-warning"></i><span data-i18n="tab_proxy">Proxy Checker</span>
+          </button>
+        </div>
       </div>
 
-      <!-- Language Selector Dropdown -->
+      <!-- Mobile & Tablet Menu Dropdown (< 992px) -->
+      <div class="mobile-tab-dropdown" id="mobileTabDropdownWrapper">
+        <button class="btn btn-sm btn-outline-gold px-3 py-1.5 fw-bold d-flex align-items-center justify-content-between" type="button" id="mobileTabDropdownBtn" onclick="toggleMobileTabMenu(event)" style="font-size: 0.82rem; border-radius: 8px;">
+          <div class="d-flex align-items-center gap-2">
+            <i class="fa-solid fa-bars text-warning fs-6"></i>
+            <span data-i18n="nav_menu" class="fw-bold text-uppercase" style="letter-spacing: 0.5px;">Menu</span>
+          </div>
+          <i class="fa-solid fa-chevron-down fa-xs opacity-75"></i>
+        </button>
+        <div class="mobile-tab-menu" id="mobileTabMenuList">
+          <div class="mobile-tab-item active" onclick="selectMobileTab('mail', event)">
+            <i class="fa-solid fa-inbox text-warning me-2"></i><span data-i18n="tab_mail">Mail Checker</span>
+          </div>
+          <div class="mobile-tab-item" onclick="selectMobileTab('capcut', event)">
+            <i class="fa-solid fa-film text-warning me-2"></i><span data-i18n="tab_capcut">CapCut Checker</span>
+          </div>
+          <div class="mobile-tab-item" onclick="selectMobileTab('2fa', event)">
+            <i class="fa-solid fa-key text-warning me-2"></i><span data-i18n="tab_2fa">2FA Generator</span>
+          </div>
+          <div class="mobile-tab-item" onclick="selectMobileTab('proxy', event)">
+            <i class="fa-solid fa-server text-warning me-2"></i><span data-i18n="tab_proxy">Proxy Checker</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Single Unified Language Selector Dropdown -->
       <div class="lang-wrapper" id="langSelectorWrapper">
         <button class="btn btn-sm btn-outline-gold px-2.5 py-1 fw-bold d-flex align-items-center gap-1.5" type="button" id="langDropdownBtn" onclick="toggleLangMenu(event)" style="font-size: 0.82rem; border-radius: 8px;">
-          <span id="currentLangFlag">🇮🇩</span> <span id="currentLangCode">ID</span>
+          <span class="currentLangFlag">🇮🇩</span> <span class="currentLangCode">ID</span>
           <i class="fa-solid fa-chevron-down fa-xs ms-1 opacity-75"></i>
         </button>
         <div class="lang-dropdown-menu" id="langDropdownList">
-          <div class="lang-dropdown-item" onclick="selectAppLanguage('id', event)"><span>🇮🇩</span> <span>Bahasa Indonesia</span></div>
-          <div class="lang-dropdown-item" onclick="selectAppLanguage('en', event)"><span>🇬🇧</span> <span>English</span></div>
-          <div class="lang-dropdown-item" onclick="selectAppLanguage('vi', event)"><span>🇻🇳</span> <span>Tiếng Việt</span></div>
-          <div class="lang-dropdown-item" onclick="selectAppLanguage('zh', event)"><span>🇨🇳</span> <span>简体中文</span></div>
-          <div class="lang-dropdown-item" onclick="selectAppLanguage('ru', event)"><span>🇷🇺</span> <span>Русский</span></div>
-          <div class="lang-dropdown-item" onclick="selectAppLanguage('es', event)"><span>🇪🇸</span> <span>Español</span></div>
-          <div class="lang-dropdown-item" onclick="selectAppLanguage('pt', event)"><span>🇧🇷</span> <span>Português</span></div>
+          <div class="lang-dropdown-item" onclick="selectAppLanguage('id', event)"><span class="fs-6">🇮🇩</span> <span>Bahasa Indonesia</span></div>
+          <div class="lang-dropdown-item" onclick="selectAppLanguage('en', event)"><span class="fs-6">🇬🇧</span> <span>English</span></div>
+          <div class="lang-dropdown-item" onclick="selectAppLanguage('vi', event)"><span class="fs-6">🇻🇳</span> <span>Tiếng Việt</span></div>
+          <div class="lang-dropdown-item" onclick="selectAppLanguage('zh', event)"><span class="fs-6">🇨🇳</span> <span>简体中文</span></div>
+          <div class="lang-dropdown-item" onclick="selectAppLanguage('ru', event)"><span class="fs-6">🇷🇺</span> <span>Русский</span></div>
+          <div class="lang-dropdown-item" onclick="selectAppLanguage('es', event)"><span class="fs-6">🇪🇸</span> <span>Español</span></div>
+          <div class="lang-dropdown-item" onclick="selectAppLanguage('pt', event)"><span class="fs-6">🇧🇷</span> <span>Português</span></div>
         </div>
       </div>
     </div>
@@ -1876,7 +2076,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script>
     /* ================= INTERNATIONALIZATION (i18n) ================= */
-    const I18N_DICTS = {"id": {"brand_sub": "MULTI TOOLS • LAYANAN SOSMED", "tab_mail": "Mail Checker", "tab_capcut": "CapCut Checker", "tab_2fa": "2FA Generator", "tab_proxy": "Proxy Checker", "tm_accounts_title": "Accounts", "tm_clear_all_title": "Hapus Semua Akun", "tm_search_acc_ph": "Cari email akun...", "tm_upload_txt": "Upload .TXT", "tm_upload_txt_title": "Upload File .TXT (Bulk Auto-read)", "tm_add_btn": "Add", "tm_add_btn_title": "Tambah Akun Manual", "tm_mode_search": "Mode: Cari Email", "tm_mode_all": "Mode: Semua Akun", "tm_show_all": "Tampilkan Semua", "tm_search_only": "Mode Cari Saja", "tm_empty_acc_msg": "Belum ada akun.<br>Upload file <b>.TXT</b> atau klik <b>Add</b>.", "tm_inbox_title": "INBOX", "tm_btn_accounts": "Akun", "tm_filter_msg_ph": "Filter pengirim / subjek...", "tm_empty_inbox_select": "Pilih akun di sebelah kiri untuk melihat pesan inbox.", "tm_active_email_placeholder": "Pilih Akun", "tm_badge_standby": "● Standby", "tm_badge_connected": "● Connected", "tm_badge_disconnected": "● Disconnected", "tm_btn_copy": "Copy", "tm_no_email_selected": "Belum ada email yang dipilih", "tm_click_inbox_hint": "Klik salah satu email dari daftar inbox untuk membaca isi surat.", "tm_otp_detected": "KODE VERIFIKASI / OTP TERDETEKSI", "tm_btn_copy_otp": "Salin OTP", "tm_copied": "Disalin!", "tm_search_another_title": "Cari Akun Lain", "tm_search_another_desc": "Ketik email di kolom pencarian di atas untuk memilih akun.", "tm_accounts_avail": "Akun Tersedia", "tm_inbox_empty": "Inbox kosong.", "tm_no_msg_filter": "Tidak ada pesan yang cocok dengan filter.", "tm_no_acc_match": "Tidak ada akun yang cocok dengan", "tm_delete_acc_confirm": "Hapus {email} dari daftar?", "tm_clear_all_confirm": "Hapus semua daftar akun Mail Checker?", "tm_extracting": "Mengekstrak & memeriksa akun...", "tm_modal_add_title": "Add Outlook / Hotmail Accounts", "tm_modal_upload_label": "UPLOAD FILE .TXT (Bulk Import)", "tm_modal_paste_label": "ATAU PASTE TOKENS (email|pass|refresh_token|client_id atau token saja)", "tm_modal_proxy_label": "PROXY (Opsional: http://user:pass@host:port)", "tm_modal_proxy_ph": "Kosongkan jika direct", "tm_modal_btn_cancel": "Batal", "tm_modal_btn_import": "Import & Check", "cc_card_title": "Input Akun CapCut", "cc_acc_label": "DAFTAR AKUN (email:pass, email|pass, dll)", "cc_acc_ph": "user1@example.com:password123\\nuser2@example.com|password456", "cc_proxy_label": "RESIDENTIAL PROXY URL (Wajib)", "cc_proxy_help": "Gunakan token <code>{sess}</code> untuk rotasi IP otomatis.", "cc_threads_label": "THREADS", "cc_retries_label": "IP RETRIES", "cc_btn_start": "Mulai Check CapCut", "cc_btn_stop": "Stop", "cc_results_title": "Hasil Pengecekan CapCut", "cc_pro_title": "PRO / VIP", "cc_pro_ph": "Akun PRO akan muncul di sini...", "cc_free_title": "FREE / REGULAR", "cc_free_ph": "Akun FREE akan muncul di sini...", "cc_dead_title": "DEAD / ERROR", "cc_dead_ph": "Akun Gagal akan muncul di sini...", "cc_btn_copy": "Copy", "cc_btn_save": "Save", "cc_alert_empty": "Silakan masukkan daftar akun CapCut!", "cc_alert_no_valid": "Tidak ada akun valid yang ditemukan!", "tfa_single_title": "Quick 2FA Code (Single)", "tfa_single_desc": "Masukkan 2FA Secret Key (Base32) untuk mendapatkan kode verifikasi 6 digit instan.", "tfa_single_label": "2FA SECRET KEY", "tfa_single_ph": "Contoh: JBSWY3DPEHPK3PXP", "tfa_btn_get": "Get Code", "tfa_auth_code_label": "AUTHENTICATOR CODE", "tfa_btn_copy_code": "Salin Kode", "tfa_bulk_title": "Bulk 2FA Generator", "tfa_bulk_desc": "Mendukung paste banyak Secret Key atau baris combo (format <code>email|pass|secret</code> atau secret per baris).", "tfa_bulk_label": "INPUT LIST SECRETS / COMBOS", "tfa_bulk_ph": "Contoh format:\\nuser1@email.com|pass1|JBSWY3DPEHPK3PXP\\nuser2@email.com:pass2:4X72J6...\\nHXDMVJZTGNCDESRR...", "tfa_btn_gen_all": "Generate All Codes", "tfa_bulk_res_label": "HASIL (FORMAT COMBO + 2FA CODE)", "tfa_bulk_res_ph": "Hasil kode 2FA akan muncul di sini...", "tfa_alert_empty_single": "Silakan masukkan 2FA Secret Key!", "tfa_alert_empty_bulk": "Silakan masukkan list secret / combo!", "tfa_processing": "Memproses...", "prx_title": "Proxy Checker", "prx_desc": "Dukungan format: <code>HOST:PORT</code>, <code>HOST:PORT:USER:PASS</code>, <code>USER:PASS:HOST:PORT</code>, atau <code>scheme://...</code>", "prx_input_label": "INPUT PROXY LIST", "prx_btn_sample": "Sample", "prx_btn_clear": "Clear", "prx_input_ph": "Contoh format:\\n192.168.1.1:8080\\n192.168.1.1:8080:username:password\\nusername:password:192.168.1.1:8080\\nhttp://user:pass@192.168.1.1:8080", "prx_threads_label": "THREADS", "prx_timeout_label": "TIMEOUT (s)", "prx_scamalytics_toggle": "Scamalytics Fraud Score Check", "prx_btn_start": "Start Checking", "prx_btn_stop": "Stop", "prx_stat_total": "TOTAL", "prx_stat_live": "LIVE", "prx_stat_dead": "DEAD", "prx_stat_latency": "AVG LATENCY", "prx_stat_clean": "LOW FRAUD (<25)", "prx_filter_all": "All", "prx_filter_live": "Live", "prx_filter_dead": "Dead", "prx_filter_clean": "Low Fraud", "prx_search_ph": "Cari IP / Negara...", "prx_btn_export": "Export", "prx_exp_live_raw": "Copy Live (Original Format)", "prx_exp_live_ipport": "Copy Live (HOST:PORT)", "prx_exp_live_txt": "Download Live (.TXT)", "prx_exp_report_json": "Download Full Report (.JSON)", "prx_th_proxy": "PROXY", "prx_th_status": "STATUS", "prx_th_ping": "PING", "prx_th_loc": "EXIT IP & LOCATION", "prx_th_isp": "ISP / ORG", "prx_th_fraud": "FRAUD RISK", "prx_th_act": "ACT", "prx_empty_table": "Belum ada proxy yang diperiksa. Masukkan list proxy dan klik <b>Start Checking</b>.", "prx_no_match": "Tidak ada proxy yang cocok dengan filter atau pencarian.", "prx_modal_title": "Proxy Diagnostic Details", "prx_modal_close": "Tutup", "prx_alert_empty": "Silakan masukkan list proxy!", "prx_no_live_copy": "Tidak ada proxy LIVE untuk disalin.", "prx_no_live_dl": "Tidak ada proxy LIVE untuk diunduh."}, "en": {"brand_sub": "MULTI TOOLS • SOCIAL MEDIA SUITE", "tab_mail": "Mail Checker", "tab_capcut": "CapCut Checker", "tab_2fa": "2FA Generator", "tab_proxy": "Proxy Checker", "tm_accounts_title": "Accounts", "tm_clear_all_title": "Clear All Accounts", "tm_search_acc_ph": "Search account email...", "tm_upload_txt": "Upload .TXT", "tm_upload_txt_title": "Upload .TXT File (Bulk Auto-read)", "tm_add_btn": "Add", "tm_add_btn_title": "Add Account Manually", "tm_mode_search": "Mode: Search Email", "tm_mode_all": "Mode: All Accounts", "tm_show_all": "Show All", "tm_search_only": "Search Only Mode", "tm_empty_acc_msg": "No accounts yet.<br>Upload a <b>.TXT</b> file or click <b>Add</b>.", "tm_inbox_title": "INBOX", "tm_btn_accounts": "Accounts", "tm_filter_msg_ph": "Filter sender / subject...", "tm_empty_inbox_select": "Select an account on the left to view inbox messages.", "tm_active_email_placeholder": "Select Account", "tm_badge_standby": "● Standby", "tm_badge_connected": "● Connected", "tm_badge_disconnected": "● Disconnected", "tm_btn_copy": "Copy", "tm_no_email_selected": "No email selected", "tm_click_inbox_hint": "Click an email from the inbox list to read its contents.", "tm_otp_detected": "VERIFICATION CODE / OTP DETECTED", "tm_btn_copy_otp": "Copy OTP", "tm_copied": "Copied!", "tm_search_another_title": "Search Another Account", "tm_search_another_desc": "Type an email in the search box above to pick an account.", "tm_accounts_avail": "Accounts Available", "tm_inbox_empty": "Inbox is empty.", "tm_no_msg_filter": "No messages match your filter.", "tm_no_acc_match": "No accounts matching", "tm_delete_acc_confirm": "Delete {email} from list?", "tm_clear_all_confirm": "Clear all Mail Checker accounts?", "tm_extracting": "Extracting & verifying accounts...", "tm_modal_add_title": "Add Outlook / Hotmail Accounts", "tm_modal_upload_label": "UPLOAD .TXT FILE (Bulk Import)", "tm_modal_paste_label": "OR PASTE TOKENS (email|pass|refresh_token|client_id or token only)", "tm_modal_proxy_label": "PROXY (Optional: http://user:pass@host:port)", "tm_modal_proxy_ph": "Leave blank if direct connection", "tm_modal_btn_cancel": "Cancel", "tm_modal_btn_import": "Import & Check", "cc_card_title": "CapCut Account Input", "cc_acc_label": "ACCOUNT LIST (email:pass, email|pass, etc)", "cc_acc_ph": "user1@example.com:password123\\nuser2@example.com|password456", "cc_proxy_label": "RESIDENTIAL PROXY URL (Required)", "cc_proxy_help": "Use token <code>{sess}</code> for automatic IP rotation.", "cc_threads_label": "THREADS", "cc_retries_label": "IP RETRIES", "cc_btn_start": "Start CapCut Check", "cc_btn_stop": "Stop", "cc_results_title": "CapCut Check Results", "cc_pro_title": "PRO / VIP", "cc_pro_ph": "PRO accounts will appear here...", "cc_free_title": "FREE / REGULAR", "cc_free_ph": "FREE accounts will appear here...", "cc_dead_title": "DEAD / ERROR", "cc_dead_ph": "Failed accounts will appear here...", "cc_btn_copy": "Copy", "cc_btn_save": "Save", "cc_alert_empty": "Please enter CapCut account list!", "cc_alert_no_valid": "No valid accounts found!", "tfa_single_title": "Quick 2FA Code (Single)", "tfa_single_desc": "Enter a 2FA Secret Key (Base32) to generate instant 6-digit verification codes.", "tfa_single_label": "2FA SECRET KEY", "tfa_single_ph": "Example: JBSWY3DPEHPK3PXP", "tfa_btn_get": "Get Code", "tfa_auth_code_label": "AUTHENTICATOR CODE", "tfa_btn_copy_code": "Copy Code", "tfa_bulk_title": "Bulk 2FA Generator", "tfa_bulk_desc": "Supports pasting multiple Secret Keys or combo lines (format <code>email|pass|secret</code> or secret per line).", "tfa_bulk_label": "INPUT LIST SECRETS / COMBOS", "tfa_bulk_ph": "Example format:\\nuser1@email.com|pass1|JBSWY3DPEHPK3PXP\\nuser2@email.com:pass2:4X72J6...\\nHXDMVJZTGNCDESRR...", "tfa_btn_gen_all": "Generate All Codes", "tfa_bulk_res_label": "RESULTS (COMBO + 2FA CODE FORMAT)", "tfa_bulk_res_ph": "Generated 2FA codes will appear here...", "tfa_alert_empty_single": "Please enter a 2FA Secret Key!", "tfa_alert_empty_bulk": "Please enter secret list or combo lines!", "tfa_processing": "Processing...", "prx_title": "Proxy Checker", "prx_desc": "Supported formats: <code>HOST:PORT</code>, <code>HOST:PORT:USER:PASS</code>, <code>USER:PASS:HOST:PORT</code>, or <code>scheme://...</code>", "prx_input_label": "INPUT PROXY LIST", "prx_btn_sample": "Sample", "prx_btn_clear": "Clear", "prx_input_ph": "Example format:\\n192.168.1.1:8080\\n192.168.1.1:8080:username:password\\nusername:password:192.168.1.1:8080\\nhttp://user:pass@192.168.1.1:8080", "prx_threads_label": "THREADS", "prx_timeout_label": "TIMEOUT (s)", "prx_scamalytics_toggle": "Scamalytics Fraud Score Check", "prx_btn_start": "Start Checking", "prx_btn_stop": "Stop", "prx_stat_total": "TOTAL", "prx_stat_live": "LIVE", "prx_stat_dead": "DEAD", "prx_stat_latency": "AVG LATENCY", "prx_stat_clean": "LOW FRAUD (<25)", "prx_filter_all": "All", "prx_filter_live": "Live", "prx_filter_dead": "Dead", "prx_filter_clean": "Low Fraud", "prx_search_ph": "Search IP / Country...", "prx_btn_export": "Export", "prx_exp_live_raw": "Copy Live (Original Format)", "prx_exp_live_ipport": "Copy Live (HOST:PORT)", "prx_exp_live_txt": "Download Live (.TXT)", "prx_exp_report_json": "Download Full Report (.JSON)", "prx_th_proxy": "PROXY", "prx_th_status": "STATUS", "prx_th_ping": "PING", "prx_th_loc": "EXIT IP & LOCATION", "prx_th_isp": "ISP / ORG", "prx_th_fraud": "FRAUD RISK", "prx_th_act": "ACT", "prx_empty_table": "No proxies checked yet. Enter proxy list and click <b>Start Checking</b>.", "prx_no_match": "No proxies match your search or filter.", "prx_modal_title": "Proxy Diagnostic Details", "prx_modal_close": "Close", "prx_alert_empty": "Please enter a proxy list!", "prx_no_live_copy": "No LIVE proxies to copy.", "prx_no_live_dl": "No LIVE proxies to download."}, "vi": {"brand_sub": "ĐA CÔNG CỤ • DỊCH VỤ MẠNG XÃ HỘI", "tab_mail": "Kiểm Tra Mail", "tab_capcut": "Kiểm Tra CapCut", "tab_2fa": "Tạo Mã 2FA", "tab_proxy": "Kiểm Tra Proxy", "tm_accounts_title": "Tài Khoản", "tm_clear_all_title": "Xóa Tất Cả Tài Khoản", "tm_search_acc_ph": "Tìm kiếm email tài khoản...", "tm_upload_txt": "Tải Lên .TXT", "tm_upload_txt_title": "Tải Tệp .TXT (Nhập Tự Động Hàng Loạt)", "tm_add_btn": "Thêm", "tm_add_btn_title": "Thêm Tài Khoản Thủ Công", "tm_mode_search": "Chế độ: Tìm Email", "tm_mode_all": "Chế độ: Tất Cả", "tm_show_all": "Hiện Tất Cả", "tm_search_only": "Chỉ Tìm Kiếm", "tm_empty_acc_msg": "Chưa có tài khoản.<br>Tải lên tệp <b>.TXT</b> hoặc bấm <b>Thêm</b>.", "tm_inbox_title": "HỘP THƯ ĐẾN", "tm_btn_accounts": "Tài Khoản", "tm_filter_msg_ph": "Lọc người gửi / tiêu đề...", "tm_empty_inbox_select": "Chọn một tài khoản ở bên trái để xem tin nhắn.", "tm_active_email_placeholder": "Chọn Tài Khoản", "tm_badge_standby": "● Chờ", "tm_badge_connected": "● Đã Kết Nối", "tm_badge_disconnected": "● Ngắt Kết Nối", "tm_btn_copy": "Sao Chép", "tm_no_email_selected": "Chưa chọn thư nào", "tm_click_inbox_hint": "Bấm vào một thư trong danh sách để đọc nội dung.", "tm_otp_detected": "PHÁT HIỆN MÃ XÁC THỰC / OTP", "tm_btn_copy_otp": "Sao Chép OTP", "tm_copied": "Đã sao chép!", "tm_search_another_title": "Tìm Tài Khoản Khác", "tm_search_another_desc": "Gõ email vào ô tìm kiếm phía trên để chọn tài khoản.", "tm_accounts_avail": "Tài Khoản Khả Dụng", "tm_inbox_empty": "Hộp thư rỗng.", "tm_no_msg_filter": "Không có thư nào khớp bộ lọc.", "tm_no_acc_match": "Không tìm thấy tài khoản", "tm_delete_acc_confirm": "Xóa {email} khỏi danh sách?", "tm_clear_all_confirm": "Xóa toàn bộ tài khoản Mail Checker?", "tm_extracting": "Đang trích xuất & kiểm tra...", "tm_modal_add_title": "Thêm Tài Khoản Outlook / Hotmail", "tm_modal_upload_label": "TẢI TỆP .TXT (Nhập Hàng Loạt)", "tm_modal_paste_label": "HOẶC DÁN TOKEN (email|pass|refresh_token|client_id)", "tm_modal_proxy_label": "PROXY (Tùy chọn: http://user:pass@host:port)", "tm_modal_proxy_ph": "Để trống nếu kết nối trực tiếp", "tm_modal_btn_cancel": "Hủy", "tm_modal_btn_import": "Nhập & Kiểm Tra", "cc_card_title": "Nhập Tài Khoản CapCut", "cc_acc_label": "DANH SÁCH (email:pass, email|pass,...)", "cc_acc_ph": "user1@example.com:password123\\nuser2@example.com|password456", "cc_proxy_label": "URL PROXY RESIDENTIAL (Bắt buộc)", "cc_proxy_help": "Dùng <code>{sess}</code> để tự động xoay IP.", "cc_threads_label": "LUỒNG", "cc_retries_label": "THỬ LẠI IP", "cc_btn_start": "Bắt Đầu Check CapCut", "cc_btn_stop": "Dừng", "cc_results_title": "Kết Quả Check CapCut", "cc_pro_title": "PRO / VIP", "cc_pro_ph": "Tài khoản PRO sẽ hiển thị ở đây...", "cc_free_title": "FREE / THƯỜNG", "cc_free_ph": "Tài khoản FREE sẽ hiển thị ở đây...", "cc_dead_title": "DEAD / LỖI", "cc_dead_ph": "Tài khoản lỗi sẽ hiển thị ở đây...", "cc_btn_copy": "Sao Chép", "cc_btn_save": "Lưu", "cc_alert_empty": "Vui lòng nhập danh sách tài khoản CapCut!", "cc_alert_no_valid": "Không tìm thấy tài khoản hợp lệ!", "tfa_single_title": "Mã 2FA Nhanh (Đơn)", "tfa_single_desc": "Nhập 2FA Secret Key (Base32) để nhận mã xác minh 6 số tức thì.", "tfa_single_label": "2FA SECRET KEY", "tfa_single_ph": "Ví dụ: JBSWY3DPEHPK3PXP", "tfa_btn_get": "Lấy Mã", "tfa_auth_code_label": "MÃ XÁC THỰC", "tfa_btn_copy_code": "Sao Chép Mã", "tfa_bulk_title": "Tạo 2FA Hàng Loạt", "tfa_bulk_desc": "Hỗ trợ dán nhiều Secret Key hoặc dòng combo (định dạng <code>email|pass|secret</code> hoặc secret mỗi dòng).", "tfa_bulk_label": "NHẬP DANH SÁCH SECRETS / COMBOS", "tfa_bulk_ph": "Ví dụ:\\nuser1@email.com|pass1|JBSWY3DPEHPK3PXP\\nuser2@email.com:pass2:4X72J6...", "tfa_btn_gen_all": "Tạo Tất Cả Mã", "tfa_bulk_res_label": "KẾT QUẢ (COMBO + MÃ 2FA)", "tfa_bulk_res_ph": "Mã 2FA sẽ xuất hiện tại đây...", "tfa_alert_empty_single": "Vui lòng nhập Secret Key 2FA!", "tfa_alert_empty_bulk": "Vui lòng nhập danh sách secret/combo!", "tfa_processing": "Đang xử lý...", "prx_title": "Kiểm Tra Proxy", "prx_desc": "Hỗ trợ: <code>HOST:PORT</code>, <code>HOST:PORT:USER:PASS</code>, <code>USER:PASS:HOST:PORT</code>, hoặc <code>scheme://...</code>", "prx_input_label": "DANH SÁCH PROXY", "prx_btn_sample": "Mẫu", "prx_btn_clear": "Xóa", "prx_input_ph": "Ví dụ:\\n192.168.1.1:8080\\n192.168.1.1:8080:user:pass", "prx_threads_label": "LUỒNG", "prx_timeout_label": "THỜI GIAN CHỜ (s)", "prx_scamalytics_toggle": "Kiểm Tra Điểm Gian Lận Scamalytics", "prx_btn_start": "Bắt Đầu Kiểm Tra", "prx_btn_stop": "Dừng", "prx_stat_total": "TỔNG SỐ", "prx_stat_live": "SỐNG (LIVE)", "prx_stat_dead": "CHẾT (DEAD)", "prx_stat_latency": "ĐỘ TRỄ TB", "prx_stat_clean": "RỦI RO THẤP (<25)", "prx_filter_all": "Tất Cả", "prx_filter_live": "Sống", "prx_filter_dead": "Chết", "prx_filter_clean": "Sạch (Low Fraud)", "prx_search_ph": "Tìm IP / Quốc gia...", "prx_btn_export": "Xuất Dữ Liệu", "prx_exp_live_raw": "Sao Chép Live (Định Dạng Gốc)", "prx_exp_live_ipport": "Sao Chép Live (HOST:PORT)", "prx_exp_live_txt": "Tải Xuống Live (.TXT)", "prx_exp_report_json": "Tải Báo Cáo Đầy Đủ (.JSON)", "prx_th_proxy": "PROXY", "prx_th_status": "TRẠNG THÁI", "prx_th_ping": "PING", "prx_th_loc": "IP THOÁT & VỊ TRÍ", "prx_th_isp": "NHÀ MẠNG / TỔ CHỨC", "prx_th_fraud": "ĐIỂM RỦI RO", "prx_th_act": "CHI TIẾT", "prx_empty_table": "Chưa kiểm tra proxy nào. Nhập danh sách và bấm <b>Bắt Đầu Kiểm Tra</b>.", "prx_no_match": "Không có proxy nào khớp bộ lọc.", "prx_modal_title": "Chi Tiết Chẩn Đoán Proxy", "prx_modal_close": "Đóng", "prx_alert_empty": "Vui lòng nhập danh sách proxy!", "prx_no_live_copy": "Không có proxy LIVE nào để sao chép.", "prx_no_live_dl": "Không có proxy LIVE nào để tải về."}, "zh": {"brand_sub": "多功能工具箱 • 社交媒体服务", "tab_mail": "邮箱检测器", "tab_capcut": "CapCut检测器", "tab_2fa": "2FA生成器", "tab_proxy": "代理检测器", "tm_accounts_title": "账号列表", "tm_clear_all_title": "清空所有账号", "tm_search_acc_ph": "搜索账号邮箱...", "tm_upload_txt": "上传 .TXT", "tm_upload_txt_title": "上传 .TXT 文件 (批量自动读取)", "tm_add_btn": "添加", "tm_add_btn_title": "手动添加账号", "tm_mode_search": "模式: 搜索邮箱", "tm_mode_all": "模式: 全部账号", "tm_show_all": "显示全部", "tm_search_only": "仅搜索模式", "tm_empty_acc_msg": "暂无账号。<br>上传 <b>.TXT</b> 文件或点击 <b>添加</b>。", "tm_inbox_title": "收件箱", "tm_btn_accounts": "账号", "tm_filter_msg_ph": "过滤发件人 / 主题...", "tm_empty_inbox_select": "请在左侧选择账号以查看收件箱消息。", "tm_active_email_placeholder": "选择账号", "tm_badge_standby": "● 待命", "tm_badge_connected": "● 已连接", "tm_badge_disconnected": "● 已断开", "tm_btn_copy": "复制", "tm_no_email_selected": "未选择邮件", "tm_click_inbox_hint": "点击收件箱列表中的邮件以阅读详细内容。", "tm_otp_detected": "已检测到验证码 / OTP", "tm_btn_copy_otp": "复制验证码", "tm_copied": "已复制!", "tm_search_another_title": "搜索其他账号", "tm_search_another_desc": "在上方搜索框输入邮箱以选取账号。", "tm_accounts_avail": "个可用账号", "tm_inbox_empty": "收件箱为空。", "tm_no_msg_filter": "没有符合过滤条件的消息。", "tm_no_acc_match": "未找到匹配账号", "tm_delete_acc_confirm": "确定从列表中删除 {email} 吗？", "tm_clear_all_confirm": "确定清空所有邮箱检测账号吗？", "tm_extracting": "正在提取并检测账号...", "tm_modal_add_title": "添加 Outlook / Hotmail 账号", "tm_modal_upload_label": "上传 .TXT 文件 (批量导入)", "tm_modal_paste_label": "或粘贴令牌 (email|pass|refresh_token|client_id 或仅token)", "tm_modal_proxy_label": "代理 (可选: http://user:pass@host:port)", "tm_modal_proxy_ph": "直接连接请留空", "tm_modal_btn_cancel": "取消", "tm_modal_btn_import": "导入并检测", "cc_card_title": "输入 CapCut 账号", "cc_acc_label": "账号列表 (email:pass, email|pass 等)", "cc_acc_ph": "user1@example.com:password123\\nuser2@example.com|password456", "cc_proxy_label": "住宅代理 URL (必填)", "cc_proxy_help": "使用 <code>{sess}</code> 变量实现自动轮换 IP。", "cc_threads_label": "线程数", "cc_retries_label": "IP重试次数", "cc_btn_start": "开始检测 CapCut", "cc_btn_stop": "停止", "cc_results_title": "CapCut 检测结果", "cc_pro_title": "PRO / VIP 会员", "cc_pro_ph": "PRO 账号将在此显示...", "cc_free_title": "FREE / 普通账号", "cc_free_ph": "FREE 账号将在此显示...", "cc_dead_title": "DEAD / 错误账号", "cc_dead_ph": "失败账号将在此显示...", "cc_btn_copy": "复制", "cc_btn_save": "保存", "cc_alert_empty": "请输入 CapCut 账号列表！", "cc_alert_no_valid": "未找到有效账号！", "tfa_single_title": "快捷 2FA 验证码 (单条)", "tfa_single_desc": "输入 2FA Secret Key (Base32) 即刻生成6位动态验证码。", "tfa_single_label": "2FA 密钥 (SECRET KEY)", "tfa_single_ph": "示例: JBSWY3DPEHPK3PXP", "tfa_btn_get": "获取验证码", "tfa_auth_code_label": "动态验证码", "tfa_btn_copy_code": "复制代码", "tfa_bulk_title": "批量 2FA 生成器", "tfa_bulk_desc": "支持批量粘贴密钥或组合行 (格式: <code>email|pass|secret</code> 或每行一个密钥)。", "tfa_bulk_label": "输入密钥列表 / 组合数据", "tfa_bulk_ph": "示例格式:\\nuser1@email.com|pass1|JBSWY3DPEHPK3PXP\\nuser2@email.com:pass2:4X72J6...", "tfa_btn_gen_all": "批量生成所有验证码", "tfa_bulk_res_label": "生成结果 (组合格式 + 2FA 码)", "tfa_bulk_res_ph": "2FA 结果将在此显示...", "tfa_alert_empty_single": "请输入 2FA 密钥！", "tfa_alert_empty_bulk": "请输入密钥列表或组合数据！", "tfa_processing": "处理中...", "prx_title": "代理检测器", "prx_desc": "支持格式: <code>HOST:PORT</code>, <code>HOST:PORT:USER:PASS</code>, <code>USER:PASS:HOST:PORT</code>, 或 <code>scheme://...</code>", "prx_input_label": "输入代理列表", "prx_btn_sample": "示例", "prx_btn_clear": "清空", "prx_input_ph": "示例格式:\\n192.168.1.1:8080\\n192.168.1.1:8080:username:password", "prx_threads_label": "并发线程", "prx_timeout_label": "超时时间 (秒)", "prx_scamalytics_toggle": "Scamalytics 欺诈风险深度检测", "prx_btn_start": "开始检测", "prx_btn_stop": "停止", "prx_stat_total": "总数", "prx_stat_live": "存活 (LIVE)", "prx_stat_dead": "失效 (DEAD)", "prx_stat_latency": "平均延迟", "prx_stat_clean": "低风险 (<25)", "prx_filter_all": "全部", "prx_filter_live": "存活", "prx_filter_dead": "失效", "prx_filter_clean": "纯净 (低风险)", "prx_search_ph": "搜索 IP / 国家...", "prx_btn_export": "导出数据", "prx_exp_live_raw": "复制存活 (原始格式)", "prx_exp_live_ipport": "复制存活 (HOST:PORT)", "prx_exp_live_txt": "下载存活 (.TXT)", "prx_exp_report_json": "下载完整报告 (.JSON)", "prx_th_proxy": "代理地址", "prx_th_status": "状态", "prx_th_ping": "延迟", "prx_th_loc": "出口IP与归属地", "prx_th_isp": "运营商 / 组织", "prx_th_fraud": "欺诈评分", "prx_th_act": "详情", "prx_empty_table": "尚未检测任何代理。输入代理列表并点击 <b>开始检测</b>。", "prx_no_match": "没有匹配的代理数据。", "prx_modal_title": "代理诊断详情", "prx_modal_close": "关闭", "prx_alert_empty": "请输入代理列表！", "prx_no_live_copy": "没有存活的代理可供复制。", "prx_no_live_dl": "没有存活的代理可供下载。"}, "ru": {"brand_sub": "МУЛЬТИ-ИНСТРУМЕНТЫ • SMM СЕРВИС", "tab_mail": "Чекер Почты", "tab_capcut": "Чекер CapCut", "tab_2fa": "Генератор 2FA", "tab_proxy": "Чекер Прокси", "tm_accounts_title": "Аккаунты", "tm_clear_all_title": "Удалить все аккаунты", "tm_search_acc_ph": "Поиск email аккаунта...", "tm_upload_txt": "Загрузить .TXT", "tm_upload_txt_title": "Загрузить файл .TXT (Массовый импорт)", "tm_add_btn": "Добавить", "tm_add_btn_title": "Добавить аккаунт вручную", "tm_mode_search": "Режим: Поиск Email", "tm_mode_all": "Режим: Все Аккаунты", "tm_show_all": "Показать все", "tm_search_only": "Только поиск", "tm_empty_acc_msg": "Нет аккаунтов.<br>Загрузите файл <b>.TXT</b> или нажмите <b>Добавить</b>.", "tm_inbox_title": "ВХОДЯЩИЕ", "tm_btn_accounts": "Аккаунты", "tm_filter_msg_ph": "Фильтр отправителя / темы...", "tm_empty_inbox_select": "Выберите аккаунт слева для просмотра входящих сообщений.", "tm_active_email_placeholder": "Выберите аккаунт", "tm_badge_standby": "● Ожидание", "tm_badge_connected": "● Подключено", "tm_badge_disconnected": "● Отключено", "tm_btn_copy": "Копировать", "tm_no_email_selected": "Письмо не выбрано", "tm_click_inbox_hint": "Нажмите на письмо в списке входящих, чтобы прочитать его.", "tm_otp_detected": "ОБНАРУЖЕН КОД ПОДТВЕРЖДЕНИЯ / OTP", "tm_btn_copy_otp": "Скопировать OTP", "tm_copied": "Скопировано!", "tm_search_another_title": "Найти другой аккаунт", "tm_search_another_desc": "Введите email в строке поиска выше, чтобы выбрать аккаунт.", "tm_accounts_avail": "Доступно аккаунтов", "tm_inbox_empty": "Входящие пусты.", "tm_no_msg_filter": "Нет сообщений, соответствующих фильтру.", "tm_no_acc_match": "Аккаунты не найдены", "tm_delete_acc_confirm": "Удалить {email} из списка?", "tm_clear_all_confirm": "Очистить все аккаунты чекера почты?", "tm_extracting": "Извлечение и проверка аккаунтов...", "tm_modal_add_title": "Добавить аккаунты Outlook / Hotmail", "tm_modal_upload_label": "ЗАГРУЗИТЬ ФАЙЛ .TXT (Массовый импорт)", "tm_modal_paste_label": "ИЛИ ВСТАВИТЬ ТОКЕНЫ (email|pass|refresh_token|client_id)", "tm_modal_proxy_label": "ПРОКСИ (Опционально: http://user:pass@host:port)", "tm_modal_proxy_ph": "Оставьте пустым для прямого соединения", "tm_modal_btn_cancel": "Отмена", "tm_modal_btn_import": "Импорт и проверка", "cc_card_title": "Ввод аккаунтов CapCut", "cc_acc_label": "СПИСОК АККАУНТОВ (email:pass, email|pass и т.д.)", "cc_acc_ph": "user1@example.com:password123\\nuser2@example.com|password456", "cc_proxy_label": "URL РЕЗИДЕНТСКИХ ПРОКСИ (Обязательно)", "cc_proxy_help": "Используйте <code>{sess}</code> для авто-ротации IP.", "cc_threads_label": "ПОТОКИ", "cc_retries_label": "ПОВТОРЫ IP", "cc_btn_start": "Начать проверку CapCut", "cc_btn_stop": "Стоп", "cc_results_title": "Результаты проверки CapCut", "cc_pro_title": "PRO / VIP", "cc_pro_ph": "PRO аккаунты появятся здесь...", "cc_free_title": "FREE / ОБЫЧНЫЕ", "cc_free_ph": "FREE аккаунты появятся здесь...", "cc_dead_title": "DEAD / ОШИБКА", "cc_dead_ph": "Невалидные аккаунты появятся здесь...", "cc_btn_copy": "Копировать", "cc_btn_save": "Сохранить", "cc_alert_empty": "Пожалуйста, введите список аккаунтов CapCut!", "cc_alert_no_valid": "Валидные аккаунты не найдены!", "tfa_single_title": "Быстрый 2FA код (Одиночный)", "tfa_single_desc": "Введите 2FA Secret Key (Base32) для мгновенной генерации 6-значного кода.", "tfa_single_label": "СЕКРЕТНЫЙ КЛЮЧ 2FA", "tfa_single_ph": "Пример: JBSWY3DPEHPK3PXP", "tfa_btn_get": "Получить код", "tfa_auth_code_label": "КОД АУТЕНТИФИКАЦИИ", "tfa_btn_copy_code": "Скопировать код", "tfa_bulk_title": "Массовый генератор 2FA", "tfa_bulk_desc": "Поддерживает вставку нескольких ключей или combo строк (формат <code>email|pass|secret</code>).", "tfa_bulk_label": "СПИСОК КЛЮЧЕЙ / COMBO", "tfa_bulk_ph": "Пример:\\nuser1@email.com|pass1|JBSWY3DPEHPK3PXP\\nuser2@email.com:pass2:4X72J6...", "tfa_btn_gen_all": "Сгенерировать все коды", "tfa_bulk_res_label": "РЕЗУЛЬТАТ (ФОРМАТ COMBO + 2FA КОД)", "tfa_bulk_res_ph": "Результаты 2FA появятся здесь...", "tfa_alert_empty_single": "Пожалуйста, введите секретный ключ 2FA!", "tfa_alert_empty_bulk": "Пожалуйста, введите список ключей или combo строк!", "tfa_processing": "Обработка...", "prx_title": "Чекер Прокси", "prx_desc": "Форматы: <code>HOST:PORT</code>, <code>HOST:PORT:USER:PASS</code>, <code>USER:PASS:HOST:PORT</code>, или <code>scheme://...</code>", "prx_input_label": "СПИСОК ПРОКСИ", "prx_btn_sample": "Пример", "prx_btn_clear": "Очистить", "prx_input_ph": "Пример:\\n192.168.1.1:8080\\n192.168.1.1:8080:user:pass", "prx_threads_label": "ПОТОКИ", "prx_timeout_label": "ТАЙМАУТ (сек)", "prx_scamalytics_toggle": "Глубокая проверка фрода Scamalytics", "prx_btn_start": "Начать проверку", "prx_btn_stop": "Стоп", "prx_stat_total": "ВСЕГО", "prx_stat_live": "ЖИВЫЕ (LIVE)", "prx_stat_dead": "МЕРТВЫЕ (DEAD)", "prx_stat_latency": "СР. ПИНГ", "prx_stat_clean": "НИЗКИЙ РИСК (<25)", "prx_filter_all": "Все", "prx_filter_live": "Живые", "prx_filter_dead": "Мертвые", "prx_filter_clean": "Чистые (<25)", "prx_search_ph": "Поиск IP / Страны...", "prx_btn_export": "Экспорт", "prx_exp_live_raw": "Копировать Live (Исходный формат)", "prx_exp_live_ipport": "Копировать Live (HOST:PORT)", "prx_exp_live_txt": "Скачать Live (.TXT)", "prx_exp_report_json": "Скачать полный отчет (.JSON)", "prx_th_proxy": "ПРОКСИ", "prx_th_status": "СТАТУС", "prx_th_ping": "ПИНГ", "prx_th_loc": "ВЫХОДНОЙ IP И ЛОКАЦИЯ", "prx_th_isp": "ПРОВАЙДЕР / ОРГ", "prx_th_fraud": "РИСК ФРОДА", "prx_th_act": "ИНФО", "prx_empty_table": "Прокси еще не проверены. Вставьте список и нажмите <b>Начать проверку</b>.", "prx_no_match": "Нет прокси, соответствующих фильтру.", "prx_modal_title": "Диагностика Прокси", "prx_modal_close": "Закрыть", "prx_alert_empty": "Пожалуйста, введите список прокси!", "prx_no_live_copy": "Нет LIVE прокси для копирования.", "prx_no_live_dl": "Нет LIVE прокси для скачивания."}, "es": {"brand_sub": "HERRAMIENTAS MÚLTIPLES • SERVICIOS SOCIALES", "tab_mail": "Verificador de Mail", "tab_capcut": "Verificador CapCut", "tab_2fa": "Generador 2FA", "tab_proxy": "Verificador de Proxy", "tm_accounts_title": "Cuentas", "tm_clear_all_title": "Borrar todas las cuentas", "tm_search_acc_ph": "Buscar correo de cuenta...", "tm_upload_txt": "Subir .TXT", "tm_upload_txt_title": "Subir archivo .TXT (Lectura masiva)", "tm_add_btn": "Añadir", "tm_add_btn_title": "Añadir cuenta manual", "tm_mode_search": "Modo: Buscar Correo", "tm_mode_all": "Modo: Todas las Cuentas", "tm_show_all": "Mostrar Todo", "tm_search_only": "Solo Buscar", "tm_empty_acc_msg": "Aún no hay cuentas.<br>Sube un archivo <b>.TXT</b> o pulsa <b>Añadir</b>.", "tm_inbox_title": "BANDEJA DE ENTRADA", "tm_btn_accounts": "Cuentas", "tm_filter_msg_ph": "Filtrar remitente / asunto...", "tm_empty_inbox_select": "Selecciona una cuenta a la izquierda para ver los mensajes.", "tm_active_email_placeholder": "Seleccionar Cuenta", "tm_badge_standby": "● En espera", "tm_badge_connected": "● Conectado", "tm_badge_disconnected": "● Desconectado", "tm_btn_copy": "Copiar", "tm_no_email_selected": "Ningún correo seleccionado", "tm_click_inbox_hint": "Haz clic en un correo de la lista para leer su contenido.", "tm_otp_detected": "CÓDIGO DE VERIFICACIÓN / OTP DETECTADO", "tm_btn_copy_otp": "Copiar OTP", "tm_copied": "¡Copiado!", "tm_search_another_title": "Buscar Otra Cuenta", "tm_search_another_desc": "Escribe el correo en el cuadro de búsqueda para elegir una cuenta.", "tm_accounts_avail": "Cuentas Disponibles", "tm_inbox_empty": "Bandeja vacía.", "tm_no_msg_filter": "No hay mensajes que coincidan con el filtro.", "tm_no_acc_match": "No se encontraron cuentas", "tm_delete_acc_confirm": "¿Eliminar {email} de la lista?", "tm_clear_all_confirm": "¿Borrar todas las cuentas del verificador?", "tm_extracting": "Extrayendo y verificando cuentas...", "tm_modal_add_title": "Añadir Cuentas Outlook / Hotmail", "tm_modal_upload_label": "SUBIR ARCHIVO .TXT (Importación Masiva)", "tm_modal_paste_label": "O PEGAR TOKENS (email|pass|refresh_token|client_id)", "tm_modal_proxy_label": "PROXY (Opcional: http://user:pass@host:port)", "tm_modal_proxy_ph": "Dejar en blanco si es directo", "tm_modal_btn_cancel": "Cancelar", "tm_modal_btn_import": "Importar y Verificar", "cc_card_title": "Entrada de Cuentas CapCut", "cc_acc_label": "LISTA DE CUENTAS (email:pass, email|pass, etc)", "cc_acc_ph": "user1@example.com:password123\\nuser2@example.com|password456", "cc_proxy_label": "URL PROXY RESIDENCIAL (Obligatorio)", "cc_proxy_help": "Usa <code>{sess}</code> para rotación automática de IP.", "cc_threads_label": "HILOS", "cc_retries_label": "REINTENTOS IP", "cc_btn_start": "Iniciar Verificación CapCut", "cc_btn_stop": "Detener", "cc_results_title": "Resultados de Verificación CapCut", "cc_pro_title": "PRO / VIP", "cc_pro_ph": "Las cuentas PRO aparecerán aquí...", "cc_free_title": "FREE / REGULAR", "cc_free_ph": "Las cuentas FREE aparecerán aquí...", "cc_dead_title": "DEAD / ERROR", "cc_dead_ph": "Las cuentas fallidas aparecerán aquí...", "cc_btn_copy": "Copiar", "cc_btn_save": "Guardar", "cc_alert_empty": "¡Por favor ingresa la lista de cuentas CapCut!", "cc_alert_no_valid": "¡No se encontraron cuentas válidas!", "tfa_single_title": "Código 2FA Rápido (Individual)", "tfa_single_desc": "Ingresa la clave secreta 2FA (Base32) para obtener códigos instantáneos de 6 dígitos.", "tfa_single_label": "CLAVE SECRETA 2FA", "tfa_single_ph": "Ejemplo: JBSWY3DPEHPK3PXP", "tfa_btn_get": "Obtener Código", "tfa_auth_code_label": "CÓDIGO DE AUTENTICACIÓN", "tfa_btn_copy_code": "Copiar Código", "tfa_bulk_title": "Generador 2FA Masivo", "tfa_bulk_desc": "Soporta pegar múltiples claves o líneas combo (formato <code>email|pass|secret</code>).", "tfa_bulk_label": "LISTA DE CLAVES / COMBOS", "tfa_bulk_ph": "Ejemplo:\\nuser1@email.com|pass1|JBSWY3DPEHPK3PXP\\nuser2@email.com:pass2:4X72J6...", "tfa_btn_gen_all": "Generar Todos los Códigos", "tfa_bulk_res_label": "RESULTADOS (FORMATO COMBO + CÓDIGO 2FA)", "tfa_bulk_res_ph": "Los códigos 2FA aparecerán aquí...", "tfa_alert_empty_single": "¡Por favor ingresa la clave secreta 2FA!", "tfa_alert_empty_bulk": "¡Por favor ingresa la lista de claves o combos!", "tfa_processing": "Procesando...", "prx_title": "Verificador de Proxy", "prx_desc": "Formatos: <code>HOST:PORT</code>, <code>HOST:PORT:USER:PASS</code>, <code>USER:PASS:HOST:PORT</code>, o <code>scheme://...</code>", "prx_input_label": "LISTA DE PROXIES", "prx_btn_sample": "Ejemplo", "prx_btn_clear": "Limpiar", "prx_input_ph": "Ejemplo:\\n192.168.1.1:8080\\n192.168.1.1:8080:user:pass", "prx_threads_label": "HILOS", "prx_timeout_label": "TIEMPO DE ESPERA (s)", "prx_scamalytics_toggle": "Verificación de Riesgo de Fraude Scamalytics", "prx_btn_start": "Iniciar Verificación", "prx_btn_stop": "Detener", "prx_stat_total": "TOTAL", "prx_stat_live": "VIVOS (LIVE)", "prx_stat_dead": "MUERTOS (DEAD)", "prx_stat_latency": "PING PROMEDIO", "prx_stat_clean": "BAJO FRAUDE (<25)", "prx_filter_all": "Todos", "prx_filter_live": "Vivos", "prx_filter_dead": "Muertos", "prx_filter_clean": "Bajo Fraude", "prx_search_ph": "Buscar IP / País...", "prx_btn_export": "Exportar", "prx_exp_live_raw": "Copiar Live (Formato Original)", "prx_exp_live_ipport": "Copiar Live (HOST:PORT)", "prx_exp_live_txt": "Descargar Live (.TXT)", "prx_exp_report_json": "Descargar Reporte Completo (.JSON)", "prx_th_proxy": "PROXY", "prx_th_status": "ESTADO", "prx_th_ping": "PING", "prx_th_loc": "IP SALIDA Y UBICACIÓN", "prx_th_isp": "PROVEEDOR / ORG", "prx_th_fraud": "RIESGO FRAUDE", "prx_th_act": "DETALLES", "prx_empty_table": "No se han verificado proxies aún. Ingresa la lista y pulsa <b>Iniciar Verificación</b>.", "prx_no_match": "No hay proxies que coincidan con el filtro.", "prx_modal_title": "Detalles de Diagnóstico de Proxy", "prx_modal_close": "Cerrar", "prx_alert_empty": "¡Por favor ingresa la lista de proxies!", "prx_no_live_copy": "No hay proxies LIVE para copiar.", "prx_no_live_dl": "No hay proxies LIVE para descargar."}, "pt": {"brand_sub": "MULTI FERRAMENTAS • PAINEL SOCIAL", "tab_mail": "Verificador de E-mail", "tab_capcut": "Verificador CapCut", "tab_2fa": "Gerador 2FA", "tab_proxy": "Verificador de Proxy", "tm_accounts_title": "Contas", "tm_clear_all_title": "Limpar Todas as Contas", "tm_search_acc_ph": "Buscar e-mail da conta...", "tm_upload_txt": "Upload .TXT", "tm_upload_txt_title": "Enviar Arquivo .TXT (Importação em Massa)", "tm_add_btn": "Adicionar", "tm_add_btn_title": "Adicionar Conta Manualmente", "tm_mode_search": "Modo: Buscar E-mail", "tm_mode_all": "Modo: Todas as Contas", "tm_show_all": "Mostrar Todas", "tm_search_only": "Apenas Busca", "tm_empty_acc_msg": "Nenhuma conta ainda.<br>Envie um arquivo <b>.TXT</b> ou clique em <b>Adicionar</b>.", "tm_inbox_title": "CAIXA DE ENTRADA", "tm_btn_accounts": "Contas", "tm_filter_msg_ph": "Filtrar remetente / assunto...", "tm_empty_inbox_select": "Selecione uma conta à esquerda para ver os e-mails.", "tm_active_email_placeholder": "Selecionar Conta", "tm_badge_standby": "● Em espera", "tm_badge_connected": "● Conectado", "tm_badge_disconnected": "● Desconectado", "tm_btn_copy": "Copiar", "tm_no_email_selected": "Nenhum e-mail selecionado", "tm_click_inbox_hint": "Clique em um e-mail na lista para ler seu conteúdo.", "tm_otp_detected": "CÓDIGO DE VERIFICAÇÃO / OTP DETECTADO", "tm_btn_copy_otp": "Copiar OTP", "tm_copied": "Copiado!", "tm_search_another_title": "Buscar Outra Conta", "tm_search_another_desc": "Digite o e-mail na busca acima para selecionar uma conta.", "tm_accounts_avail": "Contas Disponíveis", "tm_inbox_empty": "Caixa de entrada vazia.", "tm_no_msg_filter": "Nenhuma mensagem corresponde ao filtro.", "tm_no_acc_match": "Nenhuma conta encontrada", "tm_delete_acc_confirm": "Remover {email} da lista?", "tm_clear_all_confirm": "Limpar todas as contas do verificador?", "tm_extracting": "Extraindo e verificando contas...", "tm_modal_add_title": "Adicionar Contas Outlook / Hotmail", "tm_modal_upload_label": "ENVIAR ARQUIVO .TXT (Importação em Massa)", "tm_modal_paste_label": "OU COLAR TOKENS (email|pass|refresh_token|client_id)", "tm_modal_proxy_label": "PROXY (Opcional: http://user:pass@host:port)", "tm_modal_proxy_ph": "Deixe em branco se for conexão direta", "tm_modal_btn_cancel": "Cancelar", "tm_modal_btn_import": "Importar e Verificar", "cc_card_title": "Entrada de Contas CapCut", "cc_acc_label": "LISTA DE CONTAS (email:pass, email|pass, etc)", "cc_acc_ph": "user1@example.com:password123\\nuser2@example.com|password456", "cc_proxy_label": "URL PROXY RESIDENCIAL (Obrigatório)", "cc_proxy_help": "Use <code>{sess}</code> para rotação automática de IP.", "cc_threads_label": "THREADS", "cc_retries_label": "TENTATIVAS IP", "cc_btn_start": "Iniciar Checagem CapCut", "cc_btn_stop": "Parar", "cc_results_title": "Resultados de Checagem CapCut", "cc_pro_title": "PRO / VIP", "cc_pro_ph": "Contas PRO aparecerão aqui...", "cc_free_title": "FREE / REGULAR", "cc_free_ph": "Contas FREE aparecerão aqui...", "cc_dead_title": "DEAD / ERRO", "cc_dead_ph": "Contas com erro aparecerão aqui...", "cc_btn_copy": "Copiar", "cc_btn_save": "Salvar", "cc_alert_empty": "Por favor, insira a lista de contas CapCut!", "cc_alert_no_valid": "Nenhuma conta válida encontrada!", "tfa_single_title": "Código 2FA Rápido (Individual)", "tfa_single_desc": "Insira a chave secreta 2FA (Base32) para gerar códigos de verificação de 6 dígitos instantaneamente.", "tfa_single_label": "CHAVE SECRETA 2FA", "tfa_single_ph": "Exemplo: JBSWY3DPEHPK3PXP", "tfa_btn_get": "Obter Código", "tfa_auth_code_label": "CÓDIGO DE AUTENTICAÇÃO", "tfa_btn_copy_code": "Copiar Código", "tfa_bulk_title": "Gerador 2FA em Massa", "tfa_bulk_desc": "Suporta colar várias chaves ou linhas combo (formato <code>email|pass|secret</code>).", "tfa_bulk_label": "LISTA DE CHAVES / COMBOS", "tfa_bulk_ph": "Exemplo:\\nuser1@email.com|pass1|JBSWY3DPEHPK3PXP\\nuser2@email.com:pass2:4X72J6...", "tfa_btn_gen_all": "Gerar Todos os Códigos", "tfa_bulk_res_label": "RESULTADOS (FORMATO COMBO + CÓDIGO 2FA)", "tfa_bulk_res_ph": "Os códigos 2FA gerados aparecerão aqui...", "tfa_alert_empty_single": "Por favor, insira a chave secreta 2FA!", "tfa_alert_empty_bulk": "Por favor, insira a lista de chaves ou combos!", "tfa_processing": "Processando...", "prx_title": "Verificador de Proxy", "prx_desc": "Formatos: <code>HOST:PORT</code>, <code>HOST:PORT:USER:PASS</code>, <code>USER:PASS:HOST:PORT</code>, ou <code>scheme://...</code>", "prx_input_label": "LISTA DE PROXIES", "prx_btn_sample": "Exemplo", "prx_btn_clear": "Limpar", "prx_input_ph": "Exemplo:\\n192.168.1.1:8080\\n192.168.1.1:8080:user:pass", "prx_threads_label": "THREADS", "prx_timeout_label": "TIMEOUT (s)", "prx_scamalytics_toggle": "Verificação de Score de Fraude Scamalytics", "prx_btn_start": "Iniciar Checagem", "prx_btn_stop": "Parar", "prx_stat_total": "TOTAL", "prx_stat_live": "VIVOS (LIVE)", "prx_stat_dead": "MORTOS (DEAD)", "prx_stat_latency": "PING MÉDIO", "prx_stat_clean": "BAIXO RISCO (<25)", "prx_filter_all": "Todos", "prx_filter_live": "Vivos", "prx_filter_dead": "Mortos", "prx_filter_clean": "Baixo Risco", "prx_search_ph": "Buscar IP / País...", "prx_btn_export": "Exportar", "prx_exp_live_raw": "Copiar Live (Formato Original)", "prx_exp_live_ipport": "Copiar Live (HOST:PORT)", "prx_exp_live_txt": "Baixar Live (.TXT)", "prx_exp_report_json": "Baixar Relatório Completo (.JSON)", "prx_th_proxy": "PROXY", "prx_th_status": "STATUS", "prx_th_ping": "PING", "prx_th_loc": "IP DE SAÍDA E LOCALIZAÇÃO", "prx_th_isp": "PROVEDOR / ORG", "prx_th_fraud": "RISCO DE FRAUDE", "prx_th_act": "DETALHES", "prx_empty_table": "Nenhum proxy verificado ainda. Insira a lista e clique em <b>Iniciar Checagem</b>.", "prx_no_match": "Nenhum proxy corresponde ao filtro.", "prx_modal_title": "Detalhes de Diagnóstico do Proxy", "prx_modal_close": "Fechar", "prx_alert_empty": "Por favor, insira a lista de proxies!", "prx_no_live_copy": "Nenhum proxy LIVE para copiar.", "prx_no_live_dl": "Nenhum proxy LIVE para baixar."}};
+    const I18N_DICTS = {"id": {"brand_sub": "MULTI TOOLS • LAYANAN SOSMED", "tab_mail": "Mail Checker", "tab_capcut": "CapCut Checker", "tab_2fa": "2FA Generator", "tab_proxy": "Proxy Checker", "tm_accounts_title": "Accounts", "tm_clear_all_title": "Hapus Semua Akun", "tm_search_acc_ph": "Cari email akun...", "tm_upload_txt": "Upload .TXT", "tm_upload_txt_title": "Upload File .TXT (Bulk Auto-read)", "tm_add_btn": "Add", "tm_add_btn_title": "Tambah Akun Manual", "tm_mode_search": "Mode: Cari Email", "tm_mode_all": "Mode: Semua Akun", "tm_show_all": "Tampilkan Semua", "tm_search_only": "Mode Cari Saja", "tm_empty_acc_msg": "Belum ada akun.<br>Upload file <b>.TXT</b> atau klik <b>Add</b>.", "tm_inbox_title": "INBOX", "tm_btn_accounts": "Akun", "tm_filter_msg_ph": "Filter pengirim / subjek...", "tm_empty_inbox_select": "Pilih akun di sebelah kiri untuk melihat pesan inbox.", "tm_active_email_placeholder": "Pilih Akun", "tm_badge_standby": "● Standby", "tm_badge_connected": "● Connected", "tm_badge_disconnected": "● Disconnected", "tm_btn_copy": "Copy", "tm_no_email_selected": "Belum ada email yang dipilih", "tm_click_inbox_hint": "Klik salah satu email dari daftar inbox untuk membaca isi surat.", "tm_otp_detected": "KODE VERIFIKASI / OTP TERDETEKSI", "tm_btn_copy_otp": "Salin OTP", "tm_copied": "Disalin!", "tm_search_another_title": "Cari Akun Lain", "tm_search_another_desc": "Ketik email di kolom pencarian di atas untuk memilih akun.", "tm_accounts_avail": "Akun Tersedia", "tm_inbox_empty": "Inbox kosong.", "tm_no_msg_filter": "Tidak ada pesan yang cocok dengan filter.", "tm_no_acc_match": "Tidak ada akun yang cocok dengan", "tm_delete_acc_confirm": "Hapus {email} dari daftar?", "tm_clear_all_confirm": "Hapus semua daftar akun Mail Checker?", "tm_extracting": "Mengekstrak & memeriksa akun...", "tm_modal_add_title": "Add Outlook / Hotmail Accounts", "tm_modal_upload_label": "UPLOAD FILE .TXT (Bulk Import)", "tm_modal_paste_label": "ATAU PASTE TOKENS (email|pass|refresh_token|client_id atau token saja)", "tm_modal_proxy_label": "PROXY (Opsional: http://user:pass@host:port)", "tm_modal_proxy_ph": "Kosongkan jika direct", "tm_modal_btn_cancel": "Batal", "tm_modal_btn_import": "Import & Check", "cc_card_title": "Input Akun CapCut", "cc_acc_label": "DAFTAR AKUN (email:pass, email|pass, dll)", "cc_acc_ph": "user1@example.com:password123\\nuser2@example.com|password456", "cc_proxy_label": "RESIDENTIAL PROXY URL (Wajib)", "cc_proxy_help": "Gunakan token <code>{sess}</code> untuk rotasi IP otomatis.", "cc_threads_label": "THREADS", "cc_retries_label": "IP RETRIES", "cc_btn_start": "Mulai Check CapCut", "cc_btn_stop": "Stop", "cc_results_title": "Hasil Pengecekan CapCut", "cc_pro_title": "PRO / VIP", "cc_pro_ph": "Akun PRO akan muncul di sini...", "cc_free_title": "FREE / REGULAR", "cc_free_ph": "Akun FREE akan muncul di sini...", "cc_dead_title": "DEAD / ERROR", "cc_dead_ph": "Akun Gagal akan muncul di sini...", "cc_btn_copy": "Copy", "cc_btn_save": "Save", "cc_alert_empty": "Silakan masukkan daftar akun CapCut!", "cc_alert_no_valid": "Tidak ada akun valid yang ditemukan!", "tfa_single_title": "Quick 2FA Code (Single)", "tfa_single_desc": "Masukkan 2FA Secret Key (Base32) untuk mendapatkan kode verifikasi 6 digit instan.", "tfa_single_label": "2FA SECRET KEY", "tfa_single_ph": "Contoh: JBSWY3DPEHPK3PXP", "tfa_btn_get": "Get Code", "tfa_auth_code_label": "AUTHENTICATOR CODE", "tfa_btn_copy_code": "Salin Kode", "tfa_bulk_title": "Bulk 2FA Generator", "tfa_bulk_desc": "Mendukung paste banyak Secret Key atau baris combo (format <code>email|pass|secret</code> atau secret per baris).", "tfa_bulk_label": "INPUT LIST SECRETS / COMBOS", "tfa_bulk_ph": "Contoh format:\\nuser1@email.com|pass1|JBSWY3DPEHPK3PXP\\nuser2@email.com:pass2:4X72J6...\\nHXDMVJZTGNCDESRR...", "tfa_btn_gen_all": "Generate All Codes", "tfa_bulk_res_label": "HASIL (FORMAT COMBO + 2FA CODE)", "tfa_bulk_res_ph": "Hasil kode 2FA akan muncul di sini...", "tfa_alert_empty_single": "Silakan masukkan 2FA Secret Key!", "tfa_alert_empty_bulk": "Silakan masukkan list secret / combo!", "tfa_processing": "Memproses...", "prx_title": "Proxy Checker", "prx_desc": "Dukungan format: <code>HOST:PORT</code>, <code>HOST:PORT:USER:PASS</code>, <code>USER:PASS:HOST:PORT</code>, atau <code>scheme://...</code>", "prx_input_label": "INPUT PROXY LIST", "prx_btn_sample": "Sample", "prx_btn_clear": "Clear", "prx_input_ph": "Contoh format:\\n192.168.1.1:8080\\n192.168.1.1:8080:username:password\\nusername:password:192.168.1.1:8080\\nhttp://user:pass@192.168.1.1:8080", "prx_threads_label": "THREADS", "prx_timeout_label": "TIMEOUT (s)", "prx_scamalytics_toggle": "Scamalytics Fraud Score Check", "prx_btn_start": "Start Checking", "prx_btn_stop": "Stop", "prx_stat_total": "TOTAL", "prx_stat_live": "LIVE", "prx_stat_dead": "DEAD", "prx_stat_latency": "AVG LATENCY", "prx_stat_clean": "LOW FRAUD (<25)", "prx_filter_all": "All", "prx_filter_live": "Live", "prx_filter_dead": "Dead", "prx_filter_clean": "Low Fraud", "prx_search_ph": "Cari IP / Negara...", "prx_btn_export": "Export", "prx_exp_live_raw": "Copy Live (Original Format)", "prx_exp_live_ipport": "Copy Live (HOST:PORT)", "prx_exp_live_txt": "Download Live (.TXT)", "prx_exp_report_json": "Download Full Report (.JSON)", "prx_th_proxy": "PROXY", "prx_th_status": "STATUS", "prx_th_ping": "PING", "prx_th_loc": "EXIT IP & LOCATION", "prx_th_isp": "ISP / ORG", "prx_th_fraud": "FRAUD RISK", "prx_th_act": "ACT", "prx_empty_table": "Belum ada proxy yang diperiksa. Masukkan list proxy dan klik <b>Start Checking</b>.", "prx_no_match": "Tidak ada proxy yang cocok dengan filter atau pencarian.", "prx_modal_title": "Proxy Diagnostic Details", "prx_modal_close": "Tutup", "prx_alert_empty": "Silakan masukkan list proxy!", "prx_no_live_copy": "Tidak ada proxy LIVE untuk disalin.", "prx_no_live_dl": "Tidak ada proxy LIVE untuk diunduh.", "nav_menu": "Menu"}, "en": {"brand_sub": "MULTI TOOLS • SOCIAL MEDIA SUITE", "tab_mail": "Mail Checker", "tab_capcut": "CapCut Checker", "tab_2fa": "2FA Generator", "tab_proxy": "Proxy Checker", "tm_accounts_title": "Accounts", "tm_clear_all_title": "Clear All Accounts", "tm_search_acc_ph": "Search account email...", "tm_upload_txt": "Upload .TXT", "tm_upload_txt_title": "Upload .TXT File (Bulk Auto-read)", "tm_add_btn": "Add", "tm_add_btn_title": "Add Account Manually", "tm_mode_search": "Mode: Search Email", "tm_mode_all": "Mode: All Accounts", "tm_show_all": "Show All", "tm_search_only": "Search Only Mode", "tm_empty_acc_msg": "No accounts yet.<br>Upload a <b>.TXT</b> file or click <b>Add</b>.", "tm_inbox_title": "INBOX", "tm_btn_accounts": "Accounts", "tm_filter_msg_ph": "Filter sender / subject...", "tm_empty_inbox_select": "Select an account on the left to view inbox messages.", "tm_active_email_placeholder": "Select Account", "tm_badge_standby": "● Standby", "tm_badge_connected": "● Connected", "tm_badge_disconnected": "● Disconnected", "tm_btn_copy": "Copy", "tm_no_email_selected": "No email selected", "tm_click_inbox_hint": "Click an email from the inbox list to read its contents.", "tm_otp_detected": "VERIFICATION CODE / OTP DETECTED", "tm_btn_copy_otp": "Copy OTP", "tm_copied": "Copied!", "tm_search_another_title": "Search Another Account", "tm_search_another_desc": "Type an email in the search box above to pick an account.", "tm_accounts_avail": "Accounts Available", "tm_inbox_empty": "Inbox is empty.", "tm_no_msg_filter": "No messages match your filter.", "tm_no_acc_match": "No accounts matching", "tm_delete_acc_confirm": "Delete {email} from list?", "tm_clear_all_confirm": "Clear all Mail Checker accounts?", "tm_extracting": "Extracting & verifying accounts...", "tm_modal_add_title": "Add Outlook / Hotmail Accounts", "tm_modal_upload_label": "UPLOAD .TXT FILE (Bulk Import)", "tm_modal_paste_label": "OR PASTE TOKENS (email|pass|refresh_token|client_id or token only)", "tm_modal_proxy_label": "PROXY (Optional: http://user:pass@host:port)", "tm_modal_proxy_ph": "Leave blank if direct connection", "tm_modal_btn_cancel": "Cancel", "tm_modal_btn_import": "Import & Check", "cc_card_title": "CapCut Account Input", "cc_acc_label": "ACCOUNT LIST (email:pass, email|pass, etc)", "cc_acc_ph": "user1@example.com:password123\\nuser2@example.com|password456", "cc_proxy_label": "RESIDENTIAL PROXY URL (Required)", "cc_proxy_help": "Use token <code>{sess}</code> for automatic IP rotation.", "cc_threads_label": "THREADS", "cc_retries_label": "IP RETRIES", "cc_btn_start": "Start CapCut Check", "cc_btn_stop": "Stop", "cc_results_title": "CapCut Check Results", "cc_pro_title": "PRO / VIP", "cc_pro_ph": "PRO accounts will appear here...", "cc_free_title": "FREE / REGULAR", "cc_free_ph": "FREE accounts will appear here...", "cc_dead_title": "DEAD / ERROR", "cc_dead_ph": "Failed accounts will appear here...", "cc_btn_copy": "Copy", "cc_btn_save": "Save", "cc_alert_empty": "Please enter CapCut account list!", "cc_alert_no_valid": "No valid accounts found!", "tfa_single_title": "Quick 2FA Code (Single)", "tfa_single_desc": "Enter a 2FA Secret Key (Base32) to generate instant 6-digit verification codes.", "tfa_single_label": "2FA SECRET KEY", "tfa_single_ph": "Example: JBSWY3DPEHPK3PXP", "tfa_btn_get": "Get Code", "tfa_auth_code_label": "AUTHENTICATOR CODE", "tfa_btn_copy_code": "Copy Code", "tfa_bulk_title": "Bulk 2FA Generator", "tfa_bulk_desc": "Supports pasting multiple Secret Keys or combo lines (format <code>email|pass|secret</code> or secret per line).", "tfa_bulk_label": "INPUT LIST SECRETS / COMBOS", "tfa_bulk_ph": "Example format:\\nuser1@email.com|pass1|JBSWY3DPEHPK3PXP\\nuser2@email.com:pass2:4X72J6...\\nHXDMVJZTGNCDESRR...", "tfa_btn_gen_all": "Generate All Codes", "tfa_bulk_res_label": "RESULTS (COMBO + 2FA CODE FORMAT)", "tfa_bulk_res_ph": "Generated 2FA codes will appear here...", "tfa_alert_empty_single": "Please enter a 2FA Secret Key!", "tfa_alert_empty_bulk": "Please enter secret list or combo lines!", "tfa_processing": "Processing...", "prx_title": "Proxy Checker", "prx_desc": "Supported formats: <code>HOST:PORT</code>, <code>HOST:PORT:USER:PASS</code>, <code>USER:PASS:HOST:PORT</code>, or <code>scheme://...</code>", "prx_input_label": "INPUT PROXY LIST", "prx_btn_sample": "Sample", "prx_btn_clear": "Clear", "prx_input_ph": "Example format:\\n192.168.1.1:8080\\n192.168.1.1:8080:username:password\\nusername:password:192.168.1.1:8080\\nhttp://user:pass@192.168.1.1:8080", "prx_threads_label": "THREADS", "prx_timeout_label": "TIMEOUT (s)", "prx_scamalytics_toggle": "Scamalytics Fraud Score Check", "prx_btn_start": "Start Checking", "prx_btn_stop": "Stop", "prx_stat_total": "TOTAL", "prx_stat_live": "LIVE", "prx_stat_dead": "DEAD", "prx_stat_latency": "AVG LATENCY", "prx_stat_clean": "LOW FRAUD (<25)", "prx_filter_all": "All", "prx_filter_live": "Live", "prx_filter_dead": "Dead", "prx_filter_clean": "Low Fraud", "prx_search_ph": "Search IP / Country...", "prx_btn_export": "Export", "prx_exp_live_raw": "Copy Live (Original Format)", "prx_exp_live_ipport": "Copy Live (HOST:PORT)", "prx_exp_live_txt": "Download Live (.TXT)", "prx_exp_report_json": "Download Full Report (.JSON)", "prx_th_proxy": "PROXY", "prx_th_status": "STATUS", "prx_th_ping": "PING", "prx_th_loc": "EXIT IP & LOCATION", "prx_th_isp": "ISP / ORG", "prx_th_fraud": "FRAUD RISK", "prx_th_act": "ACT", "prx_empty_table": "No proxies checked yet. Enter proxy list and click <b>Start Checking</b>.", "prx_no_match": "No proxies match your search or filter.", "prx_modal_title": "Proxy Diagnostic Details", "prx_modal_close": "Close", "prx_alert_empty": "Please enter a proxy list!", "prx_no_live_copy": "No LIVE proxies to copy.", "prx_no_live_dl": "No LIVE proxies to download.", "nav_menu": "Menu"}, "vi": {"brand_sub": "ĐA CÔNG CỤ • DỊCH VỤ MẠNG XÃ HỘI", "tab_mail": "Kiểm Tra Mail", "tab_capcut": "Kiểm Tra CapCut", "tab_2fa": "Tạo Mã 2FA", "tab_proxy": "Kiểm Tra Proxy", "tm_accounts_title": "Tài Khoản", "tm_clear_all_title": "Xóa Tất Cả Tài Khoản", "tm_search_acc_ph": "Tìm kiếm email tài khoản...", "tm_upload_txt": "Tải Lên .TXT", "tm_upload_txt_title": "Tải Tệp .TXT (Nhập Tự Động Hàng Loạt)", "tm_add_btn": "Thêm", "tm_add_btn_title": "Thêm Tài Khoản Thủ Công", "tm_mode_search": "Chế độ: Tìm Email", "tm_mode_all": "Chế độ: Tất Cả", "tm_show_all": "Hiện Tất Cả", "tm_search_only": "Chỉ Tìm Kiếm", "tm_empty_acc_msg": "Chưa có tài khoản.<br>Tải lên tệp <b>.TXT</b> hoặc bấm <b>Thêm</b>.", "tm_inbox_title": "HỘP THƯ ĐẾN", "tm_btn_accounts": "Tài Khoản", "tm_filter_msg_ph": "Lọc người gửi / tiêu đề...", "tm_empty_inbox_select": "Chọn một tài khoản ở bên trái để xem tin nhắn.", "tm_active_email_placeholder": "Chọn Tài Khoản", "tm_badge_standby": "● Chờ", "tm_badge_connected": "● Đã Kết Nối", "tm_badge_disconnected": "● Ngắt Kết Nối", "tm_btn_copy": "Sao Chép", "tm_no_email_selected": "Chưa chọn thư nào", "tm_click_inbox_hint": "Bấm vào một thư trong danh sách để đọc nội dung.", "tm_otp_detected": "PHÁT HIỆN MÃ XÁC THỰC / OTP", "tm_btn_copy_otp": "Sao Chép OTP", "tm_copied": "Đã sao chép!", "tm_search_another_title": "Tìm Tài Khoản Khác", "tm_search_another_desc": "Gõ email vào ô tìm kiếm phía trên để chọn tài khoản.", "tm_accounts_avail": "Tài Khoản Khả Dụng", "tm_inbox_empty": "Hộp thư rỗng.", "tm_no_msg_filter": "Không có thư nào khớp bộ lọc.", "tm_no_acc_match": "Không tìm thấy tài khoản", "tm_delete_acc_confirm": "Xóa {email} khỏi danh sách?", "tm_clear_all_confirm": "Xóa toàn bộ tài khoản Mail Checker?", "tm_extracting": "Đang trích xuất & kiểm tra...", "tm_modal_add_title": "Thêm Tài Khoản Outlook / Hotmail", "tm_modal_upload_label": "TẢI TỆP .TXT (Nhập Hàng Loạt)", "tm_modal_paste_label": "HOẶC DÁN TOKEN (email|pass|refresh_token|client_id)", "tm_modal_proxy_label": "PROXY (Tùy chọn: http://user:pass@host:port)", "tm_modal_proxy_ph": "Để trống nếu kết nối trực tiếp", "tm_modal_btn_cancel": "Hủy", "tm_modal_btn_import": "Nhập & Kiểm Tra", "cc_card_title": "Nhập Tài Khoản CapCut", "cc_acc_label": "DANH SÁCH (email:pass, email|pass,...)", "cc_acc_ph": "user1@example.com:password123\\nuser2@example.com|password456", "cc_proxy_label": "URL PROXY RESIDENTIAL (Bắt buộc)", "cc_proxy_help": "Dùng <code>{sess}</code> để tự động xoay IP.", "cc_threads_label": "LUỒNG", "cc_retries_label": "THỬ LẠI IP", "cc_btn_start": "Bắt Đầu Check CapCut", "cc_btn_stop": "Dừng", "cc_results_title": "Kết Quả Check CapCut", "cc_pro_title": "PRO / VIP", "cc_pro_ph": "Tài khoản PRO sẽ hiển thị ở đây...", "cc_free_title": "FREE / THƯỜNG", "cc_free_ph": "Tài khoản FREE sẽ hiển thị ở đây...", "cc_dead_title": "DEAD / LỖI", "cc_dead_ph": "Tài khoản lỗi sẽ hiển thị ở đây...", "cc_btn_copy": "Sao Chép", "cc_btn_save": "Lưu", "cc_alert_empty": "Vui lòng nhập danh sách tài khoản CapCut!", "cc_alert_no_valid": "Không tìm thấy tài khoản hợp lệ!", "tfa_single_title": "Mã 2FA Nhanh (Đơn)", "tfa_single_desc": "Nhập 2FA Secret Key (Base32) để nhận mã xác minh 6 số tức thì.", "tfa_single_label": "2FA SECRET KEY", "tfa_single_ph": "Ví dụ: JBSWY3DPEHPK3PXP", "tfa_btn_get": "Lấy Mã", "tfa_auth_code_label": "MÃ XÁC THỰC", "tfa_btn_copy_code": "Sao Chép Mã", "tfa_bulk_title": "Tạo 2FA Hàng Loạt", "tfa_bulk_desc": "Hỗ trợ dán nhiều Secret Key hoặc dòng combo (định dạng <code>email|pass|secret</code> hoặc secret mỗi dòng).", "tfa_bulk_label": "NHẬP DANH SÁCH SECRETS / COMBOS", "tfa_bulk_ph": "Ví dụ:\\nuser1@email.com|pass1|JBSWY3DPEHPK3PXP\\nuser2@email.com:pass2:4X72J6...", "tfa_btn_gen_all": "Tạo Tất Cả Mã", "tfa_bulk_res_label": "KẾT QUẢ (COMBO + MÃ 2FA)", "tfa_bulk_res_ph": "Mã 2FA sẽ xuất hiện tại đây...", "tfa_alert_empty_single": "Vui lòng nhập Secret Key 2FA!", "tfa_alert_empty_bulk": "Vui lòng nhập danh sách secret/combo!", "tfa_processing": "Đang xử lý...", "prx_title": "Kiểm Tra Proxy", "prx_desc": "Hỗ trợ: <code>HOST:PORT</code>, <code>HOST:PORT:USER:PASS</code>, <code>USER:PASS:HOST:PORT</code>, hoặc <code>scheme://...</code>", "prx_input_label": "DANH SÁCH PROXY", "prx_btn_sample": "Mẫu", "prx_btn_clear": "Xóa", "prx_input_ph": "Ví dụ:\\n192.168.1.1:8080\\n192.168.1.1:8080:user:pass", "prx_threads_label": "LUỒNG", "prx_timeout_label": "THỜI GIAN CHỜ (s)", "prx_scamalytics_toggle": "Kiểm Tra Điểm Gian Lận Scamalytics", "prx_btn_start": "Bắt Đầu Kiểm Tra", "prx_btn_stop": "Dừng", "prx_stat_total": "TỔNG SỐ", "prx_stat_live": "SỐNG (LIVE)", "prx_stat_dead": "CHẾT (DEAD)", "prx_stat_latency": "ĐỘ TRỄ TB", "prx_stat_clean": "RỦI RO THẤP (<25)", "prx_filter_all": "Tất Cả", "prx_filter_live": "Sống", "prx_filter_dead": "Chết", "prx_filter_clean": "Sạch (Low Fraud)", "prx_search_ph": "Tìm IP / Quốc gia...", "prx_btn_export": "Xuất Dữ Liệu", "prx_exp_live_raw": "Sao Chép Live (Định Dạng Gốc)", "prx_exp_live_ipport": "Sao Chép Live (HOST:PORT)", "prx_exp_live_txt": "Tải Xuống Live (.TXT)", "prx_exp_report_json": "Tải Báo Cáo Đầy Đủ (.JSON)", "prx_th_proxy": "PROXY", "prx_th_status": "TRẠNG THÁI", "prx_th_ping": "PING", "prx_th_loc": "IP THOÁT & VỊ TRÍ", "prx_th_isp": "NHÀ MẠNG / TỔ CHỨC", "prx_th_fraud": "ĐIỂM RỦI RO", "prx_th_act": "CHI TIẾT", "prx_empty_table": "Chưa kiểm tra proxy nào. Nhập danh sách và bấm <b>Bắt Đầu Kiểm Tra</b>.", "prx_no_match": "Không có proxy nào khớp bộ lọc.", "prx_modal_title": "Chi Tiết Chẩn Đoán Proxy", "prx_modal_close": "Đóng", "prx_alert_empty": "Vui lòng nhập danh sách proxy!", "prx_no_live_copy": "Không có proxy LIVE nào để sao chép.", "prx_no_live_dl": "Không có proxy LIVE nào để tải về.", "nav_menu": "Menu"}, "zh": {"brand_sub": "多功能工具箱 • 社交媒体服务", "tab_mail": "邮箱检测器", "tab_capcut": "CapCut检测器", "tab_2fa": "2FA生成器", "tab_proxy": "代理检测器", "tm_accounts_title": "账号列表", "tm_clear_all_title": "清空所有账号", "tm_search_acc_ph": "搜索账号邮箱...", "tm_upload_txt": "上传 .TXT", "tm_upload_txt_title": "上传 .TXT 文件 (批量自动读取)", "tm_add_btn": "添加", "tm_add_btn_title": "手动添加账号", "tm_mode_search": "模式: 搜索邮箱", "tm_mode_all": "模式: 全部账号", "tm_show_all": "显示全部", "tm_search_only": "仅搜索模式", "tm_empty_acc_msg": "暂无账号。<br>上传 <b>.TXT</b> 文件或点击 <b>添加</b>。", "tm_inbox_title": "收件箱", "tm_btn_accounts": "账号", "tm_filter_msg_ph": "过滤发件人 / 主题...", "tm_empty_inbox_select": "请在左侧选择账号以查看收件箱消息。", "tm_active_email_placeholder": "选择账号", "tm_badge_standby": "● 待命", "tm_badge_connected": "● 已连接", "tm_badge_disconnected": "● 已断开", "tm_btn_copy": "复制", "tm_no_email_selected": "未选择邮件", "tm_click_inbox_hint": "点击收件箱列表中的邮件以阅读详细内容。", "tm_otp_detected": "已检测到验证码 / OTP", "tm_btn_copy_otp": "复制验证码", "tm_copied": "已复制!", "tm_search_another_title": "搜索其他账号", "tm_search_another_desc": "在上方搜索框输入邮箱以选取账号。", "tm_accounts_avail": "个可用账号", "tm_inbox_empty": "收件箱为空。", "tm_no_msg_filter": "没有符合过滤条件的消息。", "tm_no_acc_match": "未找到匹配账号", "tm_delete_acc_confirm": "确定从列表中删除 {email} 吗？", "tm_clear_all_confirm": "确定清空所有邮箱检测账号吗？", "tm_extracting": "正在提取并检测账号...", "tm_modal_add_title": "添加 Outlook / Hotmail 账号", "tm_modal_upload_label": "上传 .TXT 文件 (批量导入)", "tm_modal_paste_label": "或粘贴令牌 (email|pass|refresh_token|client_id 或仅token)", "tm_modal_proxy_label": "代理 (可选: http://user:pass@host:port)", "tm_modal_proxy_ph": "直接连接请留空", "tm_modal_btn_cancel": "取消", "tm_modal_btn_import": "导入并检测", "cc_card_title": "输入 CapCut 账号", "cc_acc_label": "账号列表 (email:pass, email|pass 等)", "cc_acc_ph": "user1@example.com:password123\\nuser2@example.com|password456", "cc_proxy_label": "住宅代理 URL (必填)", "cc_proxy_help": "使用 <code>{sess}</code> 变量实现自动轮换 IP。", "cc_threads_label": "线程数", "cc_retries_label": "IP重试次数", "cc_btn_start": "开始检测 CapCut", "cc_btn_stop": "停止", "cc_results_title": "CapCut 检测结果", "cc_pro_title": "PRO / VIP 会员", "cc_pro_ph": "PRO 账号将在此显示...", "cc_free_title": "FREE / 普通账号", "cc_free_ph": "FREE 账号将在此显示...", "cc_dead_title": "DEAD / 错误账号", "cc_dead_ph": "失败账号将在此显示...", "cc_btn_copy": "复制", "cc_btn_save": "保存", "cc_alert_empty": "请输入 CapCut 账号列表！", "cc_alert_no_valid": "未找到有效账号！", "tfa_single_title": "快捷 2FA 验证码 (单条)", "tfa_single_desc": "输入 2FA Secret Key (Base32) 即刻生成6位动态验证码。", "tfa_single_label": "2FA 密钥 (SECRET KEY)", "tfa_single_ph": "示例: JBSWY3DPEHPK3PXP", "tfa_btn_get": "获取验证码", "tfa_auth_code_label": "动态验证码", "tfa_btn_copy_code": "复制代码", "tfa_bulk_title": "批量 2FA 生成器", "tfa_bulk_desc": "支持批量粘贴密钥或组合行 (格式: <code>email|pass|secret</code> 或每行一个密钥)。", "tfa_bulk_label": "输入密钥列表 / 组合数据", "tfa_bulk_ph": "示例格式:\\nuser1@email.com|pass1|JBSWY3DPEHPK3PXP\\nuser2@email.com:pass2:4X72J6...", "tfa_btn_gen_all": "批量生成所有验证码", "tfa_bulk_res_label": "生成结果 (组合格式 + 2FA 码)", "tfa_bulk_res_ph": "2FA 结果将在此显示...", "tfa_alert_empty_single": "请输入 2FA 密钥！", "tfa_alert_empty_bulk": "请输入密钥列表或组合数据！", "tfa_processing": "处理中...", "prx_title": "代理检测器", "prx_desc": "支持格式: <code>HOST:PORT</code>, <code>HOST:PORT:USER:PASS</code>, <code>USER:PASS:HOST:PORT</code>, 或 <code>scheme://...</code>", "prx_input_label": "输入代理列表", "prx_btn_sample": "示例", "prx_btn_clear": "清空", "prx_input_ph": "示例格式:\\n192.168.1.1:8080\\n192.168.1.1:8080:username:password", "prx_threads_label": "并发线程", "prx_timeout_label": "超时时间 (秒)", "prx_scamalytics_toggle": "Scamalytics 欺诈风险深度检测", "prx_btn_start": "开始检测", "prx_btn_stop": "停止", "prx_stat_total": "总数", "prx_stat_live": "存活 (LIVE)", "prx_stat_dead": "失效 (DEAD)", "prx_stat_latency": "平均延迟", "prx_stat_clean": "低风险 (<25)", "prx_filter_all": "全部", "prx_filter_live": "存活", "prx_filter_dead": "失效", "prx_filter_clean": "纯净 (低风险)", "prx_search_ph": "搜索 IP / 国家...", "prx_btn_export": "导出数据", "prx_exp_live_raw": "复制存活 (原始格式)", "prx_exp_live_ipport": "复制存活 (HOST:PORT)", "prx_exp_live_txt": "下载存活 (.TXT)", "prx_exp_report_json": "下载完整报告 (.JSON)", "prx_th_proxy": "代理地址", "prx_th_status": "状态", "prx_th_ping": "延迟", "prx_th_loc": "出口IP与归属地", "prx_th_isp": "运营商 / 组织", "prx_th_fraud": "欺诈评分", "prx_th_act": "详情", "prx_empty_table": "尚未检测任何代理。输入代理列表并点击 <b>开始检测</b>。", "prx_no_match": "没有匹配的代理数据。", "prx_modal_title": "代理诊断详情", "prx_modal_close": "关闭", "prx_alert_empty": "请输入代理列表！", "prx_no_live_copy": "没有存活的代理可供复制。", "prx_no_live_dl": "没有存活的代理可供下载。", "nav_menu": "菜单 (Menu)"}, "ru": {"brand_sub": "МУЛЬТИ-ИНСТРУМЕНТЫ • SMM СЕРВИС", "tab_mail": "Чекер Почты", "tab_capcut": "Чекер CapCut", "tab_2fa": "Генератор 2FA", "tab_proxy": "Чекер Прокси", "tm_accounts_title": "Аккаунты", "tm_clear_all_title": "Удалить все аккаунты", "tm_search_acc_ph": "Поиск email аккаунта...", "tm_upload_txt": "Загрузить .TXT", "tm_upload_txt_title": "Загрузить файл .TXT (Массовый импорт)", "tm_add_btn": "Добавить", "tm_add_btn_title": "Добавить аккаунт вручную", "tm_mode_search": "Режим: Поиск Email", "tm_mode_all": "Режим: Все Аккаунты", "tm_show_all": "Показать все", "tm_search_only": "Только поиск", "tm_empty_acc_msg": "Нет аккаунтов.<br>Загрузите файл <b>.TXT</b> или нажмите <b>Добавить</b>.", "tm_inbox_title": "ВХОДЯЩИЕ", "tm_btn_accounts": "Аккаунты", "tm_filter_msg_ph": "Фильтр отправителя / темы...", "tm_empty_inbox_select": "Выберите аккаунт слева для просмотра входящих сообщений.", "tm_active_email_placeholder": "Выберите аккаунт", "tm_badge_standby": "● Ожидание", "tm_badge_connected": "● Подключено", "tm_badge_disconnected": "● Отключено", "tm_btn_copy": "Копировать", "tm_no_email_selected": "Письмо не выбрано", "tm_click_inbox_hint": "Нажмите на письмо в списке входящих, чтобы прочитать его.", "tm_otp_detected": "ОБНАРУЖЕН КОД ПОДТВЕРЖДЕНИЯ / OTP", "tm_btn_copy_otp": "Скопировать OTP", "tm_copied": "Скопировано!", "tm_search_another_title": "Найти другой аккаунт", "tm_search_another_desc": "Введите email в строке поиска выше, чтобы выбрать аккаунт.", "tm_accounts_avail": "Доступно аккаунтов", "tm_inbox_empty": "Входящие пусты.", "tm_no_msg_filter": "Нет сообщений, соответствующих фильтру.", "tm_no_acc_match": "Аккаунты не найдены", "tm_delete_acc_confirm": "Удалить {email} из списка?", "tm_clear_all_confirm": "Очистить все аккаунты чекера почты?", "tm_extracting": "Извлечение и проверка аккаунтов...", "tm_modal_add_title": "Добавить аккаунты Outlook / Hotmail", "tm_modal_upload_label": "ЗАГРУЗИТЬ ФАЙЛ .TXT (Массовый импорт)", "tm_modal_paste_label": "ИЛИ ВСТАВИТЬ ТОКЕНЫ (email|pass|refresh_token|client_id)", "tm_modal_proxy_label": "ПРОКСИ (Опционально: http://user:pass@host:port)", "tm_modal_proxy_ph": "Оставьте пустым для прямого соединения", "tm_modal_btn_cancel": "Отмена", "tm_modal_btn_import": "Импорт и проверка", "cc_card_title": "Ввод аккаунтов CapCut", "cc_acc_label": "СПИСОК АККАУНТОВ (email:pass, email|pass и т.д.)", "cc_acc_ph": "user1@example.com:password123\\nuser2@example.com|password456", "cc_proxy_label": "URL РЕЗИДЕНТСКИХ ПРОКСИ (Обязательно)", "cc_proxy_help": "Используйте <code>{sess}</code> для авто-ротации IP.", "cc_threads_label": "ПОТОКИ", "cc_retries_label": "ПОВТОРЫ IP", "cc_btn_start": "Начать проверку CapCut", "cc_btn_stop": "Стоп", "cc_results_title": "Результаты проверки CapCut", "cc_pro_title": "PRO / VIP", "cc_pro_ph": "PRO аккаунты появятся здесь...", "cc_free_title": "FREE / ОБЫЧНЫЕ", "cc_free_ph": "FREE аккаунты появятся здесь...", "cc_dead_title": "DEAD / ОШИБКА", "cc_dead_ph": "Невалидные аккаунты появятся здесь...", "cc_btn_copy": "Копировать", "cc_btn_save": "Сохранить", "cc_alert_empty": "Пожалуйста, введите список аккаунтов CapCut!", "cc_alert_no_valid": "Валидные аккаунты не найдены!", "tfa_single_title": "Быстрый 2FA код (Одиночный)", "tfa_single_desc": "Введите 2FA Secret Key (Base32) для мгновенной генерации 6-значного кода.", "tfa_single_label": "СЕКРЕТНЫЙ КЛЮЧ 2FA", "tfa_single_ph": "Пример: JBSWY3DPEHPK3PXP", "tfa_btn_get": "Получить код", "tfa_auth_code_label": "КОД АУТЕНТИФИКАЦИИ", "tfa_btn_copy_code": "Скопировать код", "tfa_bulk_title": "Массовый генератор 2FA", "tfa_bulk_desc": "Поддерживает вставку нескольких ключей или combo строк (формат <code>email|pass|secret</code>).", "tfa_bulk_label": "СПИСОК КЛЮЧЕЙ / COMBO", "tfa_bulk_ph": "Пример:\\nuser1@email.com|pass1|JBSWY3DPEHPK3PXP\\nuser2@email.com:pass2:4X72J6...", "tfa_btn_gen_all": "Сгенерировать все коды", "tfa_bulk_res_label": "РЕЗУЛЬТАТ (ФОРМАТ COMBO + 2FA КОД)", "tfa_bulk_res_ph": "Результаты 2FA появятся здесь...", "tfa_alert_empty_single": "Пожалуйста, введите секретный ключ 2FA!", "tfa_alert_empty_bulk": "Пожалуйста, введите список ключей или combo строк!", "tfa_processing": "Обработка...", "prx_title": "Чекер Прокси", "prx_desc": "Форматы: <code>HOST:PORT</code>, <code>HOST:PORT:USER:PASS</code>, <code>USER:PASS:HOST:PORT</code>, или <code>scheme://...</code>", "prx_input_label": "СПИСОК ПРОКСИ", "prx_btn_sample": "Пример", "prx_btn_clear": "Очистить", "prx_input_ph": "Пример:\\n192.168.1.1:8080\\n192.168.1.1:8080:user:pass", "prx_threads_label": "ПОТОКИ", "prx_timeout_label": "ТАЙМАУТ (сек)", "prx_scamalytics_toggle": "Глубокая проверка фрода Scamalytics", "prx_btn_start": "Начать проверку", "prx_btn_stop": "Стоп", "prx_stat_total": "ВСЕГО", "prx_stat_live": "ЖИВЫЕ (LIVE)", "prx_stat_dead": "МЕРТВЫЕ (DEAD)", "prx_stat_latency": "СР. ПИНГ", "prx_stat_clean": "НИЗКИЙ РИСК (<25)", "prx_filter_all": "Все", "prx_filter_live": "Живые", "prx_filter_dead": "Мертвые", "prx_filter_clean": "Чистые (<25)", "prx_search_ph": "Поиск IP / Страны...", "prx_btn_export": "Экспорт", "prx_exp_live_raw": "Копировать Live (Исходный формат)", "prx_exp_live_ipport": "Копировать Live (HOST:PORT)", "prx_exp_live_txt": "Скачать Live (.TXT)", "prx_exp_report_json": "Скачать полный отчет (.JSON)", "prx_th_proxy": "ПРОКСИ", "prx_th_status": "СТАТУС", "prx_th_ping": "ПИНГ", "prx_th_loc": "ВЫХОДНОЙ IP И ЛОКАЦИЯ", "prx_th_isp": "ПРОВАЙДЕР / ОРГ", "prx_th_fraud": "РИСК ФРОДА", "prx_th_act": "ИНФО", "prx_empty_table": "Прокси еще не проверены. Вставьте список и нажмите <b>Начать проверку</b>.", "prx_no_match": "Нет прокси, соответствующих фильтру.", "prx_modal_title": "Диагностика Прокси", "prx_modal_close": "Закрыть", "prx_alert_empty": "Пожалуйста, введите список прокси!", "prx_no_live_copy": "Нет LIVE прокси для копирования.", "prx_no_live_dl": "Нет LIVE прокси для скачивания.", "nav_menu": "Меню"}, "es": {"brand_sub": "HERRAMIENTAS MÚLTIPLES • SERVICIOS SOCIALES", "tab_mail": "Verificador de Mail", "tab_capcut": "Verificador CapCut", "tab_2fa": "Generador 2FA", "tab_proxy": "Verificador de Proxy", "tm_accounts_title": "Cuentas", "tm_clear_all_title": "Borrar todas las cuentas", "tm_search_acc_ph": "Buscar correo de cuenta...", "tm_upload_txt": "Subir .TXT", "tm_upload_txt_title": "Subir archivo .TXT (Lectura masiva)", "tm_add_btn": "Añadir", "tm_add_btn_title": "Añadir cuenta manual", "tm_mode_search": "Modo: Buscar Correo", "tm_mode_all": "Modo: Todas las Cuentas", "tm_show_all": "Mostrar Todo", "tm_search_only": "Solo Buscar", "tm_empty_acc_msg": "Aún no hay cuentas.<br>Sube un archivo <b>.TXT</b> o pulsa <b>Añadir</b>.", "tm_inbox_title": "BANDEJA DE ENTRADA", "tm_btn_accounts": "Cuentas", "tm_filter_msg_ph": "Filtrar remitente / asunto...", "tm_empty_inbox_select": "Selecciona una cuenta a la izquierda para ver los mensajes.", "tm_active_email_placeholder": "Seleccionar Cuenta", "tm_badge_standby": "● En espera", "tm_badge_connected": "● Conectado", "tm_badge_disconnected": "● Desconectado", "tm_btn_copy": "Copiar", "tm_no_email_selected": "Ningún correo seleccionado", "tm_click_inbox_hint": "Haz clic en un correo de la lista para leer su contenido.", "tm_otp_detected": "CÓDIGO DE VERIFICACIÓN / OTP DETECTADO", "tm_btn_copy_otp": "Copiar OTP", "tm_copied": "¡Copiado!", "tm_search_another_title": "Buscar Otra Cuenta", "tm_search_another_desc": "Escribe el correo en el cuadro de búsqueda para elegir una cuenta.", "tm_accounts_avail": "Cuentas Disponibles", "tm_inbox_empty": "Bandeja vacía.", "tm_no_msg_filter": "No hay mensajes que coincidan con el filtro.", "tm_no_acc_match": "No se encontraron cuentas", "tm_delete_acc_confirm": "¿Eliminar {email} de la lista?", "tm_clear_all_confirm": "¿Borrar todas las cuentas del verificador?", "tm_extracting": "Extrayendo y verificando cuentas...", "tm_modal_add_title": "Añadir Cuentas Outlook / Hotmail", "tm_modal_upload_label": "SUBIR ARCHIVO .TXT (Importación Masiva)", "tm_modal_paste_label": "O PEGAR TOKENS (email|pass|refresh_token|client_id)", "tm_modal_proxy_label": "PROXY (Opcional: http://user:pass@host:port)", "tm_modal_proxy_ph": "Dejar en blanco si es directo", "tm_modal_btn_cancel": "Cancelar", "tm_modal_btn_import": "Importar y Verificar", "cc_card_title": "Entrada de Cuentas CapCut", "cc_acc_label": "LISTA DE CUENTAS (email:pass, email|pass, etc)", "cc_acc_ph": "user1@example.com:password123\\nuser2@example.com|password456", "cc_proxy_label": "URL PROXY RESIDENCIAL (Obligatorio)", "cc_proxy_help": "Usa <code>{sess}</code> para rotación automática de IP.", "cc_threads_label": "HILOS", "cc_retries_label": "REINTENTOS IP", "cc_btn_start": "Iniciar Verificación CapCut", "cc_btn_stop": "Detener", "cc_results_title": "Resultados de Verificación CapCut", "cc_pro_title": "PRO / VIP", "cc_pro_ph": "Las cuentas PRO aparecerán aquí...", "cc_free_title": "FREE / REGULAR", "cc_free_ph": "Las cuentas FREE aparecerán aquí...", "cc_dead_title": "DEAD / ERROR", "cc_dead_ph": "Las cuentas fallidas aparecerán aquí...", "cc_btn_copy": "Copiar", "cc_btn_save": "Guardar", "cc_alert_empty": "¡Por favor ingresa la lista de cuentas CapCut!", "cc_alert_no_valid": "¡No se encontraron cuentas válidas!", "tfa_single_title": "Código 2FA Rápido (Individual)", "tfa_single_desc": "Ingresa la clave secreta 2FA (Base32) para obtener códigos instantáneos de 6 dígitos.", "tfa_single_label": "CLAVE SECRETA 2FA", "tfa_single_ph": "Ejemplo: JBSWY3DPEHPK3PXP", "tfa_btn_get": "Obtener Código", "tfa_auth_code_label": "CÓDIGO DE AUTENTICACIÓN", "tfa_btn_copy_code": "Copiar Código", "tfa_bulk_title": "Generador 2FA Masivo", "tfa_bulk_desc": "Soporta pegar múltiples claves o líneas combo (formato <code>email|pass|secret</code>).", "tfa_bulk_label": "LISTA DE CLAVES / COMBOS", "tfa_bulk_ph": "Ejemplo:\\nuser1@email.com|pass1|JBSWY3DPEHPK3PXP\\nuser2@email.com:pass2:4X72J6...", "tfa_btn_gen_all": "Generar Todos los Códigos", "tfa_bulk_res_label": "RESULTADOS (FORMATO COMBO + CÓDIGO 2FA)", "tfa_bulk_res_ph": "Los códigos 2FA aparecerán aquí...", "tfa_alert_empty_single": "¡Por favor ingresa la clave secreta 2FA!", "tfa_alert_empty_bulk": "¡Por favor ingresa la lista de claves o combos!", "tfa_processing": "Procesando...", "prx_title": "Verificador de Proxy", "prx_desc": "Formatos: <code>HOST:PORT</code>, <code>HOST:PORT:USER:PASS</code>, <code>USER:PASS:HOST:PORT</code>, o <code>scheme://...</code>", "prx_input_label": "LISTA DE PROXIES", "prx_btn_sample": "Ejemplo", "prx_btn_clear": "Limpiar", "prx_input_ph": "Ejemplo:\\n192.168.1.1:8080\\n192.168.1.1:8080:user:pass", "prx_threads_label": "HILOS", "prx_timeout_label": "TIEMPO DE ESPERA (s)", "prx_scamalytics_toggle": "Verificación de Riesgo de Fraude Scamalytics", "prx_btn_start": "Iniciar Verificación", "prx_btn_stop": "Detener", "prx_stat_total": "TOTAL", "prx_stat_live": "VIVOS (LIVE)", "prx_stat_dead": "MUERTOS (DEAD)", "prx_stat_latency": "PING PROMEDIO", "prx_stat_clean": "BAJO FRAUDE (<25)", "prx_filter_all": "Todos", "prx_filter_live": "Vivos", "prx_filter_dead": "Muertos", "prx_filter_clean": "Bajo Fraude", "prx_search_ph": "Buscar IP / País...", "prx_btn_export": "Exportar", "prx_exp_live_raw": "Copiar Live (Formato Original)", "prx_exp_live_ipport": "Copiar Live (HOST:PORT)", "prx_exp_live_txt": "Descargar Live (.TXT)", "prx_exp_report_json": "Descargar Reporte Completo (.JSON)", "prx_th_proxy": "PROXY", "prx_th_status": "ESTADO", "prx_th_ping": "PING", "prx_th_loc": "IP SALIDA Y UBICACIÓN", "prx_th_isp": "PROVEEDOR / ORG", "prx_th_fraud": "RIESGO FRAUDE", "prx_th_act": "DETALLES", "prx_empty_table": "No se han verificado proxies aún. Ingresa la lista y pulsa <b>Iniciar Verificación</b>.", "prx_no_match": "No hay proxies que coincidan con el filtro.", "prx_modal_title": "Detalles de Diagnóstico de Proxy", "prx_modal_close": "Cerrar", "prx_alert_empty": "¡Por favor ingresa la lista de proxies!", "prx_no_live_copy": "No hay proxies LIVE para copiar.", "prx_no_live_dl": "No hay proxies LIVE para descargar.", "nav_menu": "Menú"}, "pt": {"brand_sub": "MULTI FERRAMENTAS • PAINEL SOCIAL", "tab_mail": "Verificador de E-mail", "tab_capcut": "Verificador CapCut", "tab_2fa": "Gerador 2FA", "tab_proxy": "Verificador de Proxy", "tm_accounts_title": "Contas", "tm_clear_all_title": "Limpar Todas as Contas", "tm_search_acc_ph": "Buscar e-mail da conta...", "tm_upload_txt": "Upload .TXT", "tm_upload_txt_title": "Enviar Arquivo .TXT (Importação em Massa)", "tm_add_btn": "Adicionar", "tm_add_btn_title": "Adicionar Conta Manualmente", "tm_mode_search": "Modo: Buscar E-mail", "tm_mode_all": "Modo: Todas as Contas", "tm_show_all": "Mostrar Todas", "tm_search_only": "Apenas Busca", "tm_empty_acc_msg": "Nenhuma conta ainda.<br>Envie um arquivo <b>.TXT</b> ou clique em <b>Adicionar</b>.", "tm_inbox_title": "CAIXA DE ENTRADA", "tm_btn_accounts": "Contas", "tm_filter_msg_ph": "Filtrar remetente / assunto...", "tm_empty_inbox_select": "Selecione uma conta à esquerda para ver os e-mails.", "tm_active_email_placeholder": "Selecionar Conta", "tm_badge_standby": "● Em espera", "tm_badge_connected": "● Conectado", "tm_badge_disconnected": "● Desconectado", "tm_btn_copy": "Copiar", "tm_no_email_selected": "Nenhum e-mail selecionado", "tm_click_inbox_hint": "Clique em um e-mail na lista para ler seu conteúdo.", "tm_otp_detected": "CÓDIGO DE VERIFICAÇÃO / OTP DETECTADO", "tm_btn_copy_otp": "Copiar OTP", "tm_copied": "Copiado!", "tm_search_another_title": "Buscar Outra Conta", "tm_search_another_desc": "Digite o e-mail na busca acima para selecionar uma conta.", "tm_accounts_avail": "Contas Disponíveis", "tm_inbox_empty": "Caixa de entrada vazia.", "tm_no_msg_filter": "Nenhuma mensagem corresponde ao filtro.", "tm_no_acc_match": "Nenhuma conta encontrada", "tm_delete_acc_confirm": "Remover {email} da lista?", "tm_clear_all_confirm": "Limpar todas as contas do verificador?", "tm_extracting": "Extraindo e verificando contas...", "tm_modal_add_title": "Adicionar Contas Outlook / Hotmail", "tm_modal_upload_label": "ENVIAR ARQUIVO .TXT (Importação em Massa)", "tm_modal_paste_label": "OU COLAR TOKENS (email|pass|refresh_token|client_id)", "tm_modal_proxy_label": "PROXY (Opcional: http://user:pass@host:port)", "tm_modal_proxy_ph": "Deixe em branco se for conexão direta", "tm_modal_btn_cancel": "Cancelar", "tm_modal_btn_import": "Importar e Verificar", "cc_card_title": "Entrada de Contas CapCut", "cc_acc_label": "LISTA DE CONTAS (email:pass, email|pass, etc)", "cc_acc_ph": "user1@example.com:password123\\nuser2@example.com|password456", "cc_proxy_label": "URL PROXY RESIDENCIAL (Obrigatório)", "cc_proxy_help": "Use <code>{sess}</code> para rotação automática de IP.", "cc_threads_label": "THREADS", "cc_retries_label": "TENTATIVAS IP", "cc_btn_start": "Iniciar Checagem CapCut", "cc_btn_stop": "Parar", "cc_results_title": "Resultados de Checagem CapCut", "cc_pro_title": "PRO / VIP", "cc_pro_ph": "Contas PRO aparecerão aqui...", "cc_free_title": "FREE / REGULAR", "cc_free_ph": "Contas FREE aparecerão aqui...", "cc_dead_title": "DEAD / ERRO", "cc_dead_ph": "Contas com erro aparecerão aqui...", "cc_btn_copy": "Copiar", "cc_btn_save": "Salvar", "cc_alert_empty": "Por favor, insira a lista de contas CapCut!", "cc_alert_no_valid": "Nenhuma conta válida encontrada!", "tfa_single_title": "Código 2FA Rápido (Individual)", "tfa_single_desc": "Insira a chave secreta 2FA (Base32) para gerar códigos de verificação de 6 dígitos instantaneamente.", "tfa_single_label": "CHAVE SECRETA 2FA", "tfa_single_ph": "Exemplo: JBSWY3DPEHPK3PXP", "tfa_btn_get": "Obter Código", "tfa_auth_code_label": "CÓDIGO DE AUTENTICAÇÃO", "tfa_btn_copy_code": "Copiar Código", "tfa_bulk_title": "Gerador 2FA em Massa", "tfa_bulk_desc": "Suporta colar várias chaves ou linhas combo (formato <code>email|pass|secret</code>).", "tfa_bulk_label": "LISTA DE CHAVES / COMBOS", "tfa_bulk_ph": "Exemplo:\\nuser1@email.com|pass1|JBSWY3DPEHPK3PXP\\nuser2@email.com:pass2:4X72J6...", "tfa_btn_gen_all": "Gerar Todos os Códigos", "tfa_bulk_res_label": "RESULTADOS (FORMATO COMBO + CÓDIGO 2FA)", "tfa_bulk_res_ph": "Os códigos 2FA gerados aparecerão aqui...", "tfa_alert_empty_single": "Por favor, insira a chave secreta 2FA!", "tfa_alert_empty_bulk": "Por favor, insira a lista de chaves ou combos!", "tfa_processing": "Processando...", "prx_title": "Verificador de Proxy", "prx_desc": "Formatos: <code>HOST:PORT</code>, <code>HOST:PORT:USER:PASS</code>, <code>USER:PASS:HOST:PORT</code>, ou <code>scheme://...</code>", "prx_input_label": "LISTA DE PROXIES", "prx_btn_sample": "Exemplo", "prx_btn_clear": "Limpar", "prx_input_ph": "Exemplo:\\n192.168.1.1:8080\\n192.168.1.1:8080:user:pass", "prx_threads_label": "THREADS", "prx_timeout_label": "TIMEOUT (s)", "prx_scamalytics_toggle": "Verificação de Score de Fraude Scamalytics", "prx_btn_start": "Iniciar Checagem", "prx_btn_stop": "Parar", "prx_stat_total": "TOTAL", "prx_stat_live": "VIVOS (LIVE)", "prx_stat_dead": "MORTOS (DEAD)", "prx_stat_latency": "PING MÉDIO", "prx_stat_clean": "BAIXO RISCO (<25)", "prx_filter_all": "Todos", "prx_filter_live": "Vivos", "prx_filter_dead": "Mortos", "prx_filter_clean": "Baixo Risco", "prx_search_ph": "Buscar IP / País...", "prx_btn_export": "Exportar", "prx_exp_live_raw": "Copiar Live (Formato Original)", "prx_exp_live_ipport": "Copiar Live (HOST:PORT)", "prx_exp_live_txt": "Baixar Live (.TXT)", "prx_exp_report_json": "Baixar Relatório Completo (.JSON)", "prx_th_proxy": "PROXY", "prx_th_status": "STATUS", "prx_th_ping": "PING", "prx_th_loc": "IP DE SAÍDA E LOCALIZAÇÃO", "prx_th_isp": "PROVEDOR / ORG", "prx_th_fraud": "RISCO DE FRAUDE", "prx_th_act": "DETALHES", "prx_empty_table": "Nenhum proxy verificado ainda. Insira a lista e clique em <b>Iniciar Checagem</b>.", "prx_no_match": "Nenhum proxy corresponde ao filtro.", "prx_modal_title": "Detalhes de Diagnóstico do Proxy", "prx_modal_close": "Fechar", "prx_alert_empty": "Por favor, insira a lista de proxies!", "prx_no_live_copy": "Nenhum proxy LIVE para copiar.", "prx_no_live_dl": "Nenhum proxy LIVE para baixar.", "nav_menu": "Menu"}};
     const LANG_META = {
   "id": { "flag": "🇮🇩", "code": "ID", "name": "Bahasa Indonesia" },
   "en": { "flag": "🇬🇧", "code": "EN", "name": "English" },
@@ -1900,8 +2100,8 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 
     function toggleLangMenu(e) {
       if (e) {
-        e.preventDefault();
-        e.stopPropagation();
+        if (e.stopPropagation) e.stopPropagation();
+        if (e.preventDefault) e.preventDefault();
       }
       const menu = document.getElementById('langDropdownList');
       if (menu) {
@@ -1911,8 +2111,8 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 
     function selectAppLanguage(lang, e) {
       if (e) {
-        e.preventDefault();
-        e.stopPropagation();
+        if (e.stopPropagation) e.stopPropagation();
+        if (e.preventDefault) e.preventDefault();
       }
       setAppLanguage(lang);
       const menu = document.getElementById('langDropdownList');
@@ -1930,10 +2130,8 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 
       // Update flag & code in top navbar
       const meta = LANG_META[lang] || LANG_META['id'];
-      const flagEl = document.getElementById('currentLangFlag');
-      const codeEl = document.getElementById('currentLangCode');
-      if (flagEl) flagEl.textContent = meta.flag;
-      if (codeEl) codeEl.textContent = meta.code;
+      document.querySelectorAll('.currentLangFlag').forEach(el => el.textContent = meta.flag);
+      document.querySelectorAll('.currentLangCode').forEach(el => el.textContent = meta.code);
 
       // Update active state in dropdown
       document.querySelectorAll('.lang-dropdown-item').forEach(item => {
@@ -1979,12 +2177,45 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 
     // Close language dropdown when clicking outside
     document.addEventListener('click', function(e) {
-      const wrapper = document.getElementById('langSelectorWrapper');
-      if (wrapper && !wrapper.contains(e.target)) {
+      const langWrapper = document.getElementById('langSelectorWrapper');
+      if (langWrapper && !langWrapper.contains(e.target)) {
         const menu = document.getElementById('langDropdownList');
         if (menu) menu.classList.remove('show');
       }
+      const tabWrapper = document.getElementById('mobileTabDropdownWrapper');
+      if (tabWrapper && !tabWrapper.contains(e.target)) {
+        const menu = document.getElementById('mobileTabMenuList');
+        if (menu) menu.classList.remove('show');
+      }
     });
+
+    const TAB_META = {
+      mail: { icon: '<i class="fa-solid fa-inbox"></i>', i18n: 'tab_mail' },
+      capcut: { icon: '<i class="fa-solid fa-film"></i>', i18n: 'tab_capcut' },
+      '2fa': { icon: '<i class="fa-solid fa-key"></i>', i18n: 'tab_2fa' },
+      proxy: { icon: '<i class="fa-solid fa-server"></i>', i18n: 'tab_proxy' }
+    };
+
+    function toggleMobileTabMenu(e) {
+      if (e) {
+        if (e.stopPropagation) e.stopPropagation();
+        if (e.preventDefault) e.preventDefault();
+      }
+      const menu = document.getElementById('mobileTabMenuList');
+      if (menu) menu.classList.toggle('show');
+      const langMenu = document.getElementById('langDropdownList');
+      if (langMenu) langMenu.classList.remove('show');
+    }
+
+    function selectMobileTab(tabName, e) {
+      if (e) {
+        if (e.stopPropagation) e.stopPropagation();
+        if (e.preventDefault) e.preventDefault();
+      }
+      switchTab(tabName);
+      const menu = document.getElementById('mobileTabMenuList');
+      if (menu) menu.classList.remove('show');
+    }
 
     window.switchTab = function(tabName) {
       const allTabs = ['mail', 'capcut', '2fa', 'proxy'];
@@ -1992,7 +2223,8 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         const btn = document.getElementById('btn-tab-' + name);
         const pane = document.getElementById('tab-' + name);
         if (btn) {
-          btn.classList.toggle('active', name === tabName);
+          if (name === tabName) btn.classList.add('active');
+          else btn.classList.remove('active');
         }
         if (pane) {
           if (name === tabName) {
@@ -2002,6 +2234,20 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             pane.classList.remove('active');
             pane.style.display = 'none';
           }
+        }
+      });
+
+      // Update mobile tab dropdown button label & icon
+      const iconEl = document.getElementById('activeTabIcon');
+      
+
+      // Update active state in mobile dropdown items
+      document.querySelectorAll('.mobile-tab-item').forEach(item => {
+        const onClickAttr = item.getAttribute('onclick') || '';
+        if (onClickAttr.includes("'" + tabName + "'")) {
+          item.classList.add('active');
+        } else {
+          item.classList.remove('active');
         }
       });
     };
@@ -2840,7 +3086,10 @@ HTML_TEMPLATE = """<!DOCTYPE html>
                   </div>
                   <small class="text-muted d-block text-truncate" style="font-size: 0.72rem;">${activeAcc.ok ? (escapeHtml(activeAcc.latest_subject) || 'Connected') : (escapeHtml(activeAcc.error) || 'Dead')}</small>
                 </div>
-              </div>
+                <button class="btn btn-sm btn-link text-danger p-1 opacity-75 hover-opacity-100 flex-shrink-0" title="Delete account" onclick="deleteOutlookAccount(${selectedAccountIndex}, event)" style="font-size: 0.9rem;">
+                    <i class="fa-solid fa-trash-can text-danger"></i>
+                  </button>
+                </div>
             </div>
           `;
         }
@@ -2894,8 +3143,8 @@ HTML_TEMPLATE = """<!DOCTYPE html>
               </div>
               <small class="text-muted d-block text-truncate" style="font-size: 0.72rem;">${acc.ok ? (escapeHtml(acc.latest_subject) || 'Live') : (escapeHtml(acc.error) || 'Dead')}</small>
             </div>
-            <button class="btn btn-sm btn-link text-secondary p-0 px-1 opacity-50 hover-opacity-100" title="Delete account" onclick="deleteOutlookAccount(${idx}, event)">
-              <i class="fa-solid fa-xmark fa-sm text-danger"></i>
+            <button class="btn btn-sm btn-link text-danger p-1 opacity-75 hover-opacity-100 flex-shrink-0" title="Delete account" onclick="deleteOutlookAccount(${idx}, event)" style="font-size: 0.9rem;">
+              <i class="fa-solid fa-trash-can text-danger"></i>
             </button>
           </div>
         `;
@@ -3164,9 +3413,9 @@ HTML_TEMPLATE = """<!DOCTYPE html>
               ${escapeHtml(msg.preview || 'No preview')}
             </div>
             ${otp ? `
-              <div class="mt-2 d-flex align-items-center gap-1">
-                <span class="badge bg-warning text-dark fw-bold font-monospace py-1 px-2"><i class="fa-solid fa-key me-1"></i>OTP: ${otp}</span>
-                <button class="btn btn-xs btn-outline-warning py-0 px-2 fw-semibold" onclick="copyOtpDirect('${otp}', event)">${getI18nText('tm_btn_copy', 'Salin')}</button>
+              <div class="mt-1.5 d-flex align-items-center gap-1.5">
+                <span class="badge bg-warning text-dark fw-bold font-monospace py-0.5 px-2" style="font-size: 0.72rem;"><i class="fa-solid fa-key me-1"></i>OTP: ${otp}</span>
+                <button class="btn btn-xs btn-outline-warning py-0 px-1.5 fw-semibold" style="font-size: 0.7rem;" onclick="copyOtpDirect('${otp}', event)">${getI18nText('tm_btn_copy', 'Salin')}</button>
               </div>
             ` : ''}
           </div>
@@ -3261,8 +3510,8 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             </div>
           </div>
 
-          <div class="flex-grow-1 d-flex">
-            <iframe class="tm-email-iframe shadow" srcdoc="${escapeHtml(data.body)}"></iframe>
+          <div class="tm-email-iframe-container flex-grow-1">
+            <iframe class="tm-email-iframe" srcdoc="${escapeHtml(data.body)}"></iframe>
           </div>
         `;
       } catch (err) {
@@ -3506,6 +3755,9 @@ DOCS_TEMPLATE = """<!DOCTYPE html>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>API Documentation | ChenStore Multi Tools</title>
+  <link rel="icon" type="image/png" href="/logo.png">
+  <link rel="shortcut icon" type="image/png" href="/logo.png">
+  <link rel="apple-touch-icon" href="/logo.png">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
   <style>
@@ -4157,12 +4409,15 @@ def index():
 
 
 @app.route("/logo.png")
+@app.route("/favicon.ico")
 def serve_logo():
-    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    logo_path = os.path.join(base_dir, "logo.png")
-    if os.path.exists(logo_path):
-        return send_from_directory(base_dir, "logo.png")
-    return ("", 204)
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    candidates = [script_dir, os.path.dirname(script_dir), os.getcwd()]
+    for d in candidates:
+        target = os.path.join(d, "logo.png")
+        if os.path.isfile(target):
+            return send_from_directory(d, "logo.png", mimetype="image/png")
+    return Response(b"", status=404)
 
 @app.route("/api/check", methods=["POST"])
 def api_check_capcut():
