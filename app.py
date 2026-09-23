@@ -1093,82 +1093,155 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       color: #ffffff;
     }
 
-    /* ================= RESPONSIVE STYLES ================= */
-    @media (max-width: 992px) {
+    /* ================= RESPONSIVE STYLES (Mobile, Tablet, Laptop, Desktop) ================= */
+    @media (max-width: 1199px) {
+      .tm-sidebar { width: 250px; }
+      .tm-messages-col { width: 310px; }
+      .nav-tab-btn { padding: 8px 14px; font-size: 0.84rem; }
+    }
+
+    @media (max-width: 991px) {
       body {
         height: auto;
         min-height: 100vh;
+        overflow-x: hidden;
         overflow-y: auto;
       }
       .top-navbar {
         height: auto;
-        padding: 12px 16px;
-        flex-wrap: wrap;
+        padding: 10px 14px;
+        flex-direction: column;
         gap: 10px;
+        align-items: center;
+      }
+      .brand-container {
         justify-content: center;
+        text-align: center;
+      }
+      .nav-tabs-custom {
+        width: 100%;
+        display: flex;
+        overflow-x: auto;
+        white-space: nowrap;
+        justify-content: flex-start;
+        padding: 4px;
+        scrollbar-width: none;
+      }
+      .nav-tabs-custom::-webkit-scrollbar {
+        display: none;
+      }
+      .nav-tab-btn {
+        flex: 1 0 auto;
+        justify-content: center;
+        padding: 8px 12px;
+        font-size: 0.8rem;
       }
       .main-tab-content {
         overflow: visible;
         flex: none;
+        height: auto;
+      }
+      .tab-pane-custom {
+        height: auto;
+        min-height: calc(100vh - 140px);
+        overflow: visible;
       }
       .trackmail-container {
         flex-direction: column;
         height: auto;
         overflow: visible;
+        gap: 12px;
+        padding: 12px 10px;
       }
-      .tm-sidebar {
+      /* TrackMail Responsive View Switcher on Mobile/Tablet */
+      .trackmail-container {
+        display: flex;
         width: 100%;
-        max-height: 280px;
-        border-right: none;
-        border-bottom: 1px solid #2d1c10;
+        height: 100%;
+        overflow: hidden;
       }
-      .tm-messages-col {
-        width: 100%;
-        max-height: 320px;
-        border-right: none;
-        border-bottom: 1px solid #2d1c10;
-      }
-      .tm-reader-col {
-        width: 100%;
-        min-height: 500px;
-      }
-      .tm-email-iframe {
-        min-height: 450px;
-      }
-      .capcut-container {
-        padding: 18px 14px;
-        overflow: visible;
+
+      @media (max-width: 991px) {
+        .trackmail-container {
+          display: block !important;
+          width: 100%;
+          height: auto;
+          overflow: visible;
+          padding: 0 !important;
+        }
+        .tm-view-accounts .tm-sidebar { display: flex !important; width: 100% !important; min-height: calc(100vh - 140px); border-radius: 0; border: none; }
+        .tm-view-accounts .tm-messages-col { display: none !important; }
+        .tm-view-accounts .tm-reader-col { display: none !important; }
+
+        .tm-view-inbox .tm-sidebar { display: none !important; }
+        .tm-view-inbox .tm-messages-col { display: flex !important; width: 100% !important; min-height: calc(100vh - 140px); border-radius: 0; border: none; }
+        .tm-view-inbox .tm-reader-col { display: none !important; }
+
+        .tm-view-reader .tm-sidebar { display: none !important; }
+        .tm-view-reader .tm-messages-col { display: none !important; }
+        .tm-view-reader .tm-reader-col { display: flex !important; width: 100% !important; min-height: calc(100vh - 140px); border-radius: 0; border: none; }
+
+        .tm-sidebar {
+          width: 100%;
+          border: none;
+          max-height: none;
+        }
+        .tm-messages-col {
+          width: 100%;
+          border: none;
+          max-height: none;
+        }
+        .tm-reader-col {
+          width: 100%;
+          border: none;
+          min-height: 500px;
+        }
+        .tm-email-iframe {
+          min-height: 480px;
+        }
+        .capcut-container {
+          padding: 16px 12px;
+          overflow: visible;
+          height: auto;
+        }
       }
     }
 
     @media (max-width: 576px) {
       .top-navbar {
-        padding: 10px 12px;
+        padding: 8px 10px;
       }
       .brand-title {
         font-size: 1.1rem;
       }
-      .nav-tabs-custom {
-        width: 100%;
-        display: flex;
+      .brand-sub {
+        font-size: 0.62rem;
+        letter-spacing: 1px;
       }
-      .nav-tabs-custom .nav-item {
-        flex: 1;
+      .nav-tab-btn {
+        padding: 7px 10px;
+        font-size: 0.75rem;
       }
-      .nav-tabs-custom .nav-link {
-        width: 100%;
-        padding: 6px 8px;
-        font-size: 0.78rem;
-        text-align: center;
+      .nav-tab-btn i {
+        margin-right: 4px !important;
+      }
+      .capcut-container {
+        padding: 12px 8px;
+      }
+      .card-theme {
+        padding: 1rem !important;
       }
       .tm-reader-topbar {
-        padding: 10px 14px;
+        padding: 10px 12px;
         flex-direction: column;
         align-items: flex-start;
         gap: 8px;
       }
       .tm-reader-content {
-        padding: 14px;
+        padding: 12px;
+      }
+      .table-responsive {
+        font-size: 0.75rem;
       }
     }
   </style>
@@ -1176,8 +1249,8 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 <body>
 
   <div class="top-navbar">
-    <div class="d-flex align-items-center gap-3">
-      <img src="/logo.png" alt="ChenStore" style="height: 46px; border-radius: 8px; border: 1px solid #78471c; box-shadow: 0 2px 8px rgba(0,0,0,0.5);" onerror="this.style.display='none'">
+    <div class="d-flex align-items-center gap-3 brand-container">
+      <img src="/logo.png" alt="ChenStore" style="height: 42px; border-radius: 8px; border: 1px solid #78471c; box-shadow: 0 2px 8px rgba(0,0,0,0.5);" onerror="this.style.display='none'">
       <div>
         <div class="brand-title">ChenStore</div>
         <div class="brand-sub">MULTI TOOLS • LAYANAN SOSMED</div>
@@ -1186,7 +1259,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     
     <div class="nav-tabs-custom" id="mainTabs">
       <button type="button" class="nav-tab-btn active" id="btn-tab-mail" onclick="switchTab('mail')">
-        <i class="fa-solid fa-inbox me-2 text-warning"></i>Mail Checker (Webmail)
+        <i class="fa-solid fa-inbox me-2 text-warning"></i>Mail Checker
       </button>
       <button type="button" class="nav-tab-btn" id="btn-tab-capcut" onclick="switchTab('capcut')">
         <i class="fa-solid fa-film me-2 text-warning"></i>CapCut Checker
@@ -1203,7 +1276,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
   <div class="main-tab-content">
     
     <div id="tab-mail" class="tab-pane-custom active">
-      <div class="trackmail-container">
+      <div id="trackmailContainer" class="trackmail-container tm-view-accounts">
         
         <div class="tm-sidebar">
           <div class="tm-sidebar-header">
@@ -1232,9 +1305,14 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 
         <div class="tm-messages-col">
           <div class="tm-messages-header">
-            <span class="fw-bold small text-uppercase text-warning" id="tmInboxTitle">
-              <i class="fa-regular fa-folder-open me-1"></i> INBOX (0)
-            </span>
+            <div class="d-flex align-items-center gap-2">
+              <button class="btn btn-sm btn-outline-warning py-0 px-2 d-lg-none" onclick="setMailView('accounts')" title="Kembali ke Daftar Akun">
+                <i class="fa-solid fa-chevron-left me-1"></i>Akun
+              </button>
+              <span class="fw-bold small text-uppercase text-warning" id="tmInboxTitle">
+                <i class="fa-regular fa-folder-open me-1"></i> INBOX (0)
+              </span>
+            </div>
             <button class="btn btn-sm btn-outline-gold py-0 px-2" onclick="refreshCurrentInbox()" title="Refresh Inbox">
               <i class="fa-solid fa-rotate-right fa-xs"></i>
             </button>
@@ -1248,15 +1326,18 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 
         <div class="tm-reader-col">
           <div class="tm-reader-topbar">
-            <div class="d-flex align-items-center gap-3">
-              <span class="fw-semibold text-truncate text-warning" id="tmActiveEmailLabel" style="max-width: 320px;">Pilih Akun</span>
-              <span id="tmConnectionBadge" class="badge bg-dark border border-secondary text-secondary px-2 py-1">
+            <div class="d-flex align-items-center gap-2 overflow-hidden">
+              <button class="btn btn-sm btn-outline-warning py-0 px-2 d-lg-none flex-shrink-0" onclick="setMailView('inbox')" title="Kembali ke Inbox">
+                <i class="fa-solid fa-chevron-left me-1"></i>Inbox
+              </button>
+              <span class="fw-semibold text-truncate text-warning" id="tmActiveEmailLabel" style="max-width: 240px;">Pilih Akun</span>
+              <span id="tmConnectionBadge" class="badge bg-dark border border-secondary text-secondary px-2 py-1 flex-shrink-0">
                 ● Standby
               </span>
             </div>
-            <div class="d-flex gap-2">
+            <div class="d-flex gap-2 flex-shrink-0">
               <button class="btn btn-sm btn-outline-gold" onclick="copyCurrentEmail()" title="Copy Email">
-                <i class="fa-regular fa-copy me-1"></i> Copy Email
+                <i class="fa-regular fa-copy me-1"></i> Copy
               </button>
               <button class="btn btn-sm btn-outline-gold" onclick="refreshCurrentInbox()" title="Refresh">
                 <i class="fa-solid fa-arrows-rotate"></i>
@@ -2440,6 +2521,16 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 
     let outlookAccounts = [];
     let selectedAccountIndex = -1;
+    let currentMailView = 'accounts';
+
+    function setMailView(view) {
+      currentMailView = view;
+      const el = document.getElementById('trackmailContainer');
+      if (el) {
+        el.classList.remove('tm-view-accounts', 'tm-view-inbox', 'tm-view-reader');
+        el.classList.add('tm-view-' + view);
+      }
+    }
 
     function saveOutlookAccountsStorage() {
       try {
@@ -2454,7 +2545,9 @@ HTML_TEMPLATE = """<!DOCTYPE html>
           outlookAccounts = JSON.parse(raw) || [];
           if (outlookAccounts.length > 0) {
             renderAccountsList();
-            selectOutlookAccount(0);
+            if (window.innerWidth > 991) {
+              selectOutlookAccount(0);
+            }
           }
         }
       } catch(e) {}
@@ -2510,6 +2603,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         if (selectedAccountIndex >= 0) {
           selectOutlookAccount(selectedAccountIndex);
         } else {
+          setMailView('accounts');
           document.getElementById('tmActiveEmailLabel').textContent = 'Pilih Akun';
           document.getElementById('tmConnectionBadge').className = 'badge bg-dark border border-secondary text-secondary px-2 py-1';
           document.getElementById('tmConnectionBadge').innerHTML = '● Standby';
@@ -2589,7 +2683,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
               outlookAccounts.push(data);
               saveOutlookAccountsStorage();
               renderAccountsList();
-              if (selectedAccountIndex === -1) {
+              if (selectedAccountIndex === -1 && window.innerWidth > 991) {
                 selectOutlookAccount(0);
               }
             } catch (e) {
@@ -2602,7 +2696,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
               });
               saveOutlookAccountsStorage();
               renderAccountsList();
-              if (selectedAccountIndex === -1) {
+              if (selectedAccountIndex === -1 && window.innerWidth > 991) {
                 selectOutlookAccount(0);
               }
             }
@@ -2628,6 +2722,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         selectedAccountIndex = -1;
         try { localStorage.removeItem('chenstore_outlook_accounts'); } catch(e) {}
         renderAccountsList();
+        setMailView('accounts');
         document.getElementById('tmMessagesContainer').innerHTML = `<div class="text-center text-muted py-5 small">Pilih akun di sebelah kiri untuk melihat pesan inbox.</div>`;
         document.getElementById('tmReaderContent').innerHTML = `<div class="text-center text-muted my-auto"><i class="fa-regular fa-envelope-open fa-3x mb-3 text-warning"></i><h5 class="text-light">Belum ada email yang dipilih</h5></div>`;
       }
@@ -2636,6 +2731,9 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     async function selectOutlookAccount(idx) {
       selectedAccountIndex = idx;
       renderAccountsList();
+      if (window.innerWidth <= 991) {
+        setMailView('inbox');
+      }
       const acc = outlookAccounts[idx];
       if (!acc) return;
       document.getElementById('tmActiveEmailLabel').textContent = acc.email;
@@ -2701,7 +2799,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         });
         container.innerHTML = html;
 
-        if (data.messages.length > 0) {
+        if (data.messages.length > 0 && window.innerWidth > 991) {
           readMessage(data.messages[0].id);
         }
 
@@ -2713,6 +2811,10 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     async function readMessage(msgId) {
       if (selectedAccountIndex < 0) return;
       const acc = outlookAccounts[selectedAccountIndex];
+
+      if (window.innerWidth <= 991) {
+        setMailView('reader');
+      }
 
       document.querySelectorAll('.tm-message-item').forEach(el => el.classList.remove('active'));
       const activeEl = document.getElementById('msg-' + msgId);
