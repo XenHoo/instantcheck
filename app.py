@@ -41,6 +41,8 @@ class VercelWSGIHandler:
 handler = VercelWSGIHandler(app)
 
 
+FAVICON_B64 = "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"
+
 # ==================== CAPCUT CORE LOGIC ====================
 CAPCUT_AID = "348188"
 LOGIN_HOST = "login-row.www.capcut.com"
@@ -772,9 +774,12 @@ HTML_TEMPLATE = """<!DOCTYPE html>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ChenStore | MULTI TOOLS</title>
+  <link rel="icon" type="image/png" href="data:image/png;base64,{{ favicon_b64 }}">
+  <link rel="shortcut icon" type="image/png" href="data:image/png;base64,{{ favicon_b64 }}">
+  <link rel="apple-touch-icon" href="data:image/png;base64,{{ favicon_b64 }}">
   <link rel="icon" type="image/png" href="/logo.png">
-  <link rel="shortcut icon" type="image/png" href="/logo.png">
-  <link rel="apple-touch-icon" href="/logo.png">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#0f0a06">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
   <style>
@@ -1299,6 +1304,153 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       font-weight: 700;
     }
     
+    
+    /* Custom Gold/Bronze Luxury Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(15, 10, 6, 0.6);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #4a2c16;
+      border-radius: 10px;
+      border: 1px solid #78471c;
+      transition: background 0.2s ease;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--gold-main);
+      box-shadow: 0 0 8px var(--gold-glow);
+    }
+
+    /* Glassmorphism Navbar & Modals */
+    .top-navbar {
+      background: rgba(29, 18, 9, 0.88) !important;
+      backdrop-filter: blur(12px) !important;
+      -webkit-backdrop-filter: blur(12px) !important;
+    }
+
+    .modal-content {
+      background: rgba(24, 17, 11, 0.95) !important;
+      border: 1px solid var(--border-bronze) !important;
+      border-radius: 14px !important;
+      backdrop-filter: blur(16px) !important;
+      -webkit-backdrop-filter: blur(16px) !important;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.9) !important;
+    }
+
+    /* Modern Floating Toast Notification */
+    #chenToastContainer {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 999999;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      pointer-events: none;
+    }
+
+    .chen-toast {
+      pointer-events: auto;
+      background: linear-gradient(135deg, #2a180c 0%, #170d06 100%);
+      border: 1px solid var(--gold-main);
+      color: var(--text-main);
+      padding: 10px 18px;
+      border-radius: 10px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.7), 0 0 12px rgba(245, 158, 11, 0.25);
+      font-size: 0.85rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      animation: toastSlideIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      transition: opacity 0.25s ease, transform 0.25s ease;
+    }
+
+    .chen-toast.hide {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+
+    @keyframes toastSlideIn {
+      from {
+        opacity: 0;
+        transform: translateY(20px) scale(0.95);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    /* 2FA 30s Countdown Visual Bar */
+    .tfa-timer-container {
+      width: 100%;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 10px;
+      overflow: hidden;
+      margin-top: 8px;
+      position: relative;
+    }
+
+    .tfa-timer-bar {
+      height: 100%;
+      width: 100%;
+      background: linear-gradient(90deg, #22c55e 0%, #f59e0b 70%, #ef4444 100%);
+      border-radius: 10px;
+      transition: width 1s linear;
+    }
+
+    /* CapCut Progress Bar */
+    .cc-progress-container {
+      display: none;
+      margin-top: 12px;
+      background: #110a06;
+      border: 1px solid var(--border-bronze);
+      border-radius: 10px;
+      padding: 12px;
+    }
+
+    .cc-progress-bar {
+      height: 8px;
+      border-radius: 6px;
+      background: linear-gradient(90deg, #d97706, #f59e0b);
+      box-shadow: 0 0 10px var(--gold-glow);
+      transition: width 0.2s ease;
+    }
+
+    @media (max-width: 768px) {
+      #chenToastContainer {
+        top: 62px;
+        bottom: auto;
+        right: 16px;
+        left: 16px;
+        align-items: center;
+      }
+      .chen-toast {
+        max-width: fit-content;
+        padding: 7px 16px;
+        border-radius: 25px;
+        font-size: 0.78rem;
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.85), 0 0 10px rgba(245, 158, 11, 0.3);
+        animation: toastSlideDown 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      }
+    }
+
+    @keyframes toastSlideDown {
+      from {
+        opacity: 0;
+        transform: translateY(-15px) scale(0.96);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+    
     /* Language Selector Custom Styles */
     .lang-wrapper {
       position: relative;
@@ -1429,7 +1581,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
   <!-- Top Navbar -->
   <div class="top-navbar">
     <div class="brand-container">
-      <img src="/logo.png" alt="ChenStore" class="brand-logo-img" onerror="this.style.display='none'">
+      <img src="/logo.png" data-fallback="data:image/png;base64,{{ favicon_b64 }}" alt="ChenStore" class="brand-logo-img" onerror="if(this.dataset.fallback && this.src !== this.dataset.fallback){this.src=this.dataset.fallback;}else{this.style.display='none';}">
       <div>
         <div class="brand-title">ChenStore</div>
         <div class="brand-sub" data-i18n="brand_sub">MULTI TOOLS • LAYANAN SOSMED</div>
@@ -1668,6 +1820,17 @@ HTML_TEMPLATE = """<!DOCTYPE html>
                 <button id="btnStopCapcut" class="btn btn-outline-secondary py-2" onclick="stopCapcutChecking()" disabled>
                   <i class="fa-solid fa-stop me-2"></i><span data-i18n="cc_btn_stop">Stop</span>
                 </button>
+              </div>
+
+              <!-- Animated Live Progress Bar -->
+              <div class="cc-progress-container" id="ccProgressBox" style="display: none; margin-top: 12px; background: #110a06; border: 1px solid var(--border-bronze); border-radius: 10px; padding: 12px;">
+                <div class="d-flex justify-content-between align-items-center mb-1 small">
+                  <span class="text-warning fw-semibold"><i class="fa-solid fa-spinner fa-spin me-1"></i>Checking...</span>
+                  <span id="ccProgressText" class="font-monospace text-light">0/0 (0%)</span>
+                </div>
+                <div class="progress bg-dark" style="height: 8px; border: 1px solid var(--border-bronze); border-radius: 6px; overflow: hidden;">
+                  <div class="cc-progress-bar" id="ccProgressBar" style="width: 0%; height: 8px; border-radius: 6px; background: linear-gradient(90deg, #d97706, #f59e0b); box-shadow: 0 0 10px rgba(245, 158, 11, 0.35); transition: width 0.2s ease;"></div>
+                </div>
               </div>
 
               <div class="mt-4">
@@ -2217,6 +2380,61 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       if (menu) menu.classList.remove('show');
     }
 
+    
+    
+    /* Universal Clipboard Copy (Supports HTTPS, localhost, & Mobile LAN HTTP) */
+    function fallbackCopyText(text, callback) {
+      try {
+        const textArea = document.createElement('textarea');
+        textArea.value = text;
+        textArea.style.position = 'fixed';
+        textArea.style.top = '-9999px';
+        textArea.style.left = '-9999px';
+        textArea.style.opacity = '0';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        if (callback) callback();
+      } catch (err) {
+        if (callback) callback();
+      }
+    }
+
+    function copyToClipboard(text, successMsg = 'Disalin!', icon = 'fa-solid fa-circle-check text-success') {
+      if (!text) return;
+      const triggerSuccess = () => {
+        if (typeof showToast === 'function') {
+          showToast(successMsg, icon);
+        }
+      };
+
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text)
+          .then(triggerSuccess)
+          .catch(() => fallbackCopyText(text, triggerSuccess));
+      } else {
+        fallbackCopyText(text, triggerSuccess);
+      }
+    }
+    
+    /* Toast Notification System */
+    function showToast(msg, icon = 'fa-solid fa-circle-check text-success') {
+      const container = document.getElementById('chenToastContainer');
+      if (!container) return;
+      // Remove any existing toast immediately so only 1 popup appears
+      container.innerHTML = '';
+      const toast = document.createElement('div');
+      toast.className = 'chen-toast';
+      toast.innerHTML = `<i class="${icon} fs-6"></i> <span>${msg}</span>`;
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.classList.add('hide');
+        setTimeout(() => toast.remove(), 260);
+      }, 2000);
+    }
+    
     window.switchTab = function(tabName) {
       const allTabs = ['mail', 'capcut', '2fa', 'proxy'];
       allTabs.forEach(name => {
@@ -2321,7 +2539,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       let secret = (input ? input.value : '').trim();
       if (!secret) {
         resetSingle2fa();
-        return alert(getI18nText('tfa_alert_empty_single', 'Silakan masukkan 2FA Secret Key!'));
+        return showToast(getI18nText('tfa_alert_empty_single', 'Silakan masukkan 2FA Secret Key!'), 'fa-solid fa-triangle-exclamation text-warning');
       }
 
       // Extract secret if user pasted combo line (email|pass|secret)
@@ -2362,162 +2580,52 @@ HTML_TEMPLATE = """<!DOCTYPE html>
           resetSingle2fa();
           display.textContent = 'INVALID';
           copyBtn.disabled = true;
-          alert('Secret Key invalid / error!');
+          showToast('Secret Key invalid / error!', 'fa-solid fa-circle-xmark text-danger');
         }
       } catch (err) {
         resetSingle2fa();
         display.textContent = 'ERROR';
         copyBtn.disabled = true;
-        alert('Failed: ' + err.message);
+        showToast('Failed: ' + err.message, 'fa-solid fa-circle-xmark text-danger');
       }
     }
 
     function copySingle2fa() {
       if (!currentSingle2faCode || currentSingle2faCode === '------') return;
-      navigator.clipboard.writeText(currentSingle2faCode).then(() => {
-        const btn = document.getElementById('btnCopySingle2fa');
-        const orig = btn.innerHTML;
-        btn.innerHTML = `<i class="fa-solid fa-check me-1 text-success"></i> ${getI18nText('tm_copied', 'Disalin!')}`;
-        setTimeout(() => { btn.innerHTML = orig; }, 1500);
-      });
+      copyToClipboard(currentSingle2faCode, '✓ ' + getI18nText('tm_copied', 'Disalin!') + ': ' + currentSingle2faCode, 'fa-solid fa-key text-warning');
     }
 
-    async function generateBulk2fa() {
-      const input = document.getElementById('bulk2faInput');
-      const rawText = (input ? input.value : '').trim();
-      if (!rawText) return alert(getI18nText('tfa_alert_empty_bulk', 'Silakan masukkan list secret / combo!'));
+    function copyLiveProxies(format = 'raw') {
+      const live = proxyResults.filter(r => r.live);
+      if (live.length === 0) return showToast(getI18nText('prx_no_live_copy', 'Tidak ada proxy LIVE untuk disalin.'), 'fa-solid fa-triangle-exclamation text-warning');
 
-      const lines = (rawText || '').split(String.fromCharCode(10)).map(l => l.trim()).filter(l => l);
-      if (lines.length === 0) return;
-
-      const btn = document.getElementById('btnRunBulk2fa');
-      const origBtn = btn.innerHTML;
-      btn.disabled = true;
-      btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin me-1"></i> ${getI18nText('tfa_processing', 'Memproses...')}`;
-
-      const parsedItems = [];
-      const secretList = [];
-
-      for (const line of lines) {
-        let parts = [];
-        if (line.includes('|')) parts = line.split('|').map(p => p.trim());
-        else if (line.includes(':')) parts = line.split(':').map(p => p.trim());
-        else if (line.includes('----')) parts = line.split('----').map(p => p.trim());
-        else if (line.includes('\t')) parts = line.split('\t').map(p => p.trim());
-        else parts = [line];
-
-        let secret = "";
-        let email = "";
-        let pass = "";
-
-        if (parts.length >= 3) {
-          email = parts[0];
-          pass = parts[1];
-          secret = parts[2].replace(/[\s\-]+/g, '').toUpperCase();
-        } else if (parts.length === 2) {
-          if (parts[0].includes('@')) {
-            email = parts[0];
-            secret = parts[1].replace(/[\s\-]+/g, '').toUpperCase();
-          } else {
-            secret = parts[0].replace(/[\s\-]+/g, '').toUpperCase();
-          }
-        } else {
-          secret = parts[0].replace(/[\s\-]+/g, '').toUpperCase();
-        }
-
-        parsedItems.push({ original: line, email, pass, secret });
-        secretList.push(secret);
+      let lines = [];
+      if (format === 'ipport') {
+        lines = live.map(r => `${r.host}:${r.port}`);
+      } else {
+        lines = live.map(r => r.raw || r.display);
       }
 
-      try {
-        const batchSize = 100;
-        const codeMap = {};
-
-        for (let i = 0; i < secretList.length; i += batchSize) {
-          const batch = secretList.slice(i, i + batchSize);
-          const proxRes = await safeFetchJson('/api/2fa/generate', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ secrets: batch })
-          });
-
-          if (proxRes && proxRes.data) {
-            proxRes.data.forEach((item, idx) => {
-              const sec = (item.secret || batch[idx] || "").toUpperCase();
-              const code = item.code || item.token || "ERROR";
-              codeMap[sec] = code;
-            });
-          }
-        }
-
-        // Build output
-        let outLines = [];
-        let successCount = 0;
-        for (const item of parsedItems) {
-          const code = codeMap[item.secret] || (item.secret ? "NOT_FOUND" : "NO_SECRET");
-          if (code && code !== "ERROR" && code !== "NOT_FOUND" && code !== "NO_SECRET") {
-            successCount++;
-          }
-          if (item.email && item.pass) {
-            outLines.push(`${item.email}|${item.pass}|${item.secret}|${code}`);
-          } else if (item.email) {
-            outLines.push(`${item.email}|${item.secret}|${code}`);
-          } else {
-            outLines.push(`${item.secret} -> ${code}`);
-          }
-        }
-
-        const outArea = document.getElementById('bulk2faOutput');
-        if (outArea) outArea.value = outLines.join(String.fromCharCode(10));
-        
-        const countBadge = document.getElementById('bulk2faCount');
-        if (countBadge) countBadge.textContent = `${successCount}/${parsedItems.length} generated`;
-
-      } catch (err) {
-        alert('Gagal bulk generate: ' + err.message);
-      } finally {
-        btn.disabled = false;
-        btn.innerHTML = origBtn;
-      }
+      copyToClipboard(lines.join(String.fromCharCode(10)), '✓ ' + getI18nText('tm_copied', 'Disalin!') + ` (${live.length} LIVE)`, 'fa-solid fa-server text-success');
     }
 
-
-    /* ================= PROXY CHECKER LOGIC ================= */
-    let proxyList = [];
-    let proxyResults = [];
-    let proxyAbortController = null;
-    let proxyFilterMode = 'all';
-
-    function loadSampleProxies() {
-      const sample = [
-        '103.152.112.162:80',
-        '103.125.40.52:8080',
-        '45.114.130.138:8080',
-        '185.199.229.156:7492:sampleuser:samplepass',
-        'sampleuser:samplepass:198.51.100.1:8080'
-      ].join(String.fromCharCode(10));
-      document.getElementById('proxyInput').value = sample;
-    }
-
-    function clearProxyInput() {
-      document.getElementById('proxyInput').value = '';
-    }
-
-    function setProxyFilter(mode) {
-      proxyFilterMode = mode;
-      ['all', 'live', 'dead', 'clean'].forEach(m => {
-        const b = document.getElementById(`filterProxy${m.charAt(0).toUpperCase() + m.slice(1)}`);
-        if (b) b.classList.toggle('active', m === mode);
-      });
-      renderProxyTable();
+    function downloadLiveProxies() {
+      const live = proxyResults.filter(r => r.live);
+      if (live.length === 0) return showToast(getI18nText('prx_no_live_dl', 'Tidak ada proxy LIVE untuk diunduh.'), 'fa-solid fa-triangle-exclamation text-warning');
+      const content = live.map(r => r.raw || r.display).join(String.fromCharCode(10));
+      const blob = new Blob([content], { type: 'text/plain;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `live_proxies_${Date.now()}.txt`;
+      link.click();
     }
 
     async function startProxyChecking() {
       const rawText = document.getElementById('proxyInput').value.trim();
-      if (!rawText) return alert(getI18nText('prx_alert_empty', 'Silakan masukkan list proxy!'));
+      if (!rawText) return showToast(getI18nText('prx_alert_empty', 'Silakan masukkan list proxy!'), 'fa-solid fa-triangle-exclamation text-warning');
 
       const lines = (rawText || '').split(String.fromCharCode(10)).map(l => l.trim()).filter(l => l && !l.startsWith('#'));
-      if (lines.length === 0) return alert(getI18nText('prx_alert_empty', 'Tidak ada proxy yang valid untuk dicek.'));
+      if (lines.length === 0) return showToast(getI18nText('prx_alert_empty', 'Tidak ada proxy yang valid untuk dicek.'), 'fa-solid fa-triangle-exclamation text-warning');
 
       const concurrency = Math.min(20, Math.max(1, parseInt(document.getElementById('proxyConcurrency').value) || 5));
       const timeout = Math.min(60, Math.max(2, parseInt(document.getElementById('proxyTimeout').value) || 15));
@@ -2764,7 +2872,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 
     function copyLiveProxies(format) {
       const live = proxyResults.filter(r => r.live);
-      if (live.length === 0) return alert(getI18nText('prx_no_live_copy', 'Tidak ada proxy LIVE untuk disalin.'));
+      if (live.length === 0) return showToast(getI18nText('prx_no_live_copy', 'Tidak ada proxy LIVE untuk disalin.'), 'fa-solid fa-triangle-exclamation text-warning');
 
       let lines = [];
       if (format === 'ipport') {
@@ -2773,14 +2881,12 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         lines = live.map(r => r.raw || r.display);
       }
 
-      navigator.clipboard.writeText(lines.join(String.fromCharCode(10))).then(() => {
-        alert(`${getI18nText('tm_copied', 'Disalin!')} (${live.length} LIVE)`);
-      });
+      copyToClipboard(lines.join(String.fromCharCode(10)), '✓ ' + getI18nText('tm_copied', 'Disalin!') + ` (${live.length} LIVE)`, 'fa-solid fa-server text-success');
     }
 
     function downloadLiveProxiesTxt() {
       const live = proxyResults.filter(r => r.live);
-      if (live.length === 0) return alert(getI18nText('prx_no_live_dl', 'Tidak ada proxy LIVE untuk diunduh.'));
+      if (live.length === 0) return showToast(getI18nText('prx_no_live_dl', 'Tidak ada proxy LIVE untuk diunduh.'), 'fa-solid fa-triangle-exclamation text-warning');
       const content = live.map(r => r.raw || r.display).join(String.fromCharCode(10));
       const blob = new Blob([content], { type: 'text/plain;charset=utf-8;' });
       const link = document.createElement('a');
@@ -2790,7 +2896,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     }
 
     function downloadProxyReportJson() {
-      if (proxyResults.length === 0) return alert('Belum ada data untuk diekspor.');
+      if (proxyResults.length === 0) return showToast('Belum ada data untuk diekspor.', 'fa-solid fa-triangle-exclamation text-warning');
       const content = JSON.stringify(proxyResults, null, 2);
       const blob = new Blob([content], { type: 'application/json;charset=utf-8;' });
       const link = document.createElement('a');
@@ -2801,13 +2907,13 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 
     function copyField(elementId) {
       const el = document.getElementById(elementId);
-      if (!el.value.trim()) return;
-      navigator.clipboard.writeText(el.value).then(() => alert(getI18nText('tm_copied', 'Disalin ke clipboard!')));
+      if (!el || !el.value.trim()) return;
+      copyToClipboard(el.value, '✓ ' + getI18nText('tm_copied', 'Disalin ke clipboard!'), 'fa-solid fa-copy text-info');
     }
 
     function downloadField(elementId, filename) {
       const content = document.getElementById(elementId).value;
-      if (!content.trim()) return alert('Field is empty.');
+      if (!content.trim()) return showToast('Field is empty.', 'fa-solid fa-triangle-exclamation text-warning');
       const blob = new Blob([content], { type: 'text/plain;charset=utf-8;' });
       const link = document.createElement('a');
       link.href = URL.createObjectURL(blob);
@@ -2993,9 +3099,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     function copyOtpDirect(otp, event) {
       if (event) event.stopPropagation();
       if (!otp) return;
-      navigator.clipboard.writeText(otp).then(() => {
-        alert(`${getI18nText('tm_copied', 'Disalin!')}: ${otp}`);
-      });
+      copyToClipboard(otp, '✓ ' + getI18nText('tm_copied', 'Disalin!') + ': ' + otp, 'fa-solid fa-key text-warning');
     }
 
     function saveOutlookAccountsStorage() {
@@ -3158,7 +3262,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       const reader = new FileReader();
       reader.onload = async function(e) {
         const text = e.target.result;
-        if (!text) return alert('File is empty!');
+        if (!text) return showToast('File is empty!', 'fa-solid fa-triangle-exclamation text-warning');
         await importAccountsFromText(text);
         event.target.value = '';
       };
@@ -3195,7 +3299,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 
         if (!items || items.length === 0) {
           renderAccountsList();
-          return alert('Format not recognized / tokens missing!');
+          return showToast('Format not recognized / tokens missing!', 'fa-solid fa-circle-xmark text-danger');
         }
 
         let currentIndex = 0;
@@ -3250,7 +3354,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         saveOutlookAccountsStorage();
 
       } catch (err) {
-        alert('Failed: ' + err.message);
+        showToast('Failed: ' + err.message, 'fa-solid fa-circle-xmark text-danger');
         renderAccountsList();
       }
     }
@@ -3288,7 +3392,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       const proxyEl = document.getElementById('modalProxyInput');
       const text = inputEl ? inputEl.value.trim() : '';
       const proxy = proxyEl ? proxyEl.value.trim() : '';
-      if (!text) return alert('Silakan masukkan token / akun atau upload file .txt!');
+      if (!text) return showToast('Silakan masukkan token / akun atau upload file .txt!', 'fa-solid fa-triangle-exclamation text-warning');
 
       // Force close modal
       try {
@@ -3530,10 +3634,10 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     }
 
     function copyCurrentEmail() {
-      if (selectedAccountIndex >= 0) {
+      if (selectedAccountIndex >= 0 && outlookAccounts[selectedAccountIndex]) {
         const email = outlookAccounts[selectedAccountIndex].email;
         if (email) {
-          navigator.clipboard.writeText(email).then(() => alert(`${getI18nText('tm_copied', 'Disalin!')}: ${email}`));
+          copyToClipboard(email, '✓ ' + getI18nText('tm_copied', 'Disalin!') + ': ' + email, 'fa-solid fa-envelope text-warning');
         }
       }
     }
@@ -3620,7 +3724,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       const workers = parseInt(document.getElementById('ccWorkersInput').value) || 6;
       const retries = parseInt(document.getElementById('ccRetriesInput').value) || 6;
 
-      if (!text) return alert(getI18nText('cc_alert_empty', 'Silakan masukkan daftar akun CapCut!'));
+      if (!text) return showToast(getI18nText('cc_alert_empty', 'Silakan masukkan daftar akun CapCut!'), 'fa-solid fa-triangle-exclamation text-warning');
 
       document.getElementById('proResult').value = '';
       document.getElementById('freeResult').value = '';
@@ -3649,12 +3753,13 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         const total = accounts ? accounts.length : 0;
 
         if (total === 0) {
-          alert(getI18nText('cc_alert_no_valid', 'Tidak ada akun valid yang ditemukan!'));
+          showToast(getI18nText('cc_alert_no_valid', 'Tidak ada akun valid yang ditemukan!'), 'fa-solid fa-triangle-exclamation text-warning');
           document.getElementById('btnStartCapcut').disabled = false;
           document.getElementById('btnStopCapcut').disabled = true;
           return;
         }
 
+        const pBox = document.getElementById('ccProgressBox'); if (pBox) pBox.style.display = 'block';
         document.getElementById('ccProgressText').textContent = `0 / ${total} (0%)`;
         document.getElementById('ccProgressBar').style.width = '0%';
 
@@ -3715,7 +3820,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         await Promise.all(pool);
 
       } catch (err) {
-        if (err.name !== 'AbortError') alert('Error: ' + err.message);
+        if (err.name !== 'AbortError') showToast('Error: ' + err.message, 'fa-solid fa-circle-xmark text-danger');
       } finally {
         document.getElementById('btnStartCapcut').disabled = false;
         document.getElementById('btnStopCapcut').disabled = true;
@@ -3744,6 +3849,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       loadOutlookAccountsStorage();
     });
   </script>
+  <div id="chenToastContainer"></div>
 </body>
 </html>
 """
@@ -3755,9 +3861,12 @@ DOCS_TEMPLATE = """<!DOCTYPE html>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>API Documentation | ChenStore Multi Tools</title>
+  <link rel="icon" type="image/png" href="data:image/png;base64,{{ favicon_b64 }}">
+  <link rel="shortcut icon" type="image/png" href="data:image/png;base64,{{ favicon_b64 }}">
+  <link rel="apple-touch-icon" href="data:image/png;base64,{{ favicon_b64 }}">
   <link rel="icon" type="image/png" href="/logo.png">
-  <link rel="shortcut icon" type="image/png" href="/logo.png">
-  <link rel="apple-touch-icon" href="/logo.png">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#0f0a06">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
   <style>
@@ -3976,7 +4085,7 @@ DOCS_TEMPLATE = """<!DOCTYPE html>
   <!-- Top Navbar -->
   <header class="docs-topbar">
     <div class="d-flex align-items-center gap-3">
-      <img src="/logo.png" alt="ChenStore" style="height: 38px; border-radius: 6px; border: 1px solid #78471c;" onerror="this.style.display='none'">
+      <img src="/logo.png" data-fallback="data:image/png;base64,{{ favicon_b64 }}" alt="ChenStore" style="height: 38px; border-radius: 6px; border: 1px solid #78471c;" onerror="if(this.dataset.fallback && this.src !== this.dataset.fallback){this.src=this.dataset.fallback;}else{this.style.display='none';}">
       <div>
         <div class="brand-title">ChenStore API Docs</div>
         <div class="small text-secondary" style="font-size: 0.7rem; letter-spacing: 1px;">REST API REFERENCE FOR DEVELOPERS</div>
@@ -4189,7 +4298,8 @@ DOCS_TEMPLATE = """<!DOCTYPE html>
   "from": "CapCut <verify@capcut.com>",
   "to": "user@hotmail.com",
   "date": "20 Jul 2026, 17:15",
-  "body": "<html><body>...</body></html>",
+  "body": "<html><body>...  <div id="chenToastContainer"></div>
+</body></html>",
   "body_type": "html"
 }</pre>
           </div>
@@ -4356,6 +4466,7 @@ DOCS_TEMPLATE = """<!DOCTYPE html>
       });
     }
   </script>
+  <div id="chenToastContainer"></div>
 </body>
 </html>
 """
@@ -4365,7 +4476,25 @@ DOCS_TEMPLATE = """<!DOCTYPE html>
 @app.route("/docs")
 @app.route("/api/docs")
 def serve_docs():
-    return render_template_string(DOCS_TEMPLATE)
+    return render_template_string(DOCS_TEMPLATE, favicon_b64=FAVICON_B64)
+
+@app.route("/manifest.json")
+def serve_manifest():
+    return jsonify({
+        "name": "ChenStore Multi Tools",
+        "short_name": "ChenStore",
+        "start_url": "/",
+        "display": "standalone",
+        "background_color": "#0f0a06",
+        "theme_color": "#0f0a06",
+        "icons": [
+            {
+                "src": "/logo.png",
+                "sizes": "192x192 512x512",
+                "type": "image/png"
+            }
+        ]
+    })
 
 @app.route("/", methods=["GET", "POST"])
 @app.route("/api/index.py", methods=["GET", "POST"])
@@ -4405,19 +4534,30 @@ def index():
             return api_check_outlook()
         
     default_proxy = os.environ.get("CAPCUT_PROXY", "")
-    return render_template_string(HTML_TEMPLATE, default_proxy=default_proxy)
+    return render_template_string(HTML_TEMPLATE, default_proxy=default_proxy, favicon_b64=FAVICON_B64)
 
 
 @app.route("/logo.png")
 @app.route("/favicon.ico")
 def serve_logo():
     script_dir = os.path.dirname(os.path.abspath(__file__))
-    candidates = [script_dir, os.path.dirname(script_dir), os.getcwd()]
-    for d in candidates:
-        target = os.path.join(d, "logo.png")
+    candidates = [
+        os.path.join(script_dir, "logo.png"),
+        os.path.join(script_dir, "favicon.png"),
+        os.path.join(os.path.dirname(script_dir), "logo.png"),
+        os.path.join(os.path.dirname(script_dir), "favicon.png"),
+        os.path.join(os.getcwd(), "logo.png"),
+        os.path.join(os.getcwd(), "favicon.png")
+    ]
+    for target in candidates:
         if os.path.isfile(target):
-            return send_from_directory(d, "logo.png", mimetype="image/png")
-    return Response(b"", status=404)
+            return send_from_directory(os.path.dirname(target), os.path.basename(target), mimetype="image/png")
+    # Fallback to embedded base64 bytes
+    try:
+        raw_bytes = base64.b64decode(FAVICON_B64)
+        return Response(raw_bytes, mimetype="image/png", headers={"Cache-Control": "public, max-age=86400"})
+    except Exception:
+        return Response(b"", status=404)
 
 @app.route("/api/check", methods=["POST"])
 def api_check_capcut():
