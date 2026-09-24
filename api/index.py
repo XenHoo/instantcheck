@@ -2488,6 +2488,48 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       if (txt) txt.textContent = '--s';
     }
 
+    function extract2faSecret(raw) {
+      if (!raw) return '';
+      let str = raw.trim();
+      if (str.toLowerCase().startsWith('otpauth://')) {
+        try {
+          const u = new URL(str);
+          const s = u.searchParams.get('secret');
+          if (s) return s.replace(/[\s\-]+/g, '').toUpperCase();
+        } catch(e) {}
+      }
+
+      let parts = null;
+      if (str.includes('|')) {
+        parts = str.split('|');
+      } else if (str.includes(';')) {
+        parts = str.split(';');
+      } else if (str.includes('\t')) {
+        parts = str.split('\t');
+      } else if (str.includes(':') && (str.match(/:/g) || []).length >= 2) {
+        parts = str.split(':');
+      } else if (str.includes(',') && str.includes('@')) {
+        parts = str.split(',');
+      }
+
+      if (parts && parts.length > 1) {
+        for (let i = parts.length - 1; i >= 0; i--) {
+          const candidate = parts[i].trim().replace(/[\s\-]+/g, '');
+          if (candidate.length >= 8 && !candidate.includes('@') && /^[A-Za-z2-7=]+$/.test(candidate)) {
+            return candidate.toUpperCase();
+          }
+        }
+        for (let i = parts.length - 1; i >= 0; i--) {
+          const candidate = parts[i].trim().replace(/[\s\-]+/g, '');
+          if (candidate.length >= 8 && !candidate.includes('@')) {
+            return candidate.toUpperCase();
+          }
+        }
+      }
+
+      return str.replace(/[\s\-]+/g, '').toUpperCase();
+    }
+
     function clearBulk2fa() {
       const inEl = document.getElementById('bulk2faInput');
       const outEl = document.getElementById('bulk2faOutput');
@@ -2514,19 +2556,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         const comboMap = [];
 
         lines.forEach((line) => {
-          const parts = line.split(/[:|\s\t,;]+/);
-          let sec = '';
-          if (parts.length > 1) {
-            for (const p of parts) {
-              if (p.length >= 10 && !p.includes('@')) {
-                sec = p;
-                break;
-              }
-            }
-          } else {
-            sec = line;
-          }
-          sec = (sec || '').replace(/[\s\-]+/g, '').toUpperCase();
+          const sec = extract2faSecret(line);
           secretsToExtract.push(sec);
           comboMap.push({ raw: line, secret: sec });
         });
@@ -2584,23 +2614,13 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 
     async function generateSingle2fa() {
       const input = document.getElementById('single2faSecret');
-      let secret = (input ? input.value : '').trim();
-      if (!secret) {
+      let rawVal = (input ? input.value : '').trim();
+      if (!rawVal) {
         resetSingle2fa();
         return showToast(getI18nText('tfa_alert_empty_single', 'Silakan masukkan 2FA Secret Key!'), 'fa-solid fa-triangle-exclamation text-warning');
       }
 
-      // Extract secret if user pasted combo line (email|pass|secret)
-      const parts = secret.split(/[:|\s\t,;]+/);
-      if (parts.length > 1) {
-        for (const p of parts) {
-          if (p.length >= 10 && !p.includes('@')) {
-            secret = p;
-            break;
-          }
-        }
-      }
-      secret = secret.replace(/[\s\-]+/g, '').toUpperCase();
+      const secret = extract2faSecret(rawVal);
 
       const display = document.getElementById('single2faCodeDisplay');
       const copyBtn = document.getElementById('btnCopySingle2fa');
@@ -4828,8 +4848,6 @@ def api_2fa_generate():
         return jsonify({"ok": False, "error": "No secret provided", "data": []}), 400
 
     results = []
-    unresolved_secrets = []
-
     for s in secrets:
         clean_s = re.sub(r"[\s\-]+", "", str(s)).upper()
         code = generate_totp_code(clean_s)
@@ -4840,38 +4858,31 @@ def api_2fa_generate():
                 "error": ""
             })
         else:
-            unresolved_secrets.append(clean_s)
+            code_fallback = ""
+            err_msg = "Invalid base32 secret"
+            if clean_s:
+                try:
+                    r = requests.get(f"https://twofa.co/api/{clean_s}", headers={"User-Agent": UA}, timeout=4)
+                    if r.status_code == 200:
+                        res_data = r.json()
+                        if isinstance(res_data, dict):
+                            code_fallback = str(res_data.get("code") or res_data.get("token") or "")
+                            if res_data.get("error"):
+                                err_msg = res_data.get("error")
+                except Exception:
+                    pass
 
-    # Fallback to twofa.co for any unparseable / custom secrets
-    if unresolved_secrets:
-        try:
-            query = ",".join(unresolved_secrets[:40])
-            url = f"https://twofa.co/api/{query}"
-            headers = {"User-Agent": UA}
-            r = requests.get(url, headers=headers, timeout=8)
-            if r.status_code == 200:
-                res_data = r.json()
-                if isinstance(res_data, dict):
-                    c = res_data.get("code") or res_data.get("token") or ""
-                    results.append({
-                        "secret": res_data.get("secret", unresolved_secrets[0]),
-                        "code": str(c),
-                        "error": res_data.get("error", "")
-                    })
-                elif isinstance(res_data, list):
-                    for item in res_data:
-                        c = item.get("code") or item.get("token") or ""
-                        results.append({
-                            "secret": item.get("secret", ""),
-                            "code": str(c),
-                            "error": item.get("error", "")
-                        })
-        except Exception:
-            for uns in unresolved_secrets:
+            if code_fallback:
                 results.append({
-                    "secret": uns,
+                    "secret": clean_s,
+                    "code": code_fallback,
+                    "error": ""
+                })
+            else:
+                results.append({
+                    "secret": clean_s,
                     "code": "",
-                    "error": "Invalid base32 secret"
+                    "error": err_msg
                 })
 
     return jsonify({"ok": True, "data": results})
