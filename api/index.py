@@ -1138,13 +1138,22 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     body {
       background-color: var(--bg-wood-dark);
       background-image: 
-        radial-gradient(circle at 15% 15%, rgba(180, 83, 9, 0.12) 0%, transparent 40%),
-        radial-gradient(circle at 85% 85%, rgba(217, 119, 6, 0.08) 0%, transparent 45%);
+        radial-gradient(circle at 15% 15%, rgba(180, 83, 9, 0.16) 0%, transparent 40%),
+        radial-gradient(circle at 85% 85%, rgba(217, 119, 6, 0.12) 0%, transparent 45%),
+        radial-gradient(circle at 50% 50%, rgba(245, 158, 11, 0.04) 0%, transparent 60%);
+      background-size: 200% 200%;
+      animation: ambientGlow 20s ease-in-out infinite alternate;
       color: var(--text-main);
       font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
       height: 100vh;
       display: flex;
       flex-direction: column;
+    }
+
+    @keyframes ambientGlow {
+      0% { background-position: 0% 0%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 100%; }
     }
 
     /* Top Navbar */
@@ -1178,6 +1187,18 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       border: 1px solid #78471c;
       box-shadow: 0 2px 8px rgba(0,0,0,0.5);
       flex-shrink: 0;
+      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease;
+      animation: logoFloat 4s ease-in-out infinite alternate;
+    }
+
+    .brand-logo-img:hover {
+      transform: scale(1.08) rotate(-3deg);
+      box-shadow: 0 0 16px var(--gold-glow);
+    }
+
+    @keyframes logoFloat {
+      0% { transform: translateY(0px); }
+      100% { transform: translateY(-2px); }
     }
 
     .brand-title {
@@ -1185,12 +1206,19 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       font-weight: 800;
       font-size: 1.35rem;
       letter-spacing: 1.2px;
-      background: linear-gradient(135deg, #fffbeb 0%, #fef08a 25%, #f59e0b 60%, #b45309 100%);
+      background: linear-gradient(135deg, #fffbeb 0%, #fef08a 25%, #f59e0b 60%, #fffbeb 80%, #b45309 100%);
+      background-size: 200% auto;
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       text-shadow: 0 2px 10px rgba(245, 158, 11, 0.3);
       line-height: 1.1;
       white-space: nowrap;
+      animation: goldShimmer 8s linear infinite;
+    }
+
+    @keyframes goldShimmer {
+      0% { background-position: 0% center; }
+      100% { background-position: 200% center; }
     }
 
     .brand-sub {
@@ -1529,6 +1557,232 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       overflow-x: hidden;
     }
 
+    /* ELEGANT LUXURY OPEN/CLOSE MAILBOX & POPPING LETTER (TRUE 3D POCKET LAYERING) */
+    .tm-cute-mail-stage {
+      position: relative;
+      width: 108px;
+      height: 104px;
+      margin: 0 auto 1.25rem auto;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      cursor: pointer;
+      perspective: 700px;
+    }
+
+    /* Ambient Warm Glow beneath the stage */
+    .tm-cute-mail-stage::after {
+      content: '';
+      position: absolute;
+      bottom: -6px;
+      width: 96px;
+      height: 18px;
+      background: radial-gradient(ellipse at center, rgba(245, 158, 11, 0.4) 0%, transparent 70%);
+      filter: blur(6px);
+      z-index: 0;
+      animation: ambientGlowPulse 4s ease-in-out infinite alternate;
+    }
+
+    /* Luxury Dark Obsidian Tray with Gold Rim (Lowest in front of envelope base, z-index: 6) */
+    .tm-mail-tray {
+      position: absolute;
+      bottom: 0;
+      width: 104px;
+      height: 36px;
+      background: linear-gradient(180deg, #241408 0%, #120904 100%);
+      border: 1.5px solid rgba(245, 158, 11, 0.6);
+      border-radius: 12px;
+      box-shadow: 0 8px 22px rgba(0, 0, 0, 0.7), inset 0 1px 1px rgba(255, 230, 150, 0.3);
+      z-index: 6;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Gold Metallic Accent Notch on Tray */
+    .tm-tray-handle {
+      width: 28px;
+      height: 5px;
+      background: linear-gradient(90deg, #d97706, #fbbf24, #d97706);
+      border-radius: 4px;
+      box-shadow: 0 0 8px rgba(245, 158, 11, 0.4);
+    }
+
+    /* Main Envelope Assembly - Bobbing softly */
+    .tm-cute-envelope-wrap {
+      position: absolute;
+      bottom: 10px;
+      width: 86px;
+      height: 58px;
+      z-index: 2;
+      animation: envBobbing 4s ease-in-out infinite alternate;
+      transform-style: preserve-3d;
+    }
+
+    /* Layer 1: Envelope Back Wall (Behind letter, z-index: 1) */
+    .tm-env-back {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, #b45309 0%, #78350f 100%);
+      border: 1.5px solid rgba(120, 53, 15, 0.9);
+      border-radius: 8px;
+      z-index: 1;
+    }
+
+    /* Layer 2: Letter Card (Inside pocket, between back and front pocket, z-index: 3) */
+    .tm-letter-card {
+      position: absolute;
+      bottom: 6px;
+      left: 50%;
+      width: 66px;
+      height: 48px;
+      background: #ffffff;
+      border: 1px solid rgba(245, 158, 11, 0.35);
+      border-radius: 6px;
+      transform: translateX(-50%);
+      z-index: 3;
+      padding: 6px 7px;
+      box-shadow: 0 -3px 12px rgba(0, 0, 0, 0.25);
+      animation: letterEmergeSmooth 4s cubic-bezier(0.4, 0.0, 0.2, 1) infinite;
+    }
+
+    .tm-letter-avatar {
+      width: 12px;
+      height: 12px;
+      background: linear-gradient(135deg, #10b981, #059669);
+      border-radius: 3px;
+      float: left;
+      margin-right: 5px;
+    }
+
+    .tm-letter-lines {
+      overflow: hidden;
+    }
+
+    .tm-letter-line {
+      height: 3px;
+      background: #94a3b8;
+      border-radius: 1.5px;
+      margin-bottom: 3.5px;
+    }
+
+    .tm-letter-line.short {
+      width: 55%;
+      background: #f59e0b;
+    }
+
+    /* Layer 3: Envelope Front Pocket & Side Folds (In FRONT of letter at bottom, z-index: 4) */
+    .tm-env-front {
+      position: absolute;
+      inset: 0;
+      background: 
+        linear-gradient(to top right, #f59e0b 49%, #b45309 50%, transparent 52%) no-repeat left bottom / 50% 100%,
+        linear-gradient(to top left, #f59e0b 49%, #b45309 50%, transparent 52%) no-repeat right bottom / 50% 100%;
+      border-radius: 0 0 8px 8px;
+      z-index: 4;
+      pointer-events: none;
+    }
+
+    /* Cute Face on Front Pocket (z-index: 5) */
+    .tm-env-face {
+      position: absolute;
+      bottom: 8px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 24px;
+      height: 9px;
+      z-index: 5;
+      pointer-events: none;
+      opacity: 0.9;
+    }
+
+    .tm-env-eye {
+      position: absolute;
+      width: 4px;
+      height: 4px;
+      background: #451a03;
+      border-radius: 50%;
+      top: 0;
+      animation: eyeBlink 4.5s infinite;
+    }
+
+    .tm-env-eye.left { left: 1px; }
+    .tm-env-eye.right { right: 1px; }
+
+    .tm-env-smile {
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 6px;
+      height: 3px;
+      border-bottom: 1.5px solid #451a03;
+      border-radius: 0 0 5px 5px;
+    }
+
+    /* Layer 4: Opening & Closing Top Flap (Flips back, z-index controlled by keyframe) */
+    .tm-env-flap {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 35px;
+      background: linear-gradient(180deg, #fbbf24 0%, #d97706 100%);
+      border-top: 1.5px solid rgba(254, 240, 138, 0.7);
+      clip-path: polygon(0 0, 100% 0, 50% 100%);
+      transform-origin: top center;
+      animation: flapOpenCloseSmooth 4s cubic-bezier(0.45, 0.05, 0.25, 0.95) infinite;
+    }
+
+    /* Ultra Smooth Flap Motion: closed -> flip open back (z-index: 0 behind letter) -> close front (z-index: 5) */
+    @keyframes flapOpenCloseSmooth {
+      0%, 10% {
+        transform: rotateX(0deg);
+        z-index: 5;
+      }
+      26%, 74% {
+        transform: rotateX(180deg);
+        z-index: 0;
+      }
+      90%, 100% {
+        transform: rotateX(0deg);
+        z-index: 5;
+      }
+    }
+
+    /* Letter slides UP out of the envelope pocket */
+    @keyframes letterEmergeSmooth {
+      0%, 18% {
+        transform: translate(-50%, 4px) scale(0.94);
+        opacity: 0.6;
+      }
+      40%, 68% {
+        transform: translate(-50%, -32px) scale(1.02);
+        opacity: 1;
+      }
+      88%, 100% {
+        transform: translate(-50%, 4px) scale(0.94);
+        opacity: 0.6;
+      }
+    }
+
+    /* Gentle Floating Bobbing */
+    @keyframes envBobbing {
+      0% { transform: translateY(0px); }
+      100% { transform: translateY(-3.5px); }
+    }
+
+    @keyframes ambientGlowPulse {
+      0% { opacity: 0.35; transform: scale(0.9); }
+      100% { opacity: 0.8; transform: scale(1.1); }
+    }
+
+    /* Natural Blinking */
+    @keyframes eyeBlink {
+      0%, 48%, 52%, 100% { transform: scaleY(1); }
+      50% { transform: scaleY(0.1); }
+    }
+
     .tm-meta-card {
       background: #140c06;
       border: 1px solid var(--border-bronze);
@@ -1732,8 +1986,13 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       transition: all 0.2s ease;
     }
     .chen-powered-watermark i {
-      color: rgba(245, 158, 11, 0.8);
+      color: rgba(245, 158, 11, 0.85);
       font-size: 0.72rem;
+      animation: pulseGlow 2.5s ease-in-out infinite alternate;
+    }
+    @keyframes pulseGlow {
+      0% { transform: scale(1); opacity: 0.75; }
+      100% { transform: scale(1.15); opacity: 1; filter: drop-shadow(0 0 6px rgba(245, 158, 11, 0.8)); }
     }
     .chen-powered-watermark .powered-brand {
       color: rgba(254, 243, 199, 0.9);
@@ -2163,8 +2422,36 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 
           <div class="tm-reader-content" id="tmReaderContent">
             <div class="text-center text-muted my-auto">
-              <i class="fa-regular fa-envelope-open fa-3x mb-3 text-warning"></i>
-              <h5 class="text-light" data-i18n="tm_no_email_selected">Belum ada email yang dipilih</h5>
+              <div class="tm-cute-mail-stage">
+                <!-- Main Envelope Assembly -->
+                <div class="tm-cute-envelope-wrap">
+                  <!-- Layer 1: Back Wall behind letter -->
+                  <div class="tm-env-back"></div>
+                  <!-- Layer 2: Letter card inside pocket -->
+                  <div class="tm-letter-card">
+                    <div class="tm-letter-avatar"></div>
+                    <div class="tm-letter-lines">
+                      <div class="tm-letter-line"></div>
+                      <div class="tm-letter-line short"></div>
+                    </div>
+                  </div>
+                  <!-- Layer 3: Front Pocket Fold with Face -->
+                  <div class="tm-env-front">
+                    <div class="tm-env-face">
+                      <div class="tm-env-eye left"></div>
+                      <div class="tm-env-smile"></div>
+                      <div class="tm-env-eye right"></div>
+                    </div>
+                  </div>
+                  <!-- Layer 4: Opening Top Flap -->
+                  <div class="tm-env-flap"></div>
+                </div>
+                <!-- Dark Obsidian Tray at Bottom -->
+                <div class="tm-mail-tray">
+                  <div class="tm-tray-handle"></div>
+                </div>
+              </div>
+              <h5 class="text-light fw-bold" data-i18n="tm_no_email_selected">Belum ada email yang dipilih</h5>
               <p class="small text-secondary" data-i18n="tm_click_inbox_hint">Klik salah satu email dari daftar inbox untuk membaca isi surat.</p>
             </div>
           </div>
@@ -4247,7 +4534,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             const msgCont = document.getElementById('tmMessagesContainer');
             if (msgCont) msgCont.innerHTML = `<div class="text-center text-muted py-5 small">${getI18nText('tm_empty_inbox_select', 'Pilih akun di sebelah kiri untuk melihat pesan inbox.')}</div>`;
             const reader = document.getElementById('tmReaderContent');
-            if (reader) reader.innerHTML = `<div class="text-center text-muted my-auto"><i class="fa-regular fa-envelope-open fa-3x mb-3 text-warning"></i><h5 class="text-light">${getI18nText('tm_no_email_selected', 'Belum ada email yang dipilih')}</h5></div>`;
+            if (reader) reader.innerHTML = `<div class="text-center text-muted my-auto"><div class="tm-cute-mail-stage"><div class="tm-cute-envelope-wrap"><div class="tm-env-back"></div><div class="tm-letter-card"><div class="tm-letter-avatar"></div><div class="tm-letter-lines"><div class="tm-letter-line"></div><div class="tm-letter-line short"></div></div></div><div class="tm-env-front"><div class="tm-env-face"><div class="tm-env-eye left"></div><div class="tm-env-smile"></div><div class="tm-env-eye right"></div></div></div><div class="tm-env-flap"></div></div><div class="tm-mail-tray"><div class="tm-tray-handle"></div></div></div><h5 class="text-light fw-bold">${getI18nText('tm_no_email_selected', 'Belum ada email yang dipilih')}</h5><p class="small text-secondary mb-0">${getI18nText('tm_click_inbox_hint', 'Klik salah satu email dari daftar inbox untuk membaca isi surat.')}</p></div>`;
           }
         }
       } catch(e) {}
@@ -4558,7 +4845,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
           document.getElementById('tmConnectionBadge').innerHTML = getI18nText('tm_badge_standby', '● Standby');
           document.getElementById('tmInboxTitle').innerHTML = `<i class="fa-regular fa-folder-open me-1"></i> ${getI18nText('tm_inbox_title', 'INBOX')} (0)`;
           document.getElementById('tmMessagesContainer').innerHTML = `<div class="text-center text-muted py-5 small">${getI18nText('tm_empty_inbox_select', 'Pilih akun di sebelah kiri untuk melihat pesan inbox.')}</div>`;
-          document.getElementById('tmReaderContent').innerHTML = `<div class="text-center text-muted my-auto"><i class="fa-regular fa-envelope-open fa-3x mb-3 text-warning"></i><h5 class="text-light">${getI18nText('tm_no_email_selected', 'Belum ada email yang dipilih')}</h5></div>`;
+          document.getElementById('tmReaderContent').innerHTML = `<div class="text-center text-muted my-auto"><div class="tm-cute-mail-stage"><div class="tm-cute-envelope-wrap"><div class="tm-env-back"></div><div class="tm-letter-card"><div class="tm-letter-avatar"></div><div class="tm-letter-lines"><div class="tm-letter-line"></div><div class="tm-letter-line short"></div></div></div><div class="tm-env-front"><div class="tm-env-face"><div class="tm-env-eye left"></div><div class="tm-env-smile"></div><div class="tm-env-eye right"></div></div></div><div class="tm-env-flap"></div></div><div class="tm-mail-tray"><div class="tm-tray-handle"></div></div></div><h5 class="text-light fw-bold">${getI18nText('tm_no_email_selected', 'Belum ada email yang dipilih')}</h5><p class="small text-secondary mb-0">${getI18nText('tm_click_inbox_hint', 'Klik salah satu email dari daftar inbox untuk membaca isi surat.')}</p></div>`;
         }
       }
     }
@@ -4723,7 +5010,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         setMailView('accounts');
         document.getElementById('tmInboxTitle').innerHTML = `<i class="fa-regular fa-folder-open me-1"></i> ${getI18nText('tm_inbox_title', 'INBOX')} (0)`;
         document.getElementById('tmMessagesContainer').innerHTML = `<div class="text-center text-muted py-5 small">${getI18nText('tm_empty_inbox_select', 'Pilih akun di sebelah kiri untuk melihat pesan inbox.')}</div>`;
-        document.getElementById('tmReaderContent').innerHTML = `<div class="text-center text-muted my-auto"><i class="fa-regular fa-envelope-open fa-3x mb-3 text-warning"></i><h5 class="text-light">${getI18nText('tm_no_email_selected', 'Belum ada email yang dipilih')}</h5></div>`;
+        document.getElementById('tmReaderContent').innerHTML = `<div class="text-center text-muted my-auto"><div class="tm-cute-mail-stage"><div class="tm-cute-envelope-wrap"><div class="tm-env-back"></div><div class="tm-letter-card"><div class="tm-letter-avatar"></div><div class="tm-letter-lines"><div class="tm-letter-line"></div><div class="tm-letter-line short"></div></div></div><div class="tm-env-front"><div class="tm-env-face"><div class="tm-env-eye left"></div><div class="tm-env-smile"></div><div class="tm-env-eye right"></div></div></div><div class="tm-env-flap"></div></div><div class="tm-mail-tray"><div class="tm-tray-handle"></div></div></div><h5 class="text-light fw-bold">${getI18nText('tm_no_email_selected', 'Belum ada email yang dipilih')}</h5><p class="small text-secondary mb-0">${getI18nText('tm_click_inbox_hint', 'Klik salah satu email dari daftar inbox untuk membaca isi surat.')}</p></div>`;
       }
     }
 
