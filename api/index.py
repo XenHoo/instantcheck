@@ -235,9 +235,7 @@ def parse_outlook_lines(text: str) -> List[Dict[str, str]]:
                 token = parts[0]
         if not token:
             continue
-        if not password and len(parts) >= 2 and parts[0] == email and parts[1] != token:
-            password = parts[1]
-        key = f"{email}_{token[:20]}"
+        key = email.lower() if email else token[:40]
         if key in seen:
             continue
         seen.add(key)
@@ -249,35 +247,78 @@ def parse_outlook_lines(text: str) -> List[Dict[str, str]]:
         })
     return results
 
-def get_access_token(refresh_token: str, client_id: str = DEFAULT_CLIENT_ID, proxy: Optional[str] = None) -> Tuple[Optional[str], Optional[str]]:
-    client_id = client_id or DEFAULT_CLIENT_ID
+KNOWN_CLIENT_IDS = [
+    "9e5f94bc-e8a4-4e73-b8be-63364c29d753", # Microsoft Device / Graph
+    "d3590ed6-52b3-4102-aeff-aad2292ab01c", # Microsoft Office
+    "27922004-70b0-4fd2-8ab6-6366115993e0", # Outlook Mobile
+    "00000002-0000-0ff1-ce00-000000000000", # Office 365 Exchange Online
+]
+
+def get_access_token(refresh_token: str, client_id: str = DEFAULT_CLIENT_ID, proxy: Optional[str] = None) -> Tuple[Optional[str], Optional[str], Optional[str]]:
+    """Exchange refresh_token for access_token with auto-scope fallback, retries, and token rotation capture.
+    Returns: (access_token, new_refresh_token, error_message)
+    """
+    refresh_token = (refresh_token or "").strip()
+    if not refresh_token:
+        return None, None, "Token kosong"
+
+    client_id = (client_id or "").strip() or DEFAULT_CLIENT_ID
     proxies = {"http": proxy, "https": proxy} if proxy else None
-    data = {
-        "grant_type": "refresh_token",
-        "client_id": client_id,
-        "refresh_token": refresh_token,
-        "scope": "https://graph.microsoft.com/Mail.Read offline_access"
-    }
-    try:
-        r = requests.post(TOKEN_URL, data=data, proxies=proxies, timeout=15)
-        res_json = r.json()
-    except Exception as e:
-        return None, f"Network / Proxy error: {str(e)}"
 
-    if r.status_code != 200:
-        err_desc = res_json.get("error_description") or res_json.get("error") or r.text[:120]
-        if "AADSTS700082" in err_desc or "expired" in err_desc.lower() or "revoked" in err_desc.lower() or "invalid_grant" in err_desc.lower() or "invalid_token" in err_desc.lower() or "IDX14100" in err_desc or "InvalidAuthenticationToken" in err_desc:
-            return None, "Email / Token Invalid atau Kedaluwarsa"
-        for code, msg in ERROR_MESSAGES.items():
-            if code in err_desc:
-                err_desc = f"[{code}] {msg}"
-                break
-        return None, err_desc
+    # Candidate client IDs to try (user's client_id first, then known fallbacks if client_id error)
+    client_ids_to_try = [client_id]
+    for cid in KNOWN_CLIENT_IDS:
+        if cid not in client_ids_to_try:
+            client_ids_to_try.append(cid)
 
-    access_token = res_json.get("access_token")
-    if not access_token:
-        return None, "Email / Token Invalid atau Kedaluwarsa"
-    return access_token, None
+    for cid in client_ids_to_try[:2]: # Test user's client_id and 1 top fallback if needed
+        # Payload without explicit scope first (RFC-compliant refresh token flow: inherits original consented scopes)
+        payloads = [
+            {"grant_type": "refresh_token", "client_id": cid, "refresh_token": refresh_token},
+            {"grant_type": "refresh_token", "client_id": cid, "refresh_token": refresh_token, "scope": "https://graph.microsoft.com/Mail.Read offline_access"}
+        ]
+
+        for data in payloads:
+            for attempt in range(2): # Up to 2 attempts for transient errors
+                try:
+                    r = requests.post(TOKEN_URL, data=data, proxies=proxies, timeout=15)
+                    try:
+                        res_json = r.json()
+                    except Exception:
+                        res_json = {}
+
+                    if r.status_code == 200:
+                        access_token = res_json.get("access_token")
+                        new_refresh_token = res_json.get("refresh_token") or refresh_token
+                        if access_token:
+                            return access_token, new_refresh_token, None
+
+                    err_desc = res_json.get("error_description") or res_json.get("error") or r.text[:120]
+                    
+                    # Permanent auth failures - no need to retry this payload
+                    if any(term in err_desc.lower() for term in ["aadsts700082", "expired", "revoked", "invalid_grant", "invalid_token", "idx14100", "invalidauthenticationtoken"]):
+                        return None, None, "Email / Token Invalid atau Kedaluwarsa"
+                    
+                    # If scope parameter was rejected, break to next payload without scope
+                    if "scope" in err_desc.lower() and "scope" in data:
+                        break
+
+                    # If client id error, break to try next client id
+                    if "aadsts700016" in err_desc.lower() or "aadsts700038" in err_desc.lower():
+                        break
+
+                    # If rate limited (429) or 503, wait briefly
+                    if r.status_code in [429, 503]:
+                        time.sleep(1.0)
+                        continue
+
+                except Exception as e:
+                    if attempt == 0:
+                        time.sleep(0.5)
+                        continue
+                    return None, None, f"Network/Proxy error: {str(e)[:60]}"
+
+    return None, None, "Email / Token Invalid atau Kedaluwarsa"
 
 def check_outlook_account(email: str, password: str, refresh_token: str, client_id: str = DEFAULT_CLIENT_ID, proxy: Optional[str] = None) -> Dict[str, Any]:
     out = {
@@ -293,29 +334,37 @@ def check_outlook_account(email: str, password: str, refresh_token: str, client_
         "latest_date": "",
         "error": "Email / Token Invalid atau Kedaluwarsa"
     }
-    access_token, err = get_access_token(refresh_token, client_id, proxy)
+    access_token, new_refresh_token, err = get_access_token(refresh_token, client_id, proxy)
     if not access_token:
         out["error"] = err or "Email / Token Invalid atau Kedaluwarsa"
         return out
 
-    headers = {"Authorization": f"Bearer {access_token}"}
+    if new_refresh_token:
+        out["refresh_token"] = new_refresh_token
+
+    headers = {"Authorization": f"Bearer {access_token}", "Prefer": 'outlook.body-content-type="text"'}
     proxies = {"http": proxy, "https": proxy} if proxy else None
 
     try:
-        if not email or email == "Unknown Email":
-            me_res = requests.get("https://graph.microsoft.com/v1.0/me", headers=headers, proxies=proxies, timeout=10)
-            if me_res.status_code == 200:
-                me_data = me_res.json()
-                out["email"] = me_data.get("mail") or me_data.get("userPrincipalName") or email
+        # Resolve real user email if unknown
+        if not email or email == "Unknown Email" or "@" not in email:
+            try:
+                me_res = requests.get("https://graph.microsoft.com/v1.0/me", headers=headers, proxies=proxies, timeout=10)
+                if me_res.status_code == 200:
+                    me_data = me_res.json()
+                    out["email"] = me_data.get("mail") or me_data.get("userPrincipalName") or email
+            except Exception:
+                pass
 
+        # Safe read-only inspection of latest message header
         params = {
             "$orderby": "receivedDateTime desc",
             "$top": "1",
             "$select": "id,subject,from,receivedDateTime,isRead"
         }
-        inbox_res = requests.get(SINGLE_MESSAGE_URL, headers=headers, params=params, proxies=proxies, timeout=10)
+        inbox_res = requests.get(SINGLE_MESSAGE_URL, headers=headers, params=params, proxies=proxies, timeout=12)
         if inbox_res.status_code != 200:
-            inbox_res = requests.get(INBOX_MESSAGES_URL, headers=headers, params=params, proxies=proxies, timeout=10)
+            inbox_res = requests.get(INBOX_MESSAGES_URL, headers=headers, params=params, proxies=proxies, timeout=12)
 
         if inbox_res.status_code == 200:
             inbox_data = inbox_res.json().get("value", [])
@@ -325,23 +374,32 @@ def check_outlook_account(email: str, password: str, refresh_token: str, client_
                 sender = latest.get("from", {}).get("emailAddress", {})
                 out["latest_from"] = sender.get("name") or sender.get("address") or "Unknown"
                 out["latest_date"] = (latest.get("receivedDateTime") or "")[:10]
+            else:
+                out["latest_subject"] = "(Inbox Kosong)"
+                out["latest_from"] = "-"
+                out["latest_date"] = "-"
+
             out["ok"] = True
             out["status"] = "LIVE"
             out["error"] = ""
             return out
         else:
-            out["ok"] = False
-            out["status"] = "DEAD"
-            out["error"] = "Email / Token Invalid atau Kedaluwarsa"
+            # If access token was valid, mark LIVE even if mailbox is initializing
+            out["ok"] = True
+            out["status"] = "LIVE"
+            out["latest_subject"] = "(Mailbox Connected)"
+            out["error"] = ""
             return out
     except Exception as e:
-        out["ok"] = False
-        out["status"] = "DEAD"
-        out["error"] = str(e)
+        # Access token was already confirmed valid from Microsoft!
+        out["ok"] = True
+        out["status"] = "LIVE"
+        out["latest_subject"] = "(Mailbox Connected)"
+        out["error"] = ""
         return out
 
 def fetch_inbox_messages(refresh_token: str, client_id: str = DEFAULT_CLIENT_ID, proxy: Optional[str] = None, top: int = 50) -> Dict[str, Any]:
-    access_token, err = get_access_token(refresh_token, client_id, proxy)
+    access_token, _, err = get_access_token(refresh_token, client_id, proxy)
     if not access_token:
         return {"ok": False, "error": err or "Email / Token Invalid atau Kedaluwarsa", "messages": []}
 
@@ -413,7 +471,7 @@ def fetch_inbox_messages(refresh_token: str, client_id: str = DEFAULT_CLIENT_ID,
         return {"ok": False, "error": str(e), "messages": []}
 
 def fetch_message_detail(message_id: str, refresh_token: str, client_id: str = DEFAULT_CLIENT_ID, proxy: Optional[str] = None) -> Dict[str, Any]:
-    access_token, err = get_access_token(refresh_token, client_id, proxy)
+    access_token, _, err = get_access_token(refresh_token, client_id, proxy)
     if not access_token:
         return {"ok": False, "error": err or "Email / Token Invalid atau Kedaluwarsa"}
 
@@ -1070,6 +1128,13 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       -webkit-tap-highlight-color: transparent;
     }
 
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      overflow: hidden; /* Lock the outer viewport completely */
+    }
+
     body {
       background-color: var(--bg-wood-dark);
       background-image: 
@@ -1077,9 +1142,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         radial-gradient(circle at 85% 85%, rgba(217, 119, 6, 0.08) 0%, transparent 45%);
       color: var(--text-main);
       font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
-      min-height: 100vh;
-      margin: 0;
-      padding: 0;
+      height: 100vh;
       display: flex;
       flex-direction: column;
     }
@@ -1097,6 +1160,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       position: sticky;
       top: 0;
       z-index: 1000;
+      flex-shrink: 0;
     }
 
     .brand-container {
@@ -1202,22 +1266,31 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       flex-direction: column;
       position: relative;
       min-height: 0;
+      height: calc(100vh - 60px);
+      overflow: hidden;
     }
 
     .tab-pane-custom {
       display: none;
       flex: 1;
       width: 100%;
+      height: 100%;
+      min-height: 0;
+      overflow: hidden;
     }
 
     .tab-pane-custom.active {
       display: flex;
       flex-direction: column;
+      height: 100%;
+      min-height: 0;
     }
 
     /* Container for CapCut, 2FA, Proxy */
     .capcut-container {
       flex: 1;
+      min-height: 0;
+      height: 100%;
       padding: 1.25rem;
       overflow-y: auto;
       max-width: 1320px;
@@ -1278,9 +1351,11 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     .trackmail-container {
       flex: 1;
       display: flex;
-      height: calc(100vh - 65px);
+      height: 100%;
+      max-height: 100%;
       background-color: var(--bg-wood-dark);
       overflow: hidden;
+      min-height: 0;
     }
 
     .tm-sidebar {
@@ -1291,6 +1366,10 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       display: flex;
       flex-direction: column;
       flex-shrink: 0;
+      height: 100%;
+      max-height: 100%;
+      overflow: hidden;
+      min-height: 0;
     }
 
     .tm-messages-col {
@@ -1301,6 +1380,10 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       display: flex;
       flex-direction: column;
       flex-shrink: 0;
+      height: 100%;
+      max-height: 100%;
+      overflow: hidden;
+      min-height: 0;
     }
 
     .tm-reader-col {
@@ -1310,9 +1393,13 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       flex-direction: column;
       overflow: hidden;
       min-width: 0;
+      height: 100%;
+      max-height: 100%;
+      min-height: 0;
     }
 
     .tm-sidebar-header, .tm-messages-header, .tm-reader-topbar {
+      flex-shrink: 0;
       padding: 0.65rem 0.9rem;
       background: #140c06;
       border-bottom: 1px solid var(--border-bronze);
@@ -1324,7 +1411,9 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 
     .tm-accounts-list, .tm-messages-list {
       flex: 1;
+      min-height: 0;
       overflow-y: auto;
+      overflow-x: hidden;
       padding: 0.4rem;
     }
 
@@ -1434,11 +1523,12 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 
     .tm-reader-content {
       flex: 1;
+      min-height: 0;
       padding: 1.25rem;
       overflow-y: auto;
+      overflow-x: hidden;
     }
 
-    
     .tm-meta-card {
       background: #140c06;
       border: 1px solid var(--border-bronze);
@@ -1615,6 +1705,40 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       flex-direction: column;
       gap: 10px;
       pointer-events: none;
+    }
+
+    /* Fixed Bottom-Left Subtle Transparent Watermark */
+    .chen-powered-watermark {
+      position: fixed;
+      bottom: 12px;
+      left: 14px;
+      z-index: 999;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      background: rgba(18, 11, 6, 0.45);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border: 1px solid rgba(120, 71, 28, 0.35);
+      border-radius: 6px;
+      font-size: 0.68rem;
+      font-weight: 600;
+      color: rgba(254, 240, 138, 0.65);
+      letter-spacing: 0.5px;
+      user-select: none;
+      pointer-events: none;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+      transition: all 0.2s ease;
+    }
+    .chen-powered-watermark i {
+      color: rgba(245, 158, 11, 0.8);
+      font-size: 0.72rem;
+    }
+    .chen-powered-watermark .powered-brand {
+      color: rgba(254, 243, 199, 0.9);
+      font-weight: 700;
+      letter-spacing: 0.6px;
     }
 
     .chen-toast {
@@ -1952,10 +2076,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
               <button class="btn btn-sm btn-outline-gold flex-grow-1 py-1" style="font-size: 0.74rem;" onclick="document.getElementById('tmDirectTxtFile').click()" data-i18n-title="tm_upload_txt_title" title="Upload File .TXT (Bulk Auto-read)">
                 <i class="fa-solid fa-file-arrow-up me-1"></i><span data-i18n="tm_upload_txt">Upload .TXT</span>
               </button>
-              <button class="btn btn-sm btn-outline-warning py-1 px-2" style="font-size: 0.74rem;" onclick="openDeviceAuthModal()" title="Generator Token Resmi Microsoft">
-                <i class="fa-brands fa-microsoft me-1"></i><span>Get Token</span>
-              </button>
-              <button class="btn btn-sm btn-gold py-1 px-2" style="font-size: 0.74rem;" data-bs-toggle="modal" data-bs-target="#addAccountModal" data-i18n-title="tm_add_btn_title" title="Tambah Akun Manual">
+              <button class="btn btn-sm btn-gold py-1 px-3" style="font-size: 0.74rem;" data-bs-toggle="modal" data-bs-target="#addAccountModal" data-i18n-title="tm_add_btn_title" title="Tambah Akun Manual">
                 <i class="fa-solid fa-plus me-1"></i><span data-i18n="tm_add_btn">Add</span>
               </button>
             </div>
@@ -3963,7 +4084,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
           password = parts[1];
         }
 
-        const key = (email || token.slice(0, 30)) + '_' + token.slice(-20);
+        const key = (email || token.slice(0, 40)).toLowerCase().trim();
         if (!seen.has(key)) {
           seen.add(key);
           results.push({
@@ -4073,6 +4194,18 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 
     function saveOutlookAccountsStorage() {
       try {
+        // Auto deduplicate before saving to localStorage
+        const seen = new Set();
+        const clean = [];
+        for (const a of outlookAccounts) {
+          if (!a) continue;
+          const k = ((a.email && a.email !== 'Unknown Email' ? a.email : a.refresh_token) || '').toLowerCase().trim();
+          if (k && !seen.has(k)) {
+            seen.add(k);
+            clean.push(a);
+          }
+        }
+        outlookAccounts = clean;
         localStorage.setItem('chenstore_outlook_accounts', JSON.stringify(outlookAccounts));
       } catch(e) {}
     }
@@ -4081,7 +4214,18 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       try {
         const raw = localStorage.getItem('chenstore_outlook_accounts');
         if (raw) {
-          outlookAccounts = (JSON.parse(raw) || []).filter(a => a && a.ok);
+          const parsed = JSON.parse(raw) || [];
+          const seen = new Set();
+          const cleanList = [];
+          for (const a of parsed) {
+            if (!a || !a.ok) continue;
+            const k = ((a.email && a.email !== 'Unknown Email' ? a.email : a.refresh_token) || '').toLowerCase().trim();
+            if (k && !seen.has(k)) {
+              seen.add(k);
+              cleanList.push(a);
+            }
+          }
+          outlookAccounts = cleanList;
           saveOutlookAccountsStorage();
           if (outlookAccounts.length > 0) {
             renderAccountsList();
@@ -4292,9 +4436,35 @@ HTML_TEMPLATE = """<!DOCTYPE html>
           return showToast('Format tidak dikenali / token tidak ditemukan!', 'fa-solid fa-circle-xmark text-danger');
         }
 
+        // Filter out items that are strictly duplicated in the input itself
+        const uniqueItems = [];
+        const seenInput = new Set();
+        for (const it of items) {
+          const k = ((it.email && it.email !== 'Unknown Email' ? it.email : it.refresh_token) || '').toLowerCase().trim();
+          if (k && !seenInput.has(k)) {
+            seenInput.add(k);
+            uniqueItems.push(it);
+          }
+        }
+        items = uniqueItems;
+
         let currentIndex = 0;
         let addedCount = 0;
+        let updatedCount = 0;
         let deadCount = 0;
+        let processedCount = 0;
+
+        function updateImportStatus() {
+          const percent = Math.round((processedCount / items.length) * 100);
+          container.innerHTML = `<div class="text-center text-muted py-5 small">
+            <i class="fa-solid fa-spinner fa-spin fa-2x mb-3 text-warning"></i>
+            <div class="fw-bold text-light mb-1">Memeriksa Akun: ${processedCount} / ${items.length} (${percent}%)</div>
+            <div class="small text-secondary mb-2"><span class="text-success"><i class="fa-solid fa-circle-check me-1"></i>${addedCount + updatedCount} Live</span> &bull; <span class="text-danger"><i class="fa-solid fa-circle-xmark me-1"></i>${deadCount} Dead</span></div>
+            <div class="progress bg-dark border border-secondary mx-auto" style="height: 6px; max-width: 200px;">
+              <div class="progress-bar bg-warning progress-bar-striped progress-bar-animated" style="width: ${percent}%;"></div>
+            </div>
+          </div>`;
+        }
 
         async function worker() {
           while (currentIndex < items.length) {
@@ -4312,11 +4482,23 @@ HTML_TEMPLATE = """<!DOCTYPE html>
                   proxy: proxy
                 })
               });
+              processedCount++;
               if (data && data.ok && data.status === 'LIVE') {
-                outlookAccounts.push(data);
-                addedCount++;
+                const accEmail = (data.email || item.email || '').toLowerCase().trim();
+                const accToken = data.refresh_token || item.refresh_token || '';
+                const existingIndex = outlookAccounts.findIndex(a => {
+                  const e = (a.email || '').toLowerCase().trim();
+                  return (e && e === accEmail) || (a.refresh_token && a.refresh_token === accToken);
+                });
+
+                if (existingIndex >= 0) {
+                  outlookAccounts[existingIndex] = { ...outlookAccounts[existingIndex], ...data };
+                  updatedCount++;
+                } else {
+                  outlookAccounts.push(data);
+                  addedCount++;
+                }
                 saveOutlookAccountsStorage();
-                renderAccountsList();
                 if (selectedAccountIndex === -1 && window.innerWidth > 991) {
                   selectOutlookAccount(0);
                 }
@@ -4324,25 +4506,27 @@ HTML_TEMPLATE = """<!DOCTYPE html>
                 deadCount++;
               }
             } catch (e) {
+              processedCount++;
               deadCount++;
             }
+            updateImportStatus();
           }
         }
 
         const pool = [];
-        for (let i = 0; i < Math.min(8, items.length); i++) {
+        for (let i = 0; i < Math.min(10, items.length); i++) {
           pool.push(worker());
         }
         await Promise.all(pool);
         saveOutlookAccountsStorage();
         renderAccountsList();
 
-        if (deadCount > 0 && addedCount === 0) {
+        if (deadCount > 0 && (addedCount + updatedCount) === 0) {
           showToast(`Email / Token Invalid atau Kedaluwarsa (${deadCount} akun invalid diabaikan)`, 'fa-solid fa-triangle-exclamation text-danger');
         } else if (deadCount > 0) {
-          showToast(`Berhasil menambah ${addedCount} akun (${deadCount} akun invalid diabaikan)`, 'fa-solid fa-circle-check text-warning');
-        } else if (addedCount > 0) {
-          showToast(`Berhasil menambahkan ${addedCount} akun aktif`, 'fa-solid fa-circle-check text-success');
+          showToast(`Berhasil memuat ${addedCount + updatedCount} akun (${addedCount} baru, ${updatedCount} diperbarui, ${deadCount} invalid)`, 'fa-solid fa-circle-check text-warning');
+        } else if (addedCount > 0 || updatedCount > 0) {
+          showToast(`Berhasil menambahkan ${addedCount} akun baru (${updatedCount} diperbarui)`, 'fa-solid fa-circle-check text-success');
         }
 
       } catch (err) {
@@ -5005,6 +5189,12 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     });
   </script>
   <div id="chenToastContainer"></div>
+  
+  <!-- Fixed Bottom-Left Subtle Transparent Watermark -->
+  <div class="chen-powered-watermark">
+    <i class="fa-solid fa-bolt"></i>
+    <span>Powered by <span class="powered-brand">ChenStore</span></span>
+  </div>
 </body>
 </html>
 """
