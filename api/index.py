@@ -235,6 +235,8 @@ def parse_outlook_lines(text: str) -> List[Dict[str, str]]:
                 token = parts[0]
         if not token:
             continue
+        if not password and len(parts) >= 2 and parts[0] == email and parts[1] != token:
+            password = parts[1]
         key = email.lower() if email else token[:40]
         if key in seen:
             continue
@@ -272,10 +274,11 @@ def get_access_token(refresh_token: str, client_id: str = DEFAULT_CLIENT_ID, pro
             client_ids_to_try.append(cid)
 
     for cid in client_ids_to_try[:2]: # Test user's client_id and 1 top fallback if needed
-        # Payload without explicit scope first (RFC-compliant refresh token flow: inherits original consented scopes)
+        # Always request Graph Mail.Read scope FIRST so token audience matches graph.microsoft.com
         payloads = [
-            {"grant_type": "refresh_token", "client_id": cid, "refresh_token": refresh_token},
-            {"grant_type": "refresh_token", "client_id": cid, "refresh_token": refresh_token, "scope": "https://graph.microsoft.com/Mail.Read offline_access"}
+            {"grant_type": "refresh_token", "client_id": cid, "refresh_token": refresh_token, "scope": "https://graph.microsoft.com/Mail.Read https://graph.microsoft.com/Mail.ReadWrite offline_access"},
+            {"grant_type": "refresh_token", "client_id": cid, "refresh_token": refresh_token, "scope": "https://graph.microsoft.com/Mail.Read offline_access"},
+            {"grant_type": "refresh_token", "client_id": cid, "refresh_token": refresh_token}
         ]
 
         for data in payloads:
@@ -362,9 +365,9 @@ def check_outlook_account(email: str, password: str, refresh_token: str, client_
             "$top": "1",
             "$select": "id,subject,from,receivedDateTime,isRead"
         }
-        inbox_res = requests.get(SINGLE_MESSAGE_URL, headers=headers, params=params, proxies=proxies, timeout=12)
+        inbox_res = requests.get(INBOX_MESSAGES_URL, headers=headers, params=params, proxies=proxies, timeout=12)
         if inbox_res.status_code != 200:
-            inbox_res = requests.get(INBOX_MESSAGES_URL, headers=headers, params=params, proxies=proxies, timeout=12)
+            inbox_res = requests.get(SINGLE_MESSAGE_URL, headers=headers, params=params, proxies=proxies, timeout=12)
 
         if inbox_res.status_code == 200:
             inbox_data = inbox_res.json().get("value", [])
@@ -412,11 +415,10 @@ def fetch_inbox_messages(refresh_token: str, client_id: str = DEFAULT_CLIENT_ID,
     }
 
     try:
-        # Check all messages endpoint first (captures Inbox, Junk, Focus, Other)
-        r = requests.get(SINGLE_MESSAGE_URL, headers=headers, params=params, proxies=proxies, timeout=15)
+        # Check inbox folder first, then all messages
+        r = requests.get(INBOX_MESSAGES_URL, headers=headers, params=params, proxies=proxies, timeout=15)
         if r.status_code != 200:
-            # Fallback to inbox folder
-            r = requests.get(INBOX_MESSAGES_URL, headers=headers, params=params, proxies=proxies, timeout=15)
+            r = requests.get(SINGLE_MESSAGE_URL, headers=headers, params=params, proxies=proxies, timeout=15)
         
         if r.status_code != 200:
             err_text = r.text
