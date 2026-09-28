@@ -2395,7 +2395,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
           <!-- Accounts List Container -->
           <div class="tm-accounts-list" id="tmAccountsContainer">
             <div class="text-center text-muted py-4 px-2 small">
-              <div class="tm-cute-mail-stage">
+              <div class="tm-cute-mail-stage d-lg-none">
                 <div class="tm-cute-envelope-wrap">
                   <div class="tm-env-back"></div>
                   <div class="tm-letter-card">
@@ -2418,6 +2418,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
                   <div class="tm-tray-handle"></div>
                 </div>
               </div>
+              <i class="fa-solid fa-users-viewfinder fa-2x mb-2 text-warning opacity-75 d-none d-lg-block"></i>
               <h6 class="text-light fw-bold mb-1" data-i18n="tm_no_accounts_yet">Belum Ada Akun</h6>
               <p class="text-secondary mb-3" style="font-size: 0.74rem;" data-i18n="tm_empty_acc_msg">Upload file <b>.TXT</b> atau klik <b>Add</b> untuk memulai.</p>
               <div class="d-flex justify-content-center gap-2">
@@ -2470,7 +2471,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
           <!-- Message Items List -->
           <div class="tm-messages-list" id="tmMessagesContainer">
             <div class="text-center text-muted py-4 px-2 small">
-              <div class="tm-cute-mail-stage">
+              <div class="tm-cute-mail-stage d-lg-none">
                 <div class="tm-cute-envelope-wrap">
                   <div class="tm-env-back"></div>
                   <div class="tm-letter-card">
@@ -2493,7 +2494,8 @@ HTML_TEMPLATE = """<!DOCTYPE html>
                   <div class="tm-tray-handle"></div>
                 </div>
               </div>
-              <p class="small text-secondary mb-0" data-i18n="tm_empty_inbox_select">Pilih akun untuk melihat pesan inbox.</p>
+              <i class="fa-regular fa-envelope-open fa-2x mb-2 text-warning opacity-75 d-none d-lg-block"></i>
+              <p class="small text-secondary mb-0" data-i18n="tm_empty_inbox_select">Pilih akun di sebelah kiri untuk melihat pesan inbox.</p>
             </div>
           </div>
         </div>
@@ -4530,8 +4532,8 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       return accounts;
     }
 
-    function getCuteMailboxHtml() {
-      return `<div class="tm-cute-mail-stage"><div class="tm-cute-envelope-wrap"><div class="tm-env-back"></div><div class="tm-letter-card"><div class="tm-letter-avatar"></div><div class="tm-letter-lines"><div class="tm-letter-line"></div><div class="tm-letter-line short"></div></div></div><div class="tm-env-front"><div class="tm-env-face"><div class="tm-env-eye left"></div><div class="tm-env-smile"></div><div class="tm-env-eye right"></div></div></div><div class="tm-env-flap"></div></div><div class="tm-mail-tray"><div class="tm-tray-handle"></div></div></div>`;
+    function getCuteMailboxHtml(extraClass = '') {
+      return `<div class="tm-cute-mail-stage ${extraClass}"><div class="tm-cute-envelope-wrap"><div class="tm-env-back"></div><div class="tm-letter-card"><div class="tm-letter-avatar"></div><div class="tm-letter-lines"><div class="tm-letter-line"></div><div class="tm-letter-line short"></div></div></div><div class="tm-env-front"><div class="tm-env-face"><div class="tm-env-eye left"></div><div class="tm-env-smile"></div><div class="tm-env-eye right"></div></div></div><div class="tm-env-flap"></div></div><div class="tm-mail-tray"><div class="tm-tray-handle"></div></div></div>`;
     }
 
     let outlookAccounts = [];
@@ -4636,7 +4638,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             const inboxTitle = document.getElementById('tmInboxTitle');
             if (inboxTitle) inboxTitle.innerHTML = `<i class="fa-regular fa-folder-open me-1"></i> ${getI18nText('tm_inbox_title', 'INBOX')} (0)`;
             const msgCont = document.getElementById('tmMessagesContainer');
-            if (msgCont) msgCont.innerHTML = `<div class="text-center text-muted py-4 px-2 small">${getCuteMailboxHtml()}<p class="small text-secondary mb-0">${getI18nText('tm_empty_inbox_select', 'Pilih akun untuk melihat pesan inbox.')}</p></div>`;
+            if (msgCont) msgCont.innerHTML = `<div class="text-center text-muted py-4 px-2 small">${getCuteMailboxHtml('d-lg-none')}<i class="fa-regular fa-envelope-open fa-2x mb-2 text-warning opacity-75 d-none d-lg-block"></i><p class="small text-secondary mb-0">${getI18nText('tm_empty_inbox_select', 'Pilih akun di sebelah kiri untuk melihat pesan inbox.')}</p></div>`;
             const reader = document.getElementById('tmReaderContent');
             if (reader) reader.innerHTML = `<div class="text-center text-muted my-auto">${getCuteMailboxHtml()}<h5 class="text-light fw-bold">${getI18nText('tm_no_email_selected', 'Belum ada email yang dipilih')}</h5><p class="small text-secondary mb-0">${getI18nText('tm_click_inbox_hint', 'Klik salah satu email dari daftar inbox untuk membaca isi surat.')}</p></div>`;
           }
@@ -4688,7 +4690,8 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       if (outlookAccounts.length === 0) {
         container.innerHTML = `
           <div class="text-center text-muted py-4 px-2 small">
-            ${getCuteMailboxHtml()}
+            ${getCuteMailboxHtml('d-lg-none')}
+            <i class="fa-solid fa-users-viewfinder fa-2x mb-2 text-warning opacity-75 d-none d-lg-block"></i>
             <h6 class="text-light fw-bold mb-1">${getI18nText('tm_no_accounts_yet', 'Belum Ada Akun')}</h6>
             <p class="text-secondary mb-3" style="font-size: 0.74rem;">${getI18nText('tm_empty_acc_msg', 'Upload file <b>.TXT</b> atau klik <b>Add</b> untuk memulai.')}</p>
             <div class="d-flex justify-content-center gap-2">
@@ -5127,7 +5130,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         renderAccountsList();
         setMailView('accounts');
         document.getElementById('tmInboxTitle').innerHTML = `<i class="fa-regular fa-folder-open me-1"></i> ${getI18nText('tm_inbox_title', 'INBOX')} (0)`;
-        document.getElementById('tmMessagesContainer').innerHTML = `<div class="text-center text-muted py-4 px-2 small">${getCuteMailboxHtml()}<p class="small text-secondary mb-0">${getI18nText('tm_empty_inbox_select', 'Pilih akun untuk melihat pesan inbox.')}</p></div>`;
+        document.getElementById('tmMessagesContainer').innerHTML = `<div class="text-center text-muted py-4 px-2 small">${getCuteMailboxHtml('d-lg-none')}<i class="fa-regular fa-envelope-open fa-2x mb-2 text-warning opacity-75 d-none d-lg-block"></i><p class="small text-secondary mb-0">${getI18nText('tm_empty_inbox_select', 'Pilih akun di sebelah kiri untuk melihat pesan inbox.')}</p></div>`;
         document.getElementById('tmReaderContent').innerHTML = `<div class="text-center text-muted my-auto">${getCuteMailboxHtml()}<h5 class="text-light fw-bold">${getI18nText('tm_no_email_selected', 'Belum ada email yang dipilih')}</h5><p class="small text-secondary mb-0">${getI18nText('tm_click_inbox_hint', 'Klik salah satu email dari daftar inbox untuk membaca isi surat.')}</p></div>`;
       }
     }
@@ -5176,7 +5179,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       const search = (document.getElementById('tmMessageSearch')?.value || '').toLowerCase().trim();
 
       if (!currentInboxMessages || currentInboxMessages.length === 0) {
-        container.innerHTML = `<div class="text-center text-muted py-4 px-2 small">${getCuteMailboxHtml()}<p class="small text-secondary mb-0">${getI18nText('tm_inbox_empty', 'Inbox kosong.')}</p></div>`;
+        container.innerHTML = `<div class="text-center text-muted py-4 px-2 small">${getCuteMailboxHtml('d-lg-none')}<i class="fa-regular fa-folder-open fa-2x mb-2 text-warning opacity-75 d-none d-lg-block"></i><p class="small text-secondary mb-0">${getI18nText('tm_inbox_empty', 'Inbox kosong.')}</p></div>`;
         return;
       }
 
