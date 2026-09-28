@@ -2756,7 +2756,12 @@ HTML_TEMPLATE = """<!DOCTYPE html>
               </div>
 
               <div class="mb-3">
-                <label class="form-label text-secondary small fw-semibold mb-1" data-i18n="cc_proxy_label">RESIDENTIAL PROXY URL (Wajib)</label>
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                  <label class="form-label text-secondary small fw-semibold mb-0" data-i18n="cc_proxy_label">RESIDENTIAL PROXY URL (Wajib)</label>
+                  <a href="https://ipnon.com/" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-warning py-0 px-2 fw-semibold text-decoration-none shadow-sm" style="font-size: 0.72rem;">
+                    <i class="fa-solid fa-cart-shopping me-1"></i>Beli Proxy
+                  </a>
+                </div>
                 <input type="text" id="ccProxyInput" class="form-control form-control-theme mb-1" placeholder="http://user-session-{sess}:pass@gate.provider.com:7000" value="{{ default_proxy }}">
                 <small class="text-muted d-block mb-2" style="font-size: 0.75rem;" data-i18n="cc_proxy_help">Gunakan token <code>{sess}</code> untuk rotasi IP otomatis.</small>
 
