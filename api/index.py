@@ -2207,6 +2207,9 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       .capcut-container {
         padding: 0.75rem 0.5rem;
       }
+      .card-theme {
+        padding: 1.1rem !important;
+      }
       .trackmail-container {
         height: calc(100vh - 105px);
       }
@@ -2218,6 +2221,46 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       .tm-view-accounts .tm-sidebar { display: flex !important; }
       .tm-view-inbox .tm-messages-col { display: flex !important; }
       .tm-view-reader .tm-reader-col { display: flex !important; }
+
+      /* Mobile MS Mail Checker & Toolbars responsive */
+      .hm-toolbar-container {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 6px !important;
+      }
+      .hm-toolbar-container .btn-group {
+        display: flex !important;
+        width: 100% !important;
+      }
+      .hm-toolbar-container .btn-group .btn {
+        flex: 1 1 0 !important;
+        padding: 6px 4px !important;
+        font-size: 0.72rem !important;
+        white-space: normal !important;
+        text-align: center !important;
+      }
+      .hm-action-btns {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
+        width: 100% !important;
+        gap: 6px !important;
+      }
+      .hm-action-btns .btn {
+        width: 100% !important;
+        font-size: 0.75rem !important;
+        padding: 6px 4px !important;
+      }
+      .btn-group.flex-wrap {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        gap: 4px !important;
+      }
+      .btn-group.flex-wrap .btn {
+        flex: 1 1 auto !important;
+        border-radius: 6px !important;
+        font-size: 0.74rem !important;
+        padding: 4px 6px !important;
+      }
 
       /* Mobile inputs: avoid iOS zoom on focus */
       .form-control-theme, input, select, textarea {
@@ -2351,8 +2394,40 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 
           <!-- Accounts List Container -->
           <div class="tm-accounts-list" id="tmAccountsContainer">
-            <div class="text-center text-muted py-5 small" data-i18n="tm_empty_acc_msg">
-              Belum ada akun.<br>Upload file <b>.TXT</b> atau klik <b>Add</b>.
+            <div class="text-center text-muted py-4 px-2 small">
+              <div class="tm-cute-mail-stage">
+                <div class="tm-cute-envelope-wrap">
+                  <div class="tm-env-back"></div>
+                  <div class="tm-letter-card">
+                    <div class="tm-letter-avatar"></div>
+                    <div class="tm-letter-lines">
+                      <div class="tm-letter-line"></div>
+                      <div class="tm-letter-line short"></div>
+                    </div>
+                  </div>
+                  <div class="tm-env-front">
+                    <div class="tm-env-face">
+                      <div class="tm-env-eye left"></div>
+                      <div class="tm-env-smile"></div>
+                      <div class="tm-env-eye right"></div>
+                    </div>
+                  </div>
+                  <div class="tm-env-flap"></div>
+                </div>
+                <div class="tm-mail-tray">
+                  <div class="tm-tray-handle"></div>
+                </div>
+              </div>
+              <h6 class="text-light fw-bold mb-1" data-i18n="tm_no_accounts_yet">Belum Ada Akun</h6>
+              <p class="text-secondary mb-3" style="font-size: 0.74rem;" data-i18n="tm_empty_acc_msg">Upload file <b>.TXT</b> atau klik <b>Add</b> untuk memulai.</p>
+              <div class="d-flex justify-content-center gap-2">
+                <button class="btn btn-sm btn-outline-gold px-3 py-1" style="font-size: 0.75rem;" onclick="document.getElementById('tmDirectTxtFile').click()">
+                  <i class="fa-solid fa-file-arrow-up me-1"></i>Upload .TXT
+                </button>
+                <button class="btn btn-sm btn-gold px-3 py-1" style="font-size: 0.75rem;" data-bs-toggle="modal" data-bs-target="#addAccountModal">
+                  <i class="fa-solid fa-plus me-1"></i>Add
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -2394,8 +2469,31 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 
           <!-- Message Items List -->
           <div class="tm-messages-list" id="tmMessagesContainer">
-            <div class="text-center text-muted py-5 small" data-i18n="tm_empty_inbox_select">
-              Pilih akun di sebelah kiri untuk melihat pesan inbox.
+            <div class="text-center text-muted py-4 px-2 small">
+              <div class="tm-cute-mail-stage">
+                <div class="tm-cute-envelope-wrap">
+                  <div class="tm-env-back"></div>
+                  <div class="tm-letter-card">
+                    <div class="tm-letter-avatar"></div>
+                    <div class="tm-letter-lines">
+                      <div class="tm-letter-line"></div>
+                      <div class="tm-letter-line short"></div>
+                    </div>
+                  </div>
+                  <div class="tm-env-front">
+                    <div class="tm-env-face">
+                      <div class="tm-env-eye left"></div>
+                      <div class="tm-env-smile"></div>
+                      <div class="tm-env-eye right"></div>
+                    </div>
+                  </div>
+                  <div class="tm-env-flap"></div>
+                </div>
+                <div class="tm-mail-tray">
+                  <div class="tm-tray-handle"></div>
+                </div>
+              </div>
+              <p class="small text-secondary mb-0" data-i18n="tm_empty_inbox_select">Pilih akun untuk melihat pesan inbox.</p>
             </div>
           </div>
         </div>
@@ -2566,15 +2664,15 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             <div class="card card-theme p-4 shadow-sm">
               <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
                 <h5 class="fw-bold mb-0 text-warning"><i class="fa-solid fa-square-poll-vertical me-2"></i><span data-i18n="hm_results_title">Hasil Pengecekan MS Mail</span></h5>
-                <div class="d-flex gap-2 flex-wrap">
+                <div class="d-flex gap-2 flex-wrap hm-action-btns">
                   <button class="btn btn-sm btn-outline-warning fw-semibold" onclick="openDeviceAuthModal()" title="Generator Token Resmi Microsoft Graph">
-                    <i class="fa-brands fa-microsoft me-1"></i><span>Get Token Resmi</span>
+                    <i class="fa-brands fa-microsoft me-1"></i><span>Get Token</span>
                   </button>
                   <button class="btn btn-sm btn-gold fw-bold shadow-sm" onclick="transferLiveToMailReader()" title="Langsung buka semua akun LIVE di tab Mail Reader">
-                    <i class="fa-solid fa-bolt me-1"></i><span>Kirim ke Mail Reader</span>
+                    <i class="fa-solid fa-bolt me-1"></i><span>Ke Mail Reader</span>
                   </button>
                   <button class="btn btn-sm btn-outline-gold" onclick="downloadHotmailLive('token')" title="Download format Email|Pass|Token|Client_ID">
-                    <i class="fa-solid fa-key me-1"></i><span>Save + Token (.txt)</span>
+                    <i class="fa-solid fa-key me-1"></i><span>Save Token</span>
                   </button>
                   <button class="btn btn-sm btn-outline-secondary text-light" onclick="downloadHotmailLive('combo')" title="Download format Email:Pass">
                     <i class="fa-solid fa-download me-1"></i><span>Save Combo</span>
@@ -2589,7 +2687,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
                     <i class="fa-solid fa-circle-check me-1"></i><span data-i18n="hm_live_title">LIVE / HIT</span> 
                     <span id="hotmailLiveCount" class="badge bg-success badge-counter ms-1">0</span>
                   </span>
-                  <div class="btn-group btn-group-sm">
+                  <div class="btn-group btn-group-sm flex-wrap">
                     <button class="btn btn-sm btn-outline-warning" onclick="copyHotmailLive('token')" title="Salin format email|pass|token|client_id"><i class="fa-solid fa-key me-1"></i>Copy Token</button>
                     <button class="btn btn-sm btn-outline-secondary text-light" onclick="copyHotmailLive('combo')" title="Salin email:pass"><i class="fa-regular fa-copy me-1"></i>Copy Combo</button>
                     <button class="btn btn-sm btn-outline-secondary text-light" onclick="copyHotmailLive('full')" title="Salin email:pass | Negara"><i class="fa-solid fa-globe me-1"></i>Copy Full</button>
@@ -2597,11 +2695,11 @@ HTML_TEMPLATE = """<!DOCTYPE html>
                 </div>
 
                 <!-- Live Format Switcher Toolbar -->
-                <div class="d-flex align-items-center gap-2 mb-2 p-1.5 rounded bg-black border border-secondary" style="font-size: 0.76rem;">
+                <div class="hm-toolbar-container d-flex align-items-center gap-2 mb-2 p-1.5 rounded bg-black border border-secondary" style="font-size: 0.76rem;">
                   <span class="text-warning fw-semibold ps-1 flex-shrink-0"><i class="fa-solid fa-sliders me-1"></i>Format Output:</span>
                   <div class="btn-group btn-group-sm flex-grow-1" role="group">
                     <button type="button" class="btn btn-xs btn-outline-warning active fw-bold py-1" id="btnFmtToken" onclick="setHotmailDisplayFormat('token')">
-                      <i class="fa-solid fa-key me-1"></i>Token (Mail Reader) <span class="badge bg-dark border border-warning text-warning ms-1" style="font-size:0.62rem; font-weight:normal;">(Dalam Pengembangan)</span>
+                      <i class="fa-solid fa-key me-1"></i>Token Reader
                     </button>
                     <button type="button" class="btn btn-xs btn-outline-secondary text-light fw-bold py-1" id="btnFmtInfo" onclick="setHotmailDisplayFormat('info')">
                       <i class="fa-solid fa-globe me-1"></i>Info Negara
@@ -2612,17 +2710,17 @@ HTML_TEMPLATE = """<!DOCTYPE html>
                   </div>
                 </div>
 
-                <textarea id="hotmailLiveResult" class="form-control form-control-theme border-success font-monospace" rows="6" readonly data-i18n-ph="hm_live_ph" placeholder="Akun LIVE akan muncul di sini... (Catatan: Fitur Auto-Token Mail Reader masih dalam tahap pengembangan)"></textarea>
+                <textarea id="hotmailLiveResult" class="form-control form-control-theme border-success font-monospace" rows="6" readonly data-i18n-ph="hm_live_ph" placeholder="Akun LIVE akan muncul di sini..."></textarea>
               </div>
 
               <!-- DIE / ERROR Accounts Result -->
               <div>
-                <div class="d-flex justify-content-between align-items-center mb-1">
+                <div class="d-flex justify-content-between align-items-center mb-1 flex-wrap gap-1">
                   <span class="fw-bold text-danger">
                     <i class="fa-solid fa-circle-xmark me-1"></i><span data-i18n="hm_die_title">DIE / WRONG PASS</span>
                     <span id="hotmailDieCount" class="badge bg-danger badge-counter ms-1">0</span>
                   </span>
-                  <div class="btn-group btn-group-sm">
+                  <div class="btn-group btn-group-sm flex-wrap">
                     <button class="btn btn-sm btn-outline-secondary text-light" onclick="copyField('hotmailDieResult')" data-i18n="hm_btn_copy">Copy</button>
                     <button class="btn btn-sm btn-outline-secondary text-light" onclick="downloadField('hotmailDieResult', 'hotmail_die.txt')" data-i18n="hm_btn_save">Save</button>
                   </div>
@@ -2722,12 +2820,12 @@ HTML_TEMPLATE = """<!DOCTYPE html>
               </div>
 
               <div class="mb-3">
-                <div class="d-flex justify-content-between align-items-center mb-1">
+                <div class="d-flex justify-content-between align-items-center mb-1 flex-wrap gap-1">
                   <span class="fw-bold text-success">
                     <i class="fa-solid fa-crown me-1"></i><span data-i18n="cc_pro_title">PRO / VIP</span> 
                     <span id="proCount" class="badge bg-success badge-counter ms-1">0</span>
                   </span>
-                  <div class="btn-group btn-group-sm">
+                  <div class="btn-group btn-group-sm flex-wrap">
                     <button class="btn btn-sm btn-outline-secondary text-light" onclick="copyField('proResult')" data-i18n="cc_btn_copy">Copy</button>
                     <button class="btn btn-sm btn-outline-secondary text-light" onclick="downloadField('proResult', 'capcut_pro.txt')" data-i18n="cc_btn_save">Save</button>
                   </div>
@@ -2736,12 +2834,12 @@ HTML_TEMPLATE = """<!DOCTYPE html>
               </div>
 
               <div class="mb-3">
-                <div class="d-flex justify-content-between align-items-center mb-1">
+                <div class="d-flex justify-content-between align-items-center mb-1 flex-wrap gap-1">
                   <span class="fw-bold text-info">
                     <i class="fa-solid fa-user me-1"></i><span data-i18n="cc_free_title">FREE / REGULAR</span>
                     <span id="freeCount" class="badge bg-info text-dark badge-counter ms-1">0</span>
                   </span>
-                  <div class="btn-group btn-group-sm">
+                  <div class="btn-group btn-group-sm flex-wrap">
                     <button class="btn btn-sm btn-outline-secondary text-light" onclick="copyField('freeResult')" data-i18n="cc_btn_copy">Copy</button>
                     <button class="btn btn-sm btn-outline-secondary text-light" onclick="downloadField('freeResult', 'capcut_free.txt')" data-i18n="cc_btn_save">Save</button>
                   </div>
@@ -2750,12 +2848,12 @@ HTML_TEMPLATE = """<!DOCTYPE html>
               </div>
 
               <div>
-                <div class="d-flex justify-content-between align-items-center mb-1">
+                <div class="d-flex justify-content-between align-items-center mb-1 flex-wrap gap-1">
                   <span class="fw-bold text-danger">
                     <i class="fa-solid fa-circle-xmark me-1"></i><span data-i18n="cc_dead_title">DEAD / ERROR</span>
                     <span id="dieCount" class="badge bg-danger badge-counter ms-1">0</span>
                   </span>
-                  <div class="btn-group btn-group-sm">
+                  <div class="btn-group btn-group-sm flex-wrap">
                     <button class="btn btn-sm btn-outline-secondary text-light" onclick="copyField('dieResult')" data-i18n="cc_btn_copy">Copy</button>
                     <button class="btn btn-sm btn-outline-secondary text-light" onclick="downloadField('dieResult', 'capcut_die.txt')" data-i18n="cc_btn_save">Save</button>
                   </div>
@@ -4432,6 +4530,10 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       return accounts;
     }
 
+    function getCuteMailboxHtml() {
+      return `<div class="tm-cute-mail-stage"><div class="tm-cute-envelope-wrap"><div class="tm-env-back"></div><div class="tm-letter-card"><div class="tm-letter-avatar"></div><div class="tm-letter-lines"><div class="tm-letter-line"></div><div class="tm-letter-line short"></div></div></div><div class="tm-env-front"><div class="tm-env-face"><div class="tm-env-eye left"></div><div class="tm-env-smile"></div><div class="tm-env-eye right"></div></div></div><div class="tm-env-flap"></div></div><div class="tm-mail-tray"><div class="tm-tray-handle"></div></div></div>`;
+    }
+
     let outlookAccounts = [];
     let selectedAccountIndex = -1;
     let currentMailView = 'accounts';
@@ -4534,9 +4636,9 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             const inboxTitle = document.getElementById('tmInboxTitle');
             if (inboxTitle) inboxTitle.innerHTML = `<i class="fa-regular fa-folder-open me-1"></i> ${getI18nText('tm_inbox_title', 'INBOX')} (0)`;
             const msgCont = document.getElementById('tmMessagesContainer');
-            if (msgCont) msgCont.innerHTML = `<div class="text-center text-muted py-5 small">${getI18nText('tm_empty_inbox_select', 'Pilih akun di sebelah kiri untuk melihat pesan inbox.')}</div>`;
+            if (msgCont) msgCont.innerHTML = `<div class="text-center text-muted py-4 px-2 small">${getCuteMailboxHtml()}<p class="small text-secondary mb-0">${getI18nText('tm_empty_inbox_select', 'Pilih akun untuk melihat pesan inbox.')}</p></div>`;
             const reader = document.getElementById('tmReaderContent');
-            if (reader) reader.innerHTML = `<div class="text-center text-muted my-auto"><div class="tm-cute-mail-stage"><div class="tm-cute-envelope-wrap"><div class="tm-env-back"></div><div class="tm-letter-card"><div class="tm-letter-avatar"></div><div class="tm-letter-lines"><div class="tm-letter-line"></div><div class="tm-letter-line short"></div></div></div><div class="tm-env-front"><div class="tm-env-face"><div class="tm-env-eye left"></div><div class="tm-env-smile"></div><div class="tm-env-eye right"></div></div></div><div class="tm-env-flap"></div></div><div class="tm-mail-tray"><div class="tm-tray-handle"></div></div></div><h5 class="text-light fw-bold">${getI18nText('tm_no_email_selected', 'Belum ada email yang dipilih')}</h5><p class="small text-secondary mb-0">${getI18nText('tm_click_inbox_hint', 'Klik salah satu email dari daftar inbox untuk membaca isi surat.')}</p></div>`;
+            if (reader) reader.innerHTML = `<div class="text-center text-muted my-auto">${getCuteMailboxHtml()}<h5 class="text-light fw-bold">${getI18nText('tm_no_email_selected', 'Belum ada email yang dipilih')}</h5><p class="small text-secondary mb-0">${getI18nText('tm_click_inbox_hint', 'Klik salah satu email dari daftar inbox untuk membaca isi surat.')}</p></div>`;
           }
         }
       } catch(e) {}
@@ -4584,7 +4686,21 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       }
 
       if (outlookAccounts.length === 0) {
-        container.innerHTML = `<div class="text-center text-muted py-5 small">${getI18nText('tm_empty_acc_msg', 'Belum ada akun.<br>Upload file <b>.TXT</b> atau klik <b>Add</b>.')}</div>`;
+        container.innerHTML = `
+          <div class="text-center text-muted py-4 px-2 small">
+            ${getCuteMailboxHtml()}
+            <h6 class="text-light fw-bold mb-1">${getI18nText('tm_no_accounts_yet', 'Belum Ada Akun')}</h6>
+            <p class="text-secondary mb-3" style="font-size: 0.74rem;">${getI18nText('tm_empty_acc_msg', 'Upload file <b>.TXT</b> atau klik <b>Add</b> untuk memulai.')}</p>
+            <div class="d-flex justify-content-center gap-2">
+              <button class="btn btn-sm btn-outline-gold px-3 py-1" style="font-size: 0.75rem;" onclick="document.getElementById('tmDirectTxtFile').click()">
+                <i class="fa-solid fa-file-arrow-up me-1"></i>Upload .TXT
+              </button>
+              <button class="btn btn-sm btn-gold px-3 py-1" style="font-size: 0.75rem;" data-bs-toggle="modal" data-bs-target="#addAccountModal">
+                <i class="fa-solid fa-plus me-1"></i>Add
+              </button>
+            </div>
+          </div>
+        `;
         return;
       }
 
@@ -5011,8 +5127,8 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         renderAccountsList();
         setMailView('accounts');
         document.getElementById('tmInboxTitle').innerHTML = `<i class="fa-regular fa-folder-open me-1"></i> ${getI18nText('tm_inbox_title', 'INBOX')} (0)`;
-        document.getElementById('tmMessagesContainer').innerHTML = `<div class="text-center text-muted py-5 small">${getI18nText('tm_empty_inbox_select', 'Pilih akun di sebelah kiri untuk melihat pesan inbox.')}</div>`;
-        document.getElementById('tmReaderContent').innerHTML = `<div class="text-center text-muted my-auto"><div class="tm-cute-mail-stage"><div class="tm-cute-envelope-wrap"><div class="tm-env-back"></div><div class="tm-letter-card"><div class="tm-letter-avatar"></div><div class="tm-letter-lines"><div class="tm-letter-line"></div><div class="tm-letter-line short"></div></div></div><div class="tm-env-front"><div class="tm-env-face"><div class="tm-env-eye left"></div><div class="tm-env-smile"></div><div class="tm-env-eye right"></div></div></div><div class="tm-env-flap"></div></div><div class="tm-mail-tray"><div class="tm-tray-handle"></div></div></div><h5 class="text-light fw-bold">${getI18nText('tm_no_email_selected', 'Belum ada email yang dipilih')}</h5><p class="small text-secondary mb-0">${getI18nText('tm_click_inbox_hint', 'Klik salah satu email dari daftar inbox untuk membaca isi surat.')}</p></div>`;
+        document.getElementById('tmMessagesContainer').innerHTML = `<div class="text-center text-muted py-4 px-2 small">${getCuteMailboxHtml()}<p class="small text-secondary mb-0">${getI18nText('tm_empty_inbox_select', 'Pilih akun untuk melihat pesan inbox.')}</p></div>`;
+        document.getElementById('tmReaderContent').innerHTML = `<div class="text-center text-muted my-auto">${getCuteMailboxHtml()}<h5 class="text-light fw-bold">${getI18nText('tm_no_email_selected', 'Belum ada email yang dipilih')}</h5><p class="small text-secondary mb-0">${getI18nText('tm_click_inbox_hint', 'Klik salah satu email dari daftar inbox untuk membaca isi surat.')}</p></div>`;
       }
     }
 
@@ -5060,7 +5176,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       const search = (document.getElementById('tmMessageSearch')?.value || '').toLowerCase().trim();
 
       if (!currentInboxMessages || currentInboxMessages.length === 0) {
-        container.innerHTML = `<div class="text-center text-muted py-5 small">${getI18nText('tm_inbox_empty', 'Inbox kosong.')}</div>`;
+        container.innerHTML = `<div class="text-center text-muted py-4 px-2 small">${getCuteMailboxHtml()}<p class="small text-secondary mb-0">${getI18nText('tm_inbox_empty', 'Inbox kosong.')}</p></div>`;
         return;
       }
 
