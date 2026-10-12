@@ -274,11 +274,11 @@ def get_access_token(refresh_token: str, client_id: str = DEFAULT_CLIENT_ID, pro
             client_ids_to_try.append(cid)
 
     for cid in client_ids_to_try[:2]: # Test user's client_id and 1 top fallback if needed
-        # Always request Graph Mail.Read scope FIRST so token audience matches graph.microsoft.com
+        # Safe payloads: Start with default/implicit scope or Mail.Read, avoid aggressive Mail.ReadWrite
         payloads = [
-            {"grant_type": "refresh_token", "client_id": cid, "refresh_token": refresh_token, "scope": "https://graph.microsoft.com/Mail.Read https://graph.microsoft.com/Mail.ReadWrite offline_access"},
+            {"grant_type": "refresh_token", "client_id": cid, "refresh_token": refresh_token},
             {"grant_type": "refresh_token", "client_id": cid, "refresh_token": refresh_token, "scope": "https://graph.microsoft.com/Mail.Read offline_access"},
-            {"grant_type": "refresh_token", "client_id": cid, "refresh_token": refresh_token}
+            {"grant_type": "refresh_token", "client_id": cid, "refresh_token": refresh_token, "scope": "https://graph.microsoft.com/Mail.Read https://graph.microsoft.com/Mail.ReadWrite offline_access"}
         ]
 
         for data in payloads:
@@ -297,18 +297,22 @@ def get_access_token(refresh_token: str, client_id: str = DEFAULT_CLIENT_ID, pro
                             return access_token, new_refresh_token, None
 
                     err_desc = res_json.get("error_description") or res_json.get("error") or r.text[:120]
-                    
-                    # Permanent auth failures - no need to retry this payload
-                    if any(term in err_desc.lower() for term in ["aadsts700082", "expired", "revoked", "invalid_grant", "invalid_token", "idx14100", "invalidauthenticationtoken"]):
-                        return None, None, "Email / Token Invalid atau Kedaluwarsa"
-                    
-                    # If scope parameter was rejected, break to next payload without scope
-                    if "scope" in err_desc.lower() and "scope" in data:
+                    err_desc_lower = err_desc.lower()
+
+                    # If scope parameter was unauthorized/rejected (AADSTS70000), break to try next payload
+                    if "aadsts70000" in err_desc_lower or "scope" in err_desc_lower:
                         break
 
                     # If client id error, break to try next client id
-                    if "aadsts700016" in err_desc.lower() or "aadsts700038" in err_desc.lower():
+                    if "aadsts700016" in err_desc_lower or "aadsts700038" in err_desc_lower:
                         break
+
+                    # Permanent auth failures - only stop if actually expired / revoked
+                    if any(term in err_desc_lower for term in ["aadsts700082", "aadsts50076", "aadsts50079", "expired", "revoked", "idx14100", "invalidauthenticationtoken"]):
+                        return None, None, "Email / Token Invalid atau Kedaluwarsa"
+                    
+                    if "invalid_grant" in err_desc_lower and "aadsts70000" not in err_desc_lower:
+                        return None, None, "Email / Token Invalid atau Kedaluwarsa"
 
                     # If rate limited (429) or 503, wait briefly
                     if r.status_code in [429, 503]:
